@@ -1,5 +1,5 @@
 # BiasNavi
-A data bias management toolkit developed by ARC Training Centre for Information Resilience [CIRES](https://cires.org.au/)
+A data bias management toolkit developed by ARC Training Centre for Information Resilience [CIRES](https://cires.org.au/).
 
 BiasNavi aims to manage the bias in datasets. It complies with the following pipeline:
 
@@ -10,4 +10,4 @@ BiasNavi aims to manage the bias in datasets. It complies with the following pip
 + **Adapting**: Provide the user with a set of tools that allows them to interact with existing biased results and to adapt them for bias in their preferred ways.
 
 ## Architecture
-<img src="architecture.png" alt="architecture" width="1378">
+<img src="architecture.png" alt="architecture" width="600">
