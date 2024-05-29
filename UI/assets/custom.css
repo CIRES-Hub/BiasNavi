@@ -1,0 +1,226 @@
+/* Overall layout */
+.body {
+    background-color:#f5f5f5; /* Grey background */
+}
+
+/* For Chrome, Safari, and Edge */
+::-webkit-scrollbar {
+    width: 12px;  /* Scrollbar width */
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;  /* Track color */
+    border-radius: 10px;   /* Track corner rounding */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;      /* Handle color */
+    border-radius: 10px;   /* Handle corner rounding */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;      /* Handle color on hover */
+}
+
+/* For Firefox */
+* {
+    scrollbar-width: thin;          /* "auto" or "thin" */
+    scrollbar-color: darkslateblue white;  /* Handle and track color */
+}
+
+/* Blue banner styling */
+.banner {
+    background:darkslateblue;
+    color: white;
+    padding: 1px 20px;
+    /*border-radius: 8px 8px 0 0;*/
+    border: black;
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.2);
+    width: 100%;
+    height: 75px;
+    margin-bottom: 20px;
+    display: flex;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: bold;
+    font-size: larger;
+}
+
+
+.card {
+    border-radius: 8px; /* Rounded borders for the card */
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2); /* Horizontal offset, vertical offset, blur radius, spread radius, color */
+    background-color: white; /* Card background color */
+    margin: 15px 0;
+    /* Add other styling for the card as needed */
+}
+
+.upload{
+
+    height: 60px;
+    line-height: 60px;
+    border-width: 1px;
+    border-style: dashed;
+    border-radius: 5px;
+    text-align: center;
+    margin: 16px;
+    background-color: #ebf2fa;
+}
+
+.query{
+
+    margin: 5px;
+    background-color: white;
+    border-radius: 6px;
+
+    /*box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.2); */
+}
+
+.query-title{
+    font-weight: bold;
+
+    padding: 10px;
+}
+
+.query-div{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.query-header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.download-button{
+    background-color: white; /* Blue background */
+    color: rebeccapurple;
+    border-radius: 10px;
+    border-color: rebeccapurple;
+    padding: 3px 10px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.query-area{
+    background-color: #ffffff; /* White background */
+    border-radius: 5px;
+    border: 1px solid burlywood;
+    width: 97%;
+    overflow-y: auto;
+    margin: 10px;
+    height: 600px;
+
+}
+
+.RAG-area{
+    background-color: #ffffff; /* White background */
+    border-radius: 5px;
+    border: 1px solid steelblue;
+    width: 97%;
+    overflow-y: auto;
+    margin: 10px;
+    padding: 10px;
+    text-align: justify;
+    height: 300px;
+
+}
+
+.query-input{
+    width: 97%;
+    padding: 5px;
+    margin-right: 10px;
+    margin-left: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+.send-button {
+    background-color: #007bff; /* Blue background */
+    color: white;
+    border-radius: 10px;
+    border: none;
+    padding: 5px 20px;
+    cursor: pointer;
+    margin-bottom: 10px;
+
+}
+
+.RAG-button {
+    background-color: green;
+    color: white;
+    border-radius: 10px;
+    border: none;
+    padding: 5px 20px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    margin-left: 10px;
+}
+
+
+.load-button {
+    background-color: white; /* Blue background */
+    color: rebeccapurple;
+    border-radius: 10px;
+    border-color: rebeccapurple;
+    padding: 3px 10px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+.load-button:hover {
+    background-color: whitesmoke;
+}
+
+.download-button:hover {
+    background-color: whitesmoke;
+}
+/* Send button hover effect */
+.send-button:hover {
+    background-color: #0056b3;
+}
+
+.RAG-button:hover {
+    background-color: seagreen;
+}
+
+.query-title{
+    margin: 0 10px 0 10px;
+}
+
+.user-msg{
+    text-align: justify;
+    padding: 10px;
+    background-color: darkslateblue;
+    color: white;
+    border-radius: 15px;
+    margin: 5px 5px 5px 50%;
+    width: fit-content;
+    max-width: 50%;
+    word-wrap: break-word;
+    display: block;
+    float: right;
+}
+
+.llm-msg{
+    text-align: justify;
+    padding: 10px;
+    background-color: #f5f4ed;
+    color: black;
+    border-radius: 15px;
+    margin: 5px 25% 5px 5px;
+    width: fit-content;
+    max-width: 75%;
+    word-wrap: break-word;
+    display: inline-block
+}
+
+.logo{
+    width: 80px;
+}
+
+.title{
+    font-size:48px;
+    color:#f5f5f5;
+}
