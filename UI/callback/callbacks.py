@@ -67,7 +67,7 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
                     if glo_vars.rag:
                         glo_vars.rag.clean()
 
-                    rag = RAG(io.BytesIO(decoded))
+                    glo_vars.rag = RAG(io.BytesIO(decoded))
 
                     return [html.Div([
                         # placeholder
