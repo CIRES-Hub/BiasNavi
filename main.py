@@ -23,7 +23,14 @@ def read_api_key(file_path='config.ini'):
     try:
         api_key = config['settings']['api_key']
     except KeyError:
-        print("Please configure your openai api_key in the file config.ini before runing the program.")
+        print("""Please configure your openai api_key in the file config.ini before runing the program.
+        
+        The config.ini under the root directory of this project should have the following format:
+        
+        [settings]
+        api_key = <api_key>
+        
+        """)
         sys.exit(1)
     return api_key
 
