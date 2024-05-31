@@ -11,3 +11,9 @@ BiasNavi aims to manage the bias in datasets. It complies with the following pip
 
 ## Architecture
 <img src="architecture.png" alt="architecture" width="600">
+
+## Easy Setup
+1. Download the project
+2. Run pip install -r requirements. txt in your terminal.
+3. Config your API key in the file of Config.ini under the root directory of the project.
+4. Run python main.py to start the program.
