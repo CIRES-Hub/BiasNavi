@@ -52,20 +52,6 @@ if __name__ == '__main__':
         Input("query-area", "children")
     )
     app.run_server(debug=True)
-    # print("Now you can query the dataset and manage the bias. Enter exit to end the program.")
-    # query=''
-    # while query!="exit":
-    #     query = input("Please enter:")
-    #     data_agent.run(query)
-    # llm = ChatOpenAI(model_name="gpt-3.5-turbo-1106", max_tokens=1024)
-    # messages = [
-    #     SystemMessage(
-    #         content="You are a helpful assistant that translates English to French."
-    #     ),
-    #     HumanMessage(
-    #         content="Translate this sentence from English to French. I love programming."
-    #     ),
-    # ]
 
 
 
