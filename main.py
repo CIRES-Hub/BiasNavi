@@ -28,7 +28,7 @@ def read_api_key(file_path='config.ini'):
         The config.ini under the root directory of this project should have the following format:
         
         [settings]
-        api_key = <api_key>
+        api_key = your_openai_api_key
         
         """)
         sys.exit(1)
