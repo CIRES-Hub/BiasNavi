@@ -5,14 +5,7 @@ from UI.layout.home_layout import get_layout
 from dash.dependencies import Input, Output
 import os
 import sys
-from getpass import getpass
-from langchain_openai import ChatOpenAI
-from langchain.prompts.chat import (
-    ChatPromptTemplate,
-    HumanMessagePromptTemplate,
-    SystemMessagePromptTemplate,
-)
-from langchain.schema import HumanMessage, SystemMessage
+
 
 def read_api_key(file_path='config.ini'):
     # Create a ConfigParser object
@@ -38,9 +31,9 @@ def read_api_key(file_path='config.ini'):
 if __name__ == '__main__':
     api_key = read_api_key()
     os.environ["OPENAI_API_KEY"] = api_key
-    # compas = COMPASDataset()
-    # data_agent = DatasetAgent(compas.get_dataframe())
     app.layout = get_layout()
+
+    # Enable automatically scrolling down of the chat box
     app.clientside_callback(
         """
         function(children) {
@@ -51,8 +44,6 @@ if __name__ == '__main__':
         Output("query-area", "data-dummy"),
         Input("query-area", "children")
     )
+
+    # Run the server
     app.run_server(debug=True)
-
-
-
-

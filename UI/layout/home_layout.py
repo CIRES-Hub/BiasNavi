@@ -8,9 +8,59 @@ def get_layout():
         dbc.Row(justify="center", align="center", className="banner-row", children=[
             html.Div(children=[
                 html.Img(src='../assets/logo.svg', className="logo"),
-                html.P('BiasNavi', className="title")
+                html.P('BiasNavi', className="title"),
                 #html.P('Navigate your way through biases in your data', className='lead')
+                dbc.Nav(
+                    [
+                        dbc.DropdownMenu(
+                            [dbc.DropdownMenuItem("Import Dataset"), dbc.DropdownMenuItem("Import RAG Documents")],
+                            label="Import",
+                            nav=True,
+                            toggle_style={
+                                "color": "white",
+                            },
+                        ),
+                        dbc.DropdownMenu(
+                            [dbc.DropdownMenuItem("Export Chat History"), dbc.DropdownMenuItem("Export Dataset "
+                                                                                               "Analysis Report")],
+                            label="Export",
+                            nav=True,
+                            toggle_style={
+                                "color": "white",
+                            },
+                        ),
+                        dbc.DropdownMenu(
+                            [dbc.DropdownMenuItem("Predefined Prompt 1"), dbc.DropdownMenuItem("Predefined Prompt 2"),
+                             dbc.DropdownMenuItem("Custom Prompt")],
+                            label="Prompts",
+                            nav=True,
+                            toggle_style={
+                                "color": "white",
+                            },
+                        ),
+                        dbc.DropdownMenu(
+                            [dbc.DropdownMenuItem("OpenAI GPT 3.5"), dbc.DropdownMenuItem("OpenAI GPT 4.0"),
+                             dbc.DropdownMenuItem("Llama 3")],
+                            label="LLM Models",
+                            nav=True,
+                            toggle_style={
+                                "color": "white",
+                            },
+                        ),
+                        dbc.DropdownMenu(
+                            [dbc.DropdownMenuItem("Hide ChatBox"), dbc.DropdownMenuItem("Hide Data Views")],
+                            label="View",
+                            nav=True,
+                            toggle_style={
+                                "color": "white",
+                            },
+                        ),
+                        dbc.NavLink("About CIRES", href="https://cires.org.au/", className='nav-item'),
+                    ],
+                    className='navbar'
+                ),
             ], className='banner'),
+
         ]),
         dbc.Row([
             dbc.Col(width=3, children=[

@@ -224,3 +224,13 @@
     font-size:48px;
     color:#f5f5f5;
 }
+
+.nav-item{
+    background:darkslateblue;
+    color: white;
+    margin-left: 30px;
+}
+
+.nav-item:hover{
+    color:coral;
+}
