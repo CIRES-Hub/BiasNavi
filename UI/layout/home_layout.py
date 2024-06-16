@@ -5,55 +5,47 @@ import dash_daq as daq
 
 def get_layout():
     return dbc.Container(fluid=True, children=[
+        # =======================================================
+        # banner and menu bar layout
         dbc.Row(justify="center", align="center", className="banner-row", children=[
             html.Div(children=[
                 html.Img(src='../assets/logo.svg', className="logo"),
                 html.P('BiasNavi', className="title"),
-                #html.P('Navigate your way through biases in your data', className='lead')
+                # html.P('Navigate your way through biases in your data', className='lead')
                 dbc.Nav(
                     [
                         dbc.DropdownMenu(
-                            [dbc.DropdownMenuItem("Import Dataset"), dbc.DropdownMenuItem("Import RAG Documents")],
+                            [dbc.DropdownMenuItem("Import Dataset", id="menu-import-data")],
                             label="Import",
                             nav=True,
-                            toggle_style={
-                                "color": "white",
-                            },
+                            toggleClassName="dropdown-toggle",
                         ),
                         dbc.DropdownMenu(
                             [dbc.DropdownMenuItem("Export Chat History"), dbc.DropdownMenuItem("Export Dataset "
                                                                                                "Analysis Report")],
                             label="Export",
                             nav=True,
-                            toggle_style={
-                                "color": "white",
-                            },
+                            toggleClassName="dropdown-toggle",
                         ),
                         dbc.DropdownMenu(
                             [dbc.DropdownMenuItem("Predefined Prompt 1"), dbc.DropdownMenuItem("Predefined Prompt 2"),
                              dbc.DropdownMenuItem("Custom Prompt")],
                             label="Prompts",
                             nav=True,
-                            toggle_style={
-                                "color": "white",
-                            },
+                            toggleClassName="dropdown-toggle",
                         ),
                         dbc.DropdownMenu(
                             [dbc.DropdownMenuItem("OpenAI GPT 3.5"), dbc.DropdownMenuItem("OpenAI GPT 4.0"),
                              dbc.DropdownMenuItem("Llama 3")],
                             label="LLM Models",
                             nav=True,
-                            toggle_style={
-                                "color": "white",
-                            },
+                            toggleClassName="dropdown-toggle",
                         ),
                         dbc.DropdownMenu(
                             [dbc.DropdownMenuItem("Hide ChatBox"), dbc.DropdownMenuItem("Hide Data Views")],
                             label="View",
                             nav=True,
-                            toggle_style={
-                                "color": "white",
-                            },
+                            toggleClassName="dropdown-toggle",
                         ),
                         dbc.NavLink("About CIRES", href="https://cires.org.au/", className='nav-item'),
                     ],
@@ -62,9 +54,13 @@ def get_layout():
             ], className='banner'),
 
         ]),
+
+        # =======================================================
+        # chatbox layout
         dbc.Row([
             dbc.Col(width=3, children=[
                 dbc.Card(children=[
+                    html.Div(id="output-placeholder"),
                     dbc.Toast(
                         "Only the csv file is supported currently",
                         id="error-file-format",
@@ -77,7 +73,7 @@ def get_layout():
                     dcc.Upload(
                         id='upload-data',
                         children=html.Div([
-                            'Drag and drop file here or ',
+                            'Drag and drop your data file here or ',
                             html.A(html.B('Browse files'))
                         ]),
                         className='upload',
@@ -94,7 +90,7 @@ def get_layout():
                         dcc.Loading(
                             id="loading-1",
                             children=[html.Div(id='query-area', className='query-area')],
-                            #dcc.Textarea(id='query-area', className='query-area', readOnly=True)],
+                            # dcc.Textarea(id='query-area', className='query-area', readOnly=True)],
                             type="default",  # Choose from "graph", "cube", "circle", "dot", or "default"
                         ),
                         dbc.Toast(
@@ -125,6 +121,8 @@ def get_layout():
                         ], className="query-div"),
                     ], className='query')
                 ], className='card'),
+
+                #RAG card
                 dbc.Card(id="rag-card", style={'display': 'block'}, children=[
                     html.Div([
                         # RAG display area
@@ -139,8 +137,10 @@ def get_layout():
                     ], className='query')
                 ], className='card'),
             ]),
-            dbc.Col(width=9, children=[
 
+            # =======================================================
+            #data views
+            dbc.Col(width=9, children=[
                 dbc.Card(body=True, className='card', children=[
                     html.Div([
                         dcc.Input(id='input-start-row', type='number', placeholder='Start row',

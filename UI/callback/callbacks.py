@@ -22,19 +22,21 @@ def func(n_clicks):
     formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
     return dict(content="".join(glo_vars.dialog), filename=f"query-history-{formatted_date_time}.txt")
 
+
 @app.callback(
     Output('rag-switch-output', 'children'),
     Output('rag-card', 'style'),
     Output('RAG-button', 'style'),
     Input('rag-switch', 'value')
 )
-def update_output(value):
+def rag_switch(value):
     if value:
         glo_vars.use_rag = True
         return 'RAG: On', {'display': 'block'}, {'display': 'block'}
     else:
         glo_vars.use_rag = False
         return 'RAG: OFF', {'display': 'none'}, {'display': 'none'}
+
 
 @app.callback(
     Output('RAG-area', 'children'),
@@ -81,8 +83,8 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
             except Exception as e:
                 print(e)
                 return html.Div([
-                        'There was an error processing this file.'
-                    ])
+                    'There was an error processing this file.'
+                ])
 
     elif triggered_id == 'send-button':
         if not glo_vars.rag or not glo_vars.use_rag:
@@ -99,8 +101,6 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
         return rag_output
 
 
-
-
 @app.callback(
     Output('table-overview', 'data'),
     Output('column-names-dropdown', 'options'),
@@ -113,7 +113,6 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
     prevent_initial_call=True
 )
 def update_table(list_of_contents, list_of_names, click, start_row, end_row):
-
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
     if triggered_id == 'upload-data':
 
@@ -121,12 +120,11 @@ def update_table(list_of_contents, list_of_names, click, start_row, end_row):
             # Assuming that only the first file is processed
             contents = list_of_contents[0]
             filename = list_of_names[0]
-            glo_vars.dialog.append("DATASET: "+filename+'\n')
-            glo_vars.dialog.append("="*100 + '\n')
+            glo_vars.dialog.append("DATASET: " + filename + '\n')
+            glo_vars.dialog.append("=" * 100 + '\n')
             # Decode the contents of the file
             content_type, content_string = contents.split(',')
             decoded = base64.b64decode(content_string)
-
 
             if 'csv' in filename:
                 # Assume that the user uploaded a CSV
@@ -151,6 +149,7 @@ def update_table(list_of_contents, list_of_names, click, start_row, end_row):
         # Slicing the DataFrame
         xdf = glo_vars.df.iloc[start_row:end_row]
         return xdf.to_dict('records'), [col for col in glo_vars.df.columns], False
+
 
 @app.callback(
     Output('bar-chart', 'figure'),
@@ -177,7 +176,6 @@ def update_graph(selected_column):
         title=f'Pie Chart - Distribution of {selected_column}'
     )
     return bar, pie
-
 
 
 # @app.callback(
@@ -210,7 +208,7 @@ def update_messages(n_clicks, input_text, query_records):
     if n_clicks is None or input_text is None or glo_vars.df is None:
         return query_records, True
     new_user_message = html.Div(input_text + '\n', className="user-msg")
-    glo_vars.dialog.append("\nUSER: "+input_text + '\n')
+    glo_vars.dialog.append("\nUSER: " + input_text + '\n')
     # if df is None:
     #     return "Please load a dataset first."
     if not query_records:
@@ -219,7 +217,7 @@ def update_messages(n_clicks, input_text, query_records):
         input_text = glo_vars.rag.invoke(input_text)
         glo_vars.rag_prompt = input_text
     response = 'LLM: ' + query_llm(input_text) + '\n'
-    glo_vars.dialog.append("\n"+response)
+    glo_vars.dialog.append("\n" + response)
     # Simulate a response from the system
     new_response_message = html.Div(response, className="llm-msg")
     query_records.append(new_user_message)

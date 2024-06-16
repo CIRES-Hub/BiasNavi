@@ -234,3 +234,15 @@
 .nav-item:hover{
     color:coral;
 }
+
+.dropdown-toggle{
+    color: white;
+}
+
+.dropdown-toggle:hover{
+    color: coral;
+}
+
+.dropdown-toggle:focus{
+    color: white;
+}

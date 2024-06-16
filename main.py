@@ -1,6 +1,6 @@
 import configparser
 from UI.app import app
-from UI.callback import callbacks
+from UI.callback import callbacks, client_callbacks
 from UI.layout.home_layout import get_layout
 from dash.dependencies import Input, Output
 import os
@@ -32,18 +32,6 @@ if __name__ == '__main__':
     api_key = read_api_key()
     os.environ["OPENAI_API_KEY"] = api_key
     app.layout = get_layout()
-
-    # Enable automatically scrolling down of the chat box
-    app.clientside_callback(
-        """
-        function(children) {
-            var contentArea = document.getElementById('query-area');
-            setTimeout(function() { contentArea.scrollTop = contentArea.scrollHeight; }, 100);
-        }
-        """,
-        Output("query-area", "data-dummy"),
-        Input("query-area", "children")
-    )
 
     # Run the server
     app.run_server(debug=True)
