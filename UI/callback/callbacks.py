@@ -39,6 +39,39 @@ def rag_switch(value):
 
 
 @app.callback(
+    [Output('left-column', 'style'),
+     Output('menu-hide-chatbox', 'children'),
+     Output('left-column', 'width', allow_duplicate=True),
+     Output('right-column', 'width', allow_duplicate=True),
+     ],
+    [Input('menu-hide-chatbox', 'n_clicks')],
+    [State('menu-hide-chatbox', 'children')],
+    prevent_initial_call=True
+)
+def hide_chatbox(n_clicks, label):
+    if label == 'Show ChatBox':
+        return {'display': 'block'}, "Hide ChatBox", 3, 9
+    else:
+        return {'display': 'none'}, "Show ChatBox", 12, 0
+
+
+@app.callback(
+    [Output('right-column', 'style'),
+     Output('menu-hide-dataview', 'children'),
+     Output('left-column', 'width', allow_duplicate=True),
+     Output('right-column', 'width', allow_duplicate=True),
+     ],
+    [Input('menu-hide-dataview', 'n_clicks')],
+    [State('menu-hide-dataview', 'children')],
+    prevent_initial_call=True
+)
+def hide_dataviews(n_clicks, label):
+    if label == 'Show Data Views':
+        return {'display': 'block'}, "Hide Data Views", 3, 9
+    else:
+        return {'display': 'none'}, "Show Data Views", 12, 0
+
+@app.callback(
     Output('RAG-area', 'children'),
     Input('upload-rag', 'contents'),
     State('upload-rag', 'filename'),
@@ -112,7 +145,7 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
     State('input-end-row', 'value'),
     prevent_initial_call=True
 )
-def update_table(list_of_contents, list_of_names, click, start_row, end_row):
+def import_data(list_of_contents, list_of_names, click, start_row, end_row):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
     if triggered_id == 'upload-data':
 
@@ -195,6 +228,8 @@ def update_graph(selected_column):
 #     response = 'LLM: '+query_llm(input_text)
 #     new_text = (existing_text if existing_text else '') + "\n"+"Me: "+input_text+"\n"+response
 #     return new_text
+
+# Update the llm chatbox
 @app.callback(
     Output('query-area', 'children'),
     Output('error-query', 'is_open'),

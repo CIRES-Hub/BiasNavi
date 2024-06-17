@@ -42,7 +42,7 @@ def get_layout():
                             toggleClassName="dropdown-toggle",
                         ),
                         dbc.DropdownMenu(
-                            [dbc.DropdownMenuItem("Hide ChatBox"), dbc.DropdownMenuItem("Hide Data Views")],
+                            [dbc.DropdownMenuItem("Hide ChatBox", id="menu-hide-chatbox"), dbc.DropdownMenuItem("Hide Data Views",id="menu-hide-dataview")],
                             label="View",
                             nav=True,
                             toggleClassName="dropdown-toggle",
@@ -58,7 +58,7 @@ def get_layout():
         # =======================================================
         # chatbox layout
         dbc.Row([
-            dbc.Col(width=3, children=[
+            dbc.Col(width=3, id="left-column", children=[
                 dbc.Card(children=[
                     html.Div(id="output-placeholder"),
                     dbc.Toast(
@@ -140,7 +140,7 @@ def get_layout():
 
             # =======================================================
             #data views
-            dbc.Col(width=9, children=[
+            dbc.Col(width=9, id="right-column", children=[
                 dbc.Card(body=True, className='card', children=[
                     html.Div([
                         dcc.Input(id='input-start-row', type='number', placeholder='Start row',
