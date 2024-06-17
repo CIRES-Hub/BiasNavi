@@ -76,9 +76,10 @@ def get_layout():
                             'Drag and drop your data file here or ',
                             html.A(html.B('Browse files'))
                         ]),
+                        style={"display": "none"},
                         className='upload',
                         multiple=True
-                    )], className='card'),
+                    )], className='card', style={"display": "none"}),
                 dbc.Card(children=[
                     html.Div([
                         # Chat display area
