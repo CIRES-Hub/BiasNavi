@@ -51,6 +51,7 @@
     box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2); /* Horizontal offset, vertical offset, blur radius, spread radius, color */
     background-color: white; /* Card background color */
     margin: 15px 0;
+    padding: 10px;
     /* Add other styling for the card as needed */
 }
 
@@ -107,9 +108,8 @@
     background-color: #ffffff; /* White background */
     border-radius: 5px;
     border: 1px solid burlywood;
-    width: 97%;
+    width: 100%;
     overflow-y: auto;
-    margin: 10px;
     height: 600px;
 
 }
