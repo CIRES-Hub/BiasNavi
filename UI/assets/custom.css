@@ -38,7 +38,7 @@
     box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.2);
     width: 100%;
     height: 75px;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     display: flex;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-weight: bold;
@@ -50,7 +50,7 @@
     border-radius: 8px; /* Rounded borders for the card */
     box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2); /* Horizontal offset, vertical offset, blur radius, spread radius, color */
     background-color: white; /* Card background color */
-    margin: 15px 0;
+    margin: 10px 0;
     padding: 10px;
     /* Add other styling for the card as needed */
 }
@@ -110,7 +110,7 @@
     border: 1px solid burlywood;
     width: 100%;
     overflow-y: auto;
-    height: 600px;
+    height: 700px;
     margin-top: 10px;
     margin-bottom: 20px;
 

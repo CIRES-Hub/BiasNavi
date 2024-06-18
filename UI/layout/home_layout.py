@@ -42,7 +42,9 @@ def get_layout():
                             toggleClassName="dropdown-toggle",
                         ),
                         dbc.DropdownMenu(
-                            [dbc.DropdownMenuItem("Hide ChatBox", id="menu-hide-chatbox"), dbc.DropdownMenuItem("Hide Data Views",id="menu-hide-dataview")],
+                            [dbc.DropdownMenuItem("Hide ChatBox", id="menu-hide-chatbox"),
+                             dbc.DropdownMenuItem("Hide Data View",id="menu-hide-dataview"),
+                             dbc.DropdownMenuItem("Hide Chart View",id="menu-hide-chartview")],
                             label="View",
                             nav=True,
                             toggleClassName="dropdown-toggle",
@@ -84,7 +86,7 @@ def get_layout():
                     html.Div([
                         # Chat display area
                         html.Div([
-                            html.H4("Ask LLM", className="query-title"),
+                            html.H4("Chat with LLM", className="query-title"),
                             html.Button("Export", id="download-button", className="download-button"),
                             dcc.Download(id="export")
                         ], className="query-header"),
@@ -141,7 +143,7 @@ def get_layout():
 
             # =======================================================
             #data views
-            dbc.Col(width=9, id="right-column", children=[
+            dbc.Col(width=6, id="middle-column", children=[
                 dbc.Card(body=True, className='card', children=[
                     html.Div([
                         dcc.Input(id='input-start-row', type='number', placeholder='Start row',
@@ -167,6 +169,18 @@ def get_layout():
                     dcc.Graph(id='bar-chart'),
                     dcc.Graph(id='pie-chart')
                 ], className='visualization')
-            ])
+            ]),
+
+            dbc.Col(width=3, id="right-column", children=[
+                dbc.Card(children=[
+                    html.Div([
+                        # Chat display area
+                        html.Div([
+                            html.H4("LLM Charts", className="query-title"),
+                        ], className="query-header"),
+                    ], className='llm-chart')
+                ], className='card'),
+            ]),
+
         ])
     ], className="body")

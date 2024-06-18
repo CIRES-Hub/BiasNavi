@@ -42,6 +42,7 @@ def rag_switch(value):
     [Output('left-column', 'style'),
      Output('menu-hide-chatbox', 'children'),
      Output('left-column', 'width', allow_duplicate=True),
+     Output('middle-column', 'width', allow_duplicate=True),
      Output('right-column', 'width', allow_duplicate=True),
      ],
     [Input('menu-hide-chatbox', 'n_clicks')],
@@ -50,15 +51,16 @@ def rag_switch(value):
 )
 def hide_chatbox(n_clicks, label):
     if label == 'Show ChatBox':
-        return {'display': 'block'}, "Hide ChatBox", 3, 9
+        return {'display': 'block'}, "Hide ChatBox", 3, 6, 3
     else:
-        return {'display': 'none'}, "Show ChatBox", 12, 0
+        return {'display': 'none'}, "Show ChatBox", 0, 9, 3
 
 
 @app.callback(
-    [Output('right-column', 'style'),
+    [Output('middle-column', 'style'),
      Output('menu-hide-dataview', 'children'),
      Output('left-column', 'width', allow_duplicate=True),
+     Output('middle-column', 'width', allow_duplicate=True),
      Output('right-column', 'width', allow_duplicate=True),
      ],
     [Input('menu-hide-dataview', 'n_clicks')],
@@ -66,10 +68,27 @@ def hide_chatbox(n_clicks, label):
     prevent_initial_call=True
 )
 def hide_dataviews(n_clicks, label):
-    if label == 'Show Data Views':
-        return {'display': 'block'}, "Hide Data Views", 3, 9
+    if label == 'Show Data View':
+        return {'display': 'block'}, "Hide Data View", 3, 6, 3
     else:
-        return {'display': 'none'}, "Show Data Views", 12, 0
+        return {'display': 'none'}, "Show Data Views", 6, 0, 6
+
+@app.callback(
+    [Output('right-column', 'style'),
+     Output('menu-hide-chartview', 'children'),
+     Output('left-column', 'width', allow_duplicate=True),
+     Output('middle-column', 'width', allow_duplicate=True),
+     Output('right-column', 'width', allow_duplicate=True),
+     ],
+    [Input('menu-hide-chartview', 'n_clicks')],
+    [State('menu-hide-chartview', 'children')],
+    prevent_initial_call=True
+)
+def hide_chartview(n_clicks, label):
+    if label == 'Show Chart View':
+        return {'display': 'block'}, "Hide Chart View", 3, 6, 3
+    else:
+        return {'display': 'none'}, "Show Chart View", 3, 9, 0
 
 @app.callback(
     Output('RAG-area', 'children'),
@@ -145,7 +164,7 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
     State('input-end-row', 'value'),
     prevent_initial_call=True
 )
-def import_data(list_of_contents, list_of_names, click, start_row, end_row):
+def import_data_and_update_table(list_of_contents, list_of_names, click, start_row, end_row):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
     if triggered_id == 'upload-data':
 
@@ -167,7 +186,7 @@ def import_data(list_of_contents, list_of_names, click, start_row, end_row):
                 return (), [], True
             # Return the data in a format that Dash DataTable can use
 
-            return glo_vars.df.head(25).to_dict('records'), [col for col in glo_vars.df.columns], False
+            return glo_vars.df.head(15).to_dict('records'), [col for col in glo_vars.df.columns], False
 
         else:
             return (), [], False  # If no file was uploaded
@@ -234,12 +253,13 @@ def update_graph(selected_column):
     Output('query-area', 'children'),
     Output('error-query', 'is_open'),
     Input('send-button', 'n_clicks'),
+    Input('query-input', 'n_submit'),
     [State('query-input', 'value'),
      State('query-area', 'children'),
      ],
     prevent_initial_call=True
 )
-def update_messages(n_clicks, input_text, query_records):
+def update_messages(n_clicks, n_submit, input_text, query_records):
     if n_clicks is None or input_text is None or glo_vars.df is None:
         return query_records, True
     new_user_message = html.Div(input_text + '\n', className="user-msg")
