@@ -9,7 +9,7 @@ import io
 from RAG import RAG
 from dash import dcc, html, dash_table
 import pandas as pd
-from UI.variable import glo_vars
+from UI.variable import global_vars
 
 
 @app.callback(
@@ -20,7 +20,7 @@ from UI.variable import glo_vars
 def func(n_clicks):
     now = datetime.datetime.now()
     formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    return dict(content="".join(glo_vars.dialog), filename=f"query-history-{formatted_date_time}.txt")
+    return dict(content="".join(global_vars.dialog), filename=f"query-history-{formatted_date_time}.txt")
 
 
 @app.callback(
@@ -31,10 +31,10 @@ def func(n_clicks):
 )
 def rag_switch(value):
     if value:
-        glo_vars.use_rag = True
+        global_vars.use_rag = True
         return 'RAG: On', {'display': 'block'}, {'display': 'block'}
     else:
-        glo_vars.use_rag = False
+        global_vars.use_rag = False
         return 'RAG: OFF', {'display': 'none'}, {'display': 'none'}
 
 
@@ -118,10 +118,10 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
                 if 'pdf' in filename:
                     # Assume that the user uploaded a CSV
                     output += filename + '\n'
-                    if glo_vars.rag:
-                        glo_vars.rag.clean()
+                    if global_vars.rag:
+                        global_vars.rag.clean()
 
-                    glo_vars.rag = RAG(io.BytesIO(decoded))
+                    global_vars.rag = RAG(io.BytesIO(decoded))
 
                     return [html.Div([
                         # placeholder
@@ -139,14 +139,14 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
                 ])
 
     elif triggered_id == 'send-button':
-        if not glo_vars.rag or not glo_vars.use_rag:
+        if not global_vars.rag or not global_vars.use_rag:
             return rag_output
         if not rag_output:
             return html.Div([""])
-        if glo_vars.rag and glo_vars.use_rag:
-            glo_vars.rag_prompt = glo_vars.rag.invoke(query)
-        rag_output.append(html.Div(["RAG enhanced prompt: " + glo_vars.rag_prompt]))
-        glo_vars.rag_prompt = None
+        if global_vars.rag and global_vars.use_rag:
+            global_vars.rag_prompt = global_vars.rag.invoke(query)
+        rag_output.append(html.Div(["RAG enhanced prompt: " + global_vars.rag_prompt]))
+        global_vars.rag_prompt = None
         return rag_output
 
     else:
@@ -172,35 +172,35 @@ def import_data_and_update_table(list_of_contents, list_of_names, click, start_r
             # Assuming that only the first file is processed
             contents = list_of_contents[0]
             filename = list_of_names[0]
-            glo_vars.dialog.append("DATASET: " + filename + '\n')
-            glo_vars.dialog.append("=" * 100 + '\n')
+            global_vars.dialog.append("DATASET: " + filename + '\n')
+            global_vars.dialog.append("=" * 100 + '\n')
             # Decode the contents of the file
             content_type, content_string = contents.split(',')
             decoded = base64.b64decode(content_string)
 
             if 'csv' in filename:
                 # Assume that the user uploaded a CSV
-                glo_vars.df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
-                glo_vars.agent = DatasetAgent(glo_vars.df)
+                global_vars.df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+                global_vars.agent = DatasetAgent(global_vars.df)
             else:
                 return (), [], True
             # Return the data in a format that Dash DataTable can use
 
-            return glo_vars.df.head(15).to_dict('records'), [col for col in glo_vars.df.columns], False
+            return global_vars.df.head(15).to_dict('records'), [col for col in global_vars.df.columns], False
 
         else:
             return (), [], False  # If no file was uploaded
 
     else:
         start_row = int(start_row) - 1 if start_row else 0
-        end_row = int(end_row) if end_row else len(glo_vars.df)
+        end_row = int(end_row) if end_row else len(global_vars.df)
 
         # Check that start_row and end_row are within bounds and in the correct order
-        if start_row < 0 or end_row > len(glo_vars.df) or start_row >= end_row:
+        if start_row < 0 or end_row > len(global_vars.df) or start_row >= end_row:
             return [], (), False
         # Slicing the DataFrame
-        xdf = glo_vars.df.iloc[start_row:end_row]
-        return xdf.to_dict('records'), [col for col in glo_vars.df.columns], False
+        xdf = global_vars.df.iloc[start_row:end_row]
+        return xdf.to_dict('records'), [col for col in global_vars.df.columns], False
 
 
 @app.callback(
@@ -210,7 +210,7 @@ def import_data_and_update_table(list_of_contents, list_of_names, click, start_r
     prevent_initial_call=True
 )
 def update_graph(selected_column):
-    value_counts = glo_vars.df[selected_column].value_counts()
+    value_counts = global_vars.df[selected_column].value_counts()
     bar = px.bar(
         x=value_counts.index,
         y=value_counts.values,
@@ -218,7 +218,7 @@ def update_graph(selected_column):
         title=f'Bar Chart - Distribution of {selected_column}'
     )
 
-    value_counts = glo_vars.df[selected_column].value_counts().reset_index()
+    value_counts = global_vars.df[selected_column].value_counts().reset_index()
     value_counts.columns = [selected_column, 'count']
 
     pie = px.pie(
@@ -260,19 +260,17 @@ def update_graph(selected_column):
     prevent_initial_call=True
 )
 def update_messages(n_clicks, n_submit, input_text, query_records):
-    if n_clicks is None or input_text is None or glo_vars.df is None:
+    if n_clicks is None or input_text is None or global_vars.df is None:
         return query_records, True
     new_user_message = html.Div(input_text + '\n', className="user-msg")
-    glo_vars.dialog.append("\nUSER: " + input_text + '\n')
-    # if df is None:
-    #     return "Please load a dataset first."
+    global_vars.dialog.append("\nUSER: " + input_text + '\n')
     if not query_records:
         query_records = []
-    if glo_vars.rag and glo_vars.use_rag:
-        input_text = glo_vars.rag.invoke(input_text)
-        glo_vars.rag_prompt = input_text
+    if global_vars.rag and global_vars.use_rag:
+        input_text = global_vars.rag.invoke(input_text)
+        global_vars.rag_prompt = input_text
     response = 'LLM: ' + query_llm(input_text) + '\n'
-    glo_vars.dialog.append("\n" + response)
+    global_vars.dialog.append("\n" + response)
     # Simulate a response from the system
     new_response_message = html.Div(response, className="llm-msg")
     query_records.append(new_user_message)
@@ -285,7 +283,7 @@ def query_llm(query):
     #                 Answer this question step by step and generate a output with details and inference:
     #         """ + query
     print(query)
-    response = glo_vars.agent.run(query)
+    response = global_vars.agent.run(query)
     return response.__str__()
 
 # @app.callback(

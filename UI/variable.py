@@ -8,4 +8,4 @@ class Variables(object):
         self.dialog = []
 
 
-glo_vars = Variables()
+global_vars = Variables()

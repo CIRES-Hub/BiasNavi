@@ -10,10 +10,10 @@ import pdfplumber
 
 class RAG(object):
     def __init__(self, content):
-
         self.vectorstore = None
         self.content = content
         self.retriever = None
+        self.rag_chain = None
         self.load()
         self.build_chain()
 
@@ -23,7 +23,8 @@ class RAG(object):
             for page in pdf.pages:
                 docs.append(page.extract_text())
         # Create OpenAI embeddings
-        self.vectorstore = Chroma.from_texts(docs, embedding=OpenAIEmbeddings()) #from_documents(documents=docs, embedding=OpenAIEmbeddings())
+        self.vectorstore = Chroma.from_texts(docs,
+                                             embedding=OpenAIEmbeddings())  # from_documents(documents=docs, embedding=OpenAIEmbeddings())
         self.retriever = self.vectorstore.as_retriever()
 
     def build_chain(self):
@@ -40,4 +41,3 @@ class RAG(object):
 
     def clean(self):
         self.vectorstore.delete_collection()
-
