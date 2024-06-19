@@ -49,6 +49,7 @@ def get_layout():
                             nav=True,
                             toggleClassName="dropdown-toggle",
                         ),
+                        dbc.NavLink("Help", href="", className='nav-item'),
                         dbc.NavLink("About CIRES", href="https://cires.org.au/", className='nav-item'),
                     ],
                     className='navbar'
