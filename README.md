@@ -13,7 +13,26 @@ BiasNavi aims to manage the bias in datasets. It complies with the following pip
 <img src="architecture.png" alt="architecture" width="600">
 
 ## Easy Setup
-1. Download the project
-2. Run pip install -r requirements. txt in your terminal to install all the depencenies.
-3. Config your API key in the file of Config.ini under the root directory of the project.
-4. Run python main.py to start the program.
+1. Run the following command to set up the project for the first time:
+```bash
+make setup
+```
+2. Config your API key and database URL in the file named `config.sample.ini` under the root directory of the project and rename it to `config.ini`
+3. Start the program.
+```bash
+make run
+```
+
+## Additional Steps
+To stop database containers, run:
+```bash
+make stop-db
+```
+To stop and delete database containers, run:
+```bash
+make clean-db
+```
+To start the database explicitly, run:
+```bash
+make start-db
+```

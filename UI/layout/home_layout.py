@@ -2,6 +2,8 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html, dash_table
 import dash_daq as daq
 
+from agent import ConversationFormat
+
 
 def get_layout():
     return dbc.Container(fluid=True, children=[
@@ -87,10 +89,22 @@ def get_layout():
                     html.Div([
                         # Chat display area
                         html.Div([
-                            html.H4("Chat with LLM", className="query-title"),
+                            html.H4("Chat with LLM", className="query-title")
+                        ], className="query-header"),
+                        html.Div([
+                            dcc.Dropdown(id='export-format-dropdown', options=[v.value for v in ConversationFormat], value=ConversationFormat.SIMPLIFIED_JSON.value),
                             html.Button("Export", id="download-button", className="download-button"),
                             dcc.Download(id="export")
                         ], className="query-header"),
+                        dbc.Toast(
+                            "Have you imported a dataset and entered a query?",
+                            id="error-export",
+                            header="Reminder",
+                            is_open=False,
+                            dismissable=True,
+                            icon="danger",
+                            duration=4000,
+                        ),
                         dcc.Loading(
                             id="loading-1",
                             children=[html.Div(id='query-area', className='query-area')],
@@ -148,11 +162,11 @@ def get_layout():
                 dbc.Card(body=True, className='card', children=[
                     html.Div([
                         dcc.Input(id='input-start-row', type='number', placeholder='Start row',
-                                  style={'margin-right': '10px'}),
+                                  style={'marginRight': '10px'}),
                         dcc.Input(id='input-end-row', type='number', placeholder='End row',
-                                  style={'margin-right': '10px'}),
+                                  style={'marginRight': '10px'}),
                         html.Button('Show Rows', id='show-rows-button', className='load-button')
-                    ], style={'margin-bottom': '16px', 'height': '45px'}),
+                    ], style={'marginBottom': '16px', 'height': '45px'}),
                     dash_table.DataTable(id='table-overview', page_size=25, page_action='native',
                                          style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
                                          style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
