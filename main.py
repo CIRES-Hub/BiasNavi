@@ -1,41 +1,22 @@
-import configparser
-from UI.app import app
+from UI.app import app, db, server
+from models import *
 from UI.callback import callbacks, client_callbacks
 from UI.layout.home_layout import get_layout
-from dash.dependencies import Input, Output
-import os
 import sys
 
-
-def read_api_key(file_path='config.ini'):
-    # Create a ConfigParser object
-    config = configparser.ConfigParser()
-    # Read the config.ini file
-    config.read(file_path)
-    # Access the api_key from the 'settings' section
-    error_msg = """Please configure your openai api_key in the file config.ini before running the program.
-        
-        The config.ini under the root directory of this project should have the following format:
-        
-        [settings]
-        api_key = your_openai_api_key
-        
-        """
-    try:
-        api_key = config['settings']['api_key']
-    except KeyError:
-        print(error_msg)
-        sys.exit(1)
-    if api_key.strip() == '':
-        print(error_msg)
-        sys.exit(1)
-    return api_key
-
-
 if __name__ == '__main__':
-    api_key = read_api_key()
-    os.environ["OPENAI_API_KEY"] = api_key
+    # Init tables
+    try:
+        with server.app_context():
+            db.create_all()
+            db.session.commit()
+    except Exception as e:
+        print(str(e))
+        sys.stdout.flush()
+        with server.app_context():
+            db.session.rollback()
+
     app.layout = get_layout()
 
     # Run the server
-    app.run_server(debug=True)
+    app.run(debug=True)

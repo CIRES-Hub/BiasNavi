@@ -2,7 +2,7 @@ from UI.app import app
 from dash.dependencies import Input, Output, State
 import plotly.express as px
 import base64
-from agent import DatasetAgent
+from agent import ConversationFormat, DatasetAgent
 import datetime
 from dash import callback_context
 import io
@@ -14,13 +14,22 @@ from UI.variable import global_vars
 
 @app.callback(
     Output("export", "data"),
+    Output("error-export", "is_open"),
     Input("download-button", "n_clicks"),
+    Input("export-format-dropdown", "value"),
     prevent_initial_call=True,
 )
-def func(n_clicks):
+def func(n_clicks, format):
     now = datetime.datetime.now()
     formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    return dict(content="".join(global_vars.dialog), filename=f"query-history-{formatted_date_time}.txt")
+    triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+    if (triggered_id != 'download-button'):
+        return None, False
+    # return dict(content="".join(global_vars.dialog), filename=f"query-history-{formatted_date_time}.txt")
+    if (global_vars.agent is None):
+        return None, True
+    history, extension = global_vars.agent.get_history(format=ConversationFormat(format))
+    return dict(content=history, filename=f"query-history-{formatted_date_time}" + extension), False
 
 
 @app.callback(
@@ -172,6 +181,7 @@ def import_data_and_update_table(list_of_contents, list_of_names, click, start_r
             # Assuming that only the first file is processed
             contents = list_of_contents[0]
             filename = list_of_names[0]
+            global_vars.file_name = filename
             global_vars.dialog.append("DATASET: " + filename + '\n')
             global_vars.dialog.append("=" * 100 + '\n')
             # Decode the contents of the file
@@ -181,7 +191,7 @@ def import_data_and_update_table(list_of_contents, list_of_names, click, start_r
             if 'csv' in filename:
                 # Assume that the user uploaded a CSV
                 global_vars.df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
-                global_vars.agent = DatasetAgent(global_vars.df)
+                global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name)
             else:
                 return (), [], True
             # Return the data in a format that Dash DataTable can use
@@ -284,7 +294,8 @@ def query_llm(query):
     #         """ + query
     print(query)
     response = global_vars.agent.run(query)
-    return response.__str__()
+    global_vars.agent.persist_history()
+    return response
 
 # @app.callback(
 #     Output('query-output', 'children'),
