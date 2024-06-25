@@ -4,14 +4,13 @@ from langchain.agents.agent_types import AgentType
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.messages.base import messages_to_dict
-import pandas as pd
 import os
 import time
 from enum import Enum
 import json
 
-from models.conversation import Conversation
-from models.system_log import SystemLogMessage
+from utils.conversation import Conversation
+from utils.system_log import SystemLogMessage
 
 class ConversationFormat(str, Enum):
     FULL_JSON = 'Full JSON'
