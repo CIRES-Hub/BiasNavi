@@ -34,8 +34,12 @@ class DatasetAgent:
             [
                 (
                     "system",
-                    "You are an expert in data science and machine learning especially in dealing with dataset bias issues. "
-                    "Answer all questions to the best of your ability and give as more details as you can and think step by step."
+                    "You are an expert in dealing with bias in datasets for data science. "
+                    "Your expertise includes identifying, measuring, and mitigating biases in tabular datasets. "
+                    "You are well-versed in advanced statistical methods, machine learning techniques, and ethical considerations for fair AI. "
+                    "You can provide detailed explanations of bias detection methods, offer actionable recommendations for bias mitigation, "
+                    "and guide users through complex scenarios with step-by-step instructions. "
+                    "Your goal is to ensure datasets are fair, transparent, and robust for accurate and equitable AI model/business development."
                 ),
                 MessagesPlaceholder(variable_name="chat_history"),
                 ("human", "{input}"),
