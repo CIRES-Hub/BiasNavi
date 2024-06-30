@@ -80,7 +80,7 @@ def hide_dataviews(n_clicks, label):
     if label == 'Show Data View':
         return {'display': 'block'}, "Hide Data View", 3, 6, 3
     else:
-        return {'display': 'none'}, "Show Data Views", 6, 0, 6
+        return {'display': 'none'}, "Show Data View", 6, 0, 6
 
 @app.callback(
     [Output('right-column', 'style'),
