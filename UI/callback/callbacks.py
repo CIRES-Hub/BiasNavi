@@ -102,33 +102,39 @@ def hide_chartview(n_clicks, label):
 
 
 @app.callback(
-    Output('menu-model-gpt3dot5', 'children'),
+    [Output('menu-model-gpt3dot5', 'children', allow_duplicate=True),
+     Output('menu-model-gpt4', 'children', allow_duplicate=True),
+     Output('menu-model-gpt4o', 'children', allow_duplicate=True)],
     Input('menu-model-gpt3dot5', 'n_clicks'),
     prevent_initial_call=True
 )
 def change_llm_model_gpt3dot5(n_clicks):
     global_vars.agent.set_llm_model('gpt3dot5')
-    return "GPT-3.5"
+    return "GPT-3.5 ✔", "GPT-4", "GPT-4o"
 
 
 @app.callback(
-    Output('menu-model-gpt4', 'children'),
+    [Output('menu-model-gpt3dot5', 'children', allow_duplicate=True),
+     Output('menu-model-gpt4', 'children', allow_duplicate=True),
+     Output('menu-model-gpt4o', 'children', allow_duplicate=True)],
     Input('menu-model-gpt4', 'n_clicks'),
     prevent_initial_call=True
 )
 def change_llm_model_gpt3dot5(n_clicks):
     global_vars.agent.set_llm_model('gpt4')
-    return "GPT-4"
+    return "GPT-3.5", "GPT-4 ✔", "GPT-4o"
 
 
 @app.callback(
-    Output('menu-model-gpt4o', 'children'),
+    [Output('menu-model-gpt3dot5', 'children', allow_duplicate=True),
+     Output('menu-model-gpt4', 'children', allow_duplicate=True),
+     Output('menu-model-gpt4o', 'children', allow_duplicate=True)],
     Input('menu-model-gpt4o', 'n_clicks'),
     prevent_initial_call=True
 )
 def change_llm_model_gpt3dot5(n_clicks):
     global_vars.agent.set_llm_model('gpt4o')
-    return "GPT-4o"
+    return "GPT-3.5", "GPT-4", "GPT-4o ✔"
 
 
 @app.callback(

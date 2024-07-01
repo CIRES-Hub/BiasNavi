@@ -38,7 +38,7 @@ def get_layout():
                         ),
                         dbc.DropdownMenu(
                             [dbc.DropdownMenuItem("GPT-3.5", id="menu-model-gpt3dot5"), dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
-                             dbc.DropdownMenuItem("GPT-4o", id="menu-model-gpt4o")],
+                             dbc.DropdownMenuItem("GPT-4o ✔", id="menu-model-gpt4o")],
                             label="LLM Models",
                             nav=True,
                             toggleClassName="dropdown-toggle",
