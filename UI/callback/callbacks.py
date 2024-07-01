@@ -28,7 +28,7 @@ def func(n_clicks, format):
     # return dict(content="".join(global_vars.dialog), filename=f"query-history-{formatted_date_time}.txt")
     if (global_vars.agent is None):
         return None, True
-    history, extension = global_vars.agent.get_history(format=ConversationFormat(format))
+    history, extension = global_vars.agent.get_history(c_format=ConversationFormat(format))
     return dict(content=history, filename=f"query-history-{formatted_date_time}" + extension), False
 
 
@@ -82,6 +82,7 @@ def hide_dataviews(n_clicks, label):
     else:
         return {'display': 'none'}, "Show Data View", 6, 0, 6
 
+
 @app.callback(
     [Output('right-column', 'style'),
      Output('menu-hide-chartview', 'children'),
@@ -98,6 +99,37 @@ def hide_chartview(n_clicks, label):
         return {'display': 'block'}, "Hide Chart View", 3, 6, 3
     else:
         return {'display': 'none'}, "Show Chart View", 3, 9, 0
+
+
+@app.callback(
+    Output('menu-model-gpt3dot5', 'children'),
+    Input('menu-model-gpt3dot5', 'n_clicks'),
+    prevent_initial_call=True
+)
+def change_llm_model_gpt3dot5(n_clicks):
+    global_vars.agent.set_llm_model('gpt3dot5')
+    return "GPT-3.5"
+
+
+@app.callback(
+    Output('menu-model-gpt4', 'children'),
+    Input('menu-model-gpt4', 'n_clicks'),
+    prevent_initial_call=True
+)
+def change_llm_model_gpt3dot5(n_clicks):
+    global_vars.agent.set_llm_model('gpt4')
+    return "GPT-4"
+
+
+@app.callback(
+    Output('menu-model-gpt4o', 'children'),
+    Input('menu-model-gpt4o', 'n_clicks'),
+    prevent_initial_call=True
+)
+def change_llm_model_gpt3dot5(n_clicks):
+    global_vars.agent.set_llm_model('gpt4o')
+    return "GPT-4o"
+
 
 @app.callback(
     Output('RAG-area', 'children'),

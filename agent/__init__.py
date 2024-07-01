@@ -12,6 +12,8 @@ from utils.conversation import Conversation
 from utils.system_log import SystemLogMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import ConfigurableField
+
 
 class ConversationFormat(str, Enum):
     FULL_JSON = 'Full JSON'
@@ -24,11 +26,25 @@ class PersistenceType(str, Enum):
     FILE = 'File'
 
 
+class LLMModel(str, Enum):
+    GPT4O = 'gpt4o'
+    GPT4 = 'gpt4'
+    GPT3DOT5 = 'gpt3dot5'
+
+
 class DatasetAgent:
     def __init__(self, df, llm=None, file_name=None):
         if llm is None:
-            llm = ChatOpenAI(temperature=0, model="gpt-4o-2024-05-13")
-        self.model_name = llm.model_name
+            self.llm = ChatOpenAI(temperature=0, model="gpt-4o").configurable_alternatives(
+                ConfigurableField(id="llm"),
+                default_key="gpt-4o",
+                gpt3dot5=ChatOpenAI(model="gpt-3.5-turbo"),
+                gpt4=ChatOpenAI(model="gpt-4-turbo"),
+                gpt4o=ChatOpenAI(model="gpt-4o"),
+            )
+        else:
+            self.llm = llm
+        self.model_name = "gpt4o"
         self.session_id = round(time.time() * 1000)
         self.prompt = ChatPromptTemplate.from_messages(
             [
@@ -47,12 +63,13 @@ class DatasetAgent:
         )
 
         self.agent = create_pandas_dataframe_agent(
-            llm,
+            self.llm,
             df,
             verbose=True,
             agent_type=AgentType.OPENAI_FUNCTIONS,
             agent_executor_kwargs={"handle_parsing_errors": True}
         )
+
         self.chain = self.prompt | self.agent
         self.history = ChatMessageHistory(session_id=self.session_id)
         self.agent_with_chat_history = RunnableWithMessageHistory(
@@ -79,9 +96,24 @@ class DatasetAgent:
         return True
 
     def run(self, text):
-        return \
-        self.agent_with_trimmed_history.invoke({"input": text}, config={"configurable": {"session_id": self.session_id}})[
-            'output']
+        if self.model_name == LLMModel.GPT4O:
+            return \
+                self.agent_with_trimmed_history.with_config(
+                    configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text})[
+                    'output']
+        elif self.model_name == LLMModel.GPT3DOT5:
+            return \
+                self.agent_with_trimmed_history.with_config(
+                    configurable={"llm": "gpt3dot5", "session_id": self.session_id}).invoke({"input": text})[
+                    'output']
+        else:
+            return \
+                self.agent_with_trimmed_history.with_config(
+                    configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text})[
+                    'output']
+
+    def set_llm_model(self, model):
+        self.model_name = model
 
     def _get_full_history(self) -> dict:
         return {
