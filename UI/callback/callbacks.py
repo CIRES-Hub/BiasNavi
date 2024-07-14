@@ -10,6 +10,8 @@ from RAG import RAG
 from dash import dcc, html, dash_table
 import pandas as pd
 from UI.variable import global_vars
+from UI.functions import *
+from utils.data_wrangler import DataWrangler
 
 
 @app.callback(
@@ -190,8 +192,11 @@ def import_data_and_update_table(list_of_contents, list_of_names, click, start_r
 
             if 'csv' in filename:
                 # Assume that the user uploaded a CSV
-                global_vars.df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+                raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+                global_vars.df = DataWrangler.fill_missing_values(raw_data)
+                #global_vars.df = DataWrangler.drop_rows_with_missing_values(raw_data)
                 global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name)
+                #identify_sensitive_attributes(global_vars.df,"two_year_recid")
             else:
                 return (), [], True
             # Return the data in a format that Dash DataTable can use
