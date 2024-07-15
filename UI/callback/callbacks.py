@@ -206,6 +206,7 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
     Output('table-overview', 'data'),
     Output('column-names-dropdown', 'options'),
     Output('error-file-format', 'is_open'),
+    Output('bias-report','children'),
     Input('upload-data', 'contents'),
     State('upload-data', 'filename'),
     Input('show-rows-button', 'n_clicks'),
@@ -227,6 +228,7 @@ def import_data_and_update_table(list_of_contents, list_of_names, click, start_r
             # Decode the contents of the file
             content_type, content_string = contents.split(',')
             decoded = base64.b64decode(content_string)
+            bias_identification = None
 
             if 'csv' in filename:
                 # Assume that the user uploaded a CSV
@@ -234,15 +236,18 @@ def import_data_and_update_table(list_of_contents, list_of_names, click, start_r
                 global_vars.df = DataWrangler.fill_missing_values(raw_data)
                 #global_vars.df = DataWrangler.drop_rows_with_missing_values(raw_data)
                 global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name)
-                #identify_sensitive_attributes(global_vars.df,"two_year_recid")
+                global_vars.bias_reporter = identify_sensitive_attributes(global_vars.df,"two_year_recid")
+                sensitive_attr = global_vars.bias_reporter.sensitive_attrs
+                bias_identification = " ".join(sensitive_attr)
+
             else:
-                return (), [], True
+                return (), [], True, []
             # Return the data in a format that Dash DataTable can use
 
-            return global_vars.df.head(15).to_dict('records'), [col for col in global_vars.df.columns], False
+            return global_vars.df.head(15).to_dict('records'), [col for col in global_vars.df.columns], False, html.Div([html.H5("Identified sensitive attributes"),html.P(bias_identification)])
 
         else:
-            return (), [], False  # If no file was uploaded
+            return (), [], False, []  # If no file was uploaded
 
     else:
         start_row = int(start_row) - 1 if start_row else 0

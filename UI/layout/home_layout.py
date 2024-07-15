@@ -89,7 +89,7 @@ def get_layout():
                     html.Div([
                         # Chat display area
                         html.Div([
-                            html.H4("Chat with LLM", className="query-title")
+                            html.H4("Chat with BiasNavi", className="query-title")
                         ], className="query-header"),
                         html.Div([
                             dcc.Dropdown(id='export-format-dropdown', options=[v.value for v in ConversationFormat], value=ConversationFormat.SIMPLIFIED_JSON.value),
@@ -160,7 +160,7 @@ def get_layout():
             #data views
             dbc.Col(width=6, id="middle-column", children=[
                 dbc.Card(body=True, className='card', children=[
-                    html.Div([
+                    dcc.Loading(id="table-loading", children=[html.Div([
                         dcc.Input(id='input-start-row', type='number', placeholder='Start row',
                                   style={'marginRight': '10px'}),
                         dcc.Input(id='input-end-row', type='number', placeholder='End row',
@@ -172,6 +172,13 @@ def get_layout():
                                          style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
                                                        'fontWeight': 'bold'
                                                        }, style_table={'overflowX': 'auto'}),
+                    html.Div(id="bias-report",className="bias-report-area",children=[])
+
+                    ],
+                    overlay_style={"visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
+                    custom_spinner=html.H2(["Loading data and identifying bias...", dbc.Spinner(color="primary")]),
+                    ),
+
                 ]),
                 dbc.Card(body=True, children=[
                     # dcc.Tabs(id='tabs-figures', value='single', children=[

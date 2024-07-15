@@ -9,6 +9,7 @@ class Variables(object):
         self.use_rag = False
         self.dialog = []
         self.file_name = None
+        self.bias_reporter = None
 
 
 global_vars = Variables()

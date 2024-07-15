@@ -219,6 +219,15 @@
     display: inline-block
 }
 
+.bias-report-area{
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.bias-report-area:hover{
+    background-color:#fff2e5 ;
+}
+
 .logo{
     width: 80px;
 }
