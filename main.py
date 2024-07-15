@@ -19,4 +19,4 @@ if __name__ == '__main__':
     app.layout = get_layout()
 
     # Run the server
-    app.run(debug=True)
+    app.run(debug=True,dev_tools_hot_reload=False)

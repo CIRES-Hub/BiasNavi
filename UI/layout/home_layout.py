@@ -172,7 +172,8 @@ def get_layout():
                                          style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
                                                        'fontWeight': 'bold'
                                                        }, style_table={'overflowX': 'auto'}),
-                    html.Div(id="bias-report",className="bias-report-area",children=[])
+                    html.Div(id="bias-report",className="bias-report-area",children=[]),
+                    html.Img(id="multi_dist_plot",style={'maxWidth': '100%', 'height': 'auto'})
 
                     ],
                     overlay_style={"visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
@@ -189,7 +190,7 @@ def get_layout():
                     "Select the attribute to visualize:\n",
                     dcc.Dropdown(id='column-names-dropdown'),
                     dcc.Graph(id='bar-chart'),
-                    dcc.Graph(id='pie-chart')
+                    #dcc.Graph(id='pie-chart')
                 ], className='visualization')
             ]),
 

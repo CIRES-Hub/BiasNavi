@@ -333,6 +333,8 @@ def mult_distr_plot(
             cmap=cmap,
             ax=ax_,
         )
+
+    return fig
     # if not os.path.exists("./results/plots/"):
     #     os.makedirs("./results/plots/")
     # plt.savefig("./results/plots/mult_distr_plot.png")

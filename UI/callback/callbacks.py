@@ -207,6 +207,8 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
     Output('column-names-dropdown', 'options'),
     Output('error-file-format', 'is_open'),
     Output('bias-report','children'),
+    Output('table-overview','style_data_conditional'),
+    Output('multi_dist_plot','src'),
     Input('upload-data', 'contents'),
     State('upload-data', 'filename'),
     Input('show-rows-button', 'n_clicks'),
@@ -216,6 +218,7 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
 )
 def import_data_and_update_table(list_of_contents, list_of_names, click, start_row, end_row):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+    styles = []
     if triggered_id == 'upload-data':
 
         if list_of_contents is not None:
@@ -236,18 +239,27 @@ def import_data_and_update_table(list_of_contents, list_of_names, click, start_r
                 global_vars.df = DataWrangler.fill_missing_values(raw_data)
                 #global_vars.df = DataWrangler.drop_rows_with_missing_values(raw_data)
                 global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name)
-                global_vars.bias_reporter = identify_sensitive_attributes(global_vars.df,"two_year_recid")
-                sensitive_attr = global_vars.bias_reporter.sensitive_attrs
-                bias_identification = " ".join(sensitive_attr)
+                sensitive_attrs = identify_sensitive_attributes(global_vars.df,"decile_score")
+                for attr in sensitive_attrs:
+                    styles.append({
+                        'if': {'column_id': attr},
+                        'backgroundColor': 'tomato',
+                        'color': 'white'
+                    })
+                bias_identification = " ".join(sensitive_attrs)
+                draw_multi_dist_plot(global_vars.df,"decile_score",sensitive_attrs)
 
             else:
-                return (), [], True, []
+                return (), [], True, [], styles, ""
             # Return the data in a format that Dash DataTable can use
 
-            return global_vars.df.head(15).to_dict('records'), [col for col in global_vars.df.columns], False, html.Div([html.H5("Identified sensitive attributes"),html.P(bias_identification)])
+            return (global_vars.df.head(15).to_dict('records'), [col for col in global_vars.df.columns], False,
+                    html.Div([html.H5("Identified sensitive attributes"),html.P([html.B(f"{bias_identification}. ", style={'color': 'tomato'}),
+                                                                                f"When making decisions, it should be cautious to use these attributes."])]), styles,
+                                                                                f"../assets/{global_vars.file_name}_mult_dist_plot.png")
 
         else:
-            return (), [], False, []  # If no file was uploaded
+            return (), [], False, [], styles, ""  # If no file was uploaded
 
     else:
         start_row = int(start_row) - 1 if start_row else 0
@@ -258,12 +270,12 @@ def import_data_and_update_table(list_of_contents, list_of_names, click, start_r
             return [], (), False
         # Slicing the DataFrame
         xdf = global_vars.df.iloc[start_row:end_row]
-        return xdf.to_dict('records'), [col for col in global_vars.df.columns], False
+        return xdf.to_dict('records'), [col for col in global_vars.df.columns], False, [], styles
 
 
 @app.callback(
     Output('bar-chart', 'figure'),
-    Output('pie-chart', 'figure'),
+    #Output('pie-chart', 'figure'),
     Input('column-names-dropdown', 'value'),
     prevent_initial_call=True
 )
@@ -276,16 +288,16 @@ def update_graph(selected_column):
         title=f'Bar Chart - Distribution of {selected_column}'
     )
 
-    value_counts = global_vars.df[selected_column].value_counts().reset_index()
-    value_counts.columns = [selected_column, 'count']
+    # value_counts = global_vars.df[selected_column].value_counts().reset_index()
+    # value_counts.columns = [selected_column, 'count']
 
-    pie = px.pie(
-        value_counts,
-        names=selected_column,
-        values='count',
-        title=f'Pie Chart - Distribution of {selected_column}'
-    )
-    return bar, pie
+    # pie = px.pie(
+    #     value_counts,
+    #     names=selected_column,
+    #     values='count',
+    #     title=f'Pie Chart - Distribution of {selected_column}'
+    # )
+    return bar #, pie
 
 
 # @app.callback(
