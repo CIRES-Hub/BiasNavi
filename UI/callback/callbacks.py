@@ -209,6 +209,7 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
     Output('bias-report','children'),
     Output('table-overview','style_data_conditional'),
     Output('multi_dist_plot','src'),
+    Output('bias-overview', 'data'),
     Input('upload-data', 'contents'),
     State('upload-data', 'filename'),
     Input('show-rows-button', 'n_clicks'),
@@ -248,18 +249,18 @@ def import_data_and_update_table(list_of_contents, list_of_names, click, start_r
                     })
                 bias_identification = " ".join(sensitive_attrs)
                 draw_multi_dist_plot(global_vars.df,"decile_score",sensitive_attrs)
-
+                bias_report = calculate_demographic_report(global_vars.df,"decile_score",["sex","race"])
             else:
-                return (), [], True, [], styles, ""
+                return (), [], True, [], styles, "", ()
             # Return the data in a format that Dash DataTable can use
 
             return (global_vars.df.head(15).to_dict('records'), [col for col in global_vars.df.columns], False,
                     html.Div([html.H5("Identified sensitive attributes"),html.P([html.B(f"{bias_identification}. ", style={'color': 'tomato'}),
                                                                                 f"When making decisions, it should be cautious to use these attributes."])]), styles,
-                                                                                f"../assets/{global_vars.file_name}_mult_dist_plot.png")
+                                                                                f"../assets/{global_vars.file_name}_mult_dist_plot.png", bias_report.to_dict('records'))
 
         else:
-            return (), [], False, [], styles, ""  # If no file was uploaded
+            return (), [], False, [], styles, "", ()  # If no file was uploaded
 
     else:
         start_row = int(start_row) - 1 if start_row else 0

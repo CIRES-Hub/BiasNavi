@@ -173,8 +173,12 @@ def get_layout():
                                                        'fontWeight': 'bold'
                                                        }, style_table={'overflowX': 'auto'}),
                     html.Div(id="bias-report",className="bias-report-area",children=[]),
-                    html.Img(id="multi_dist_plot",style={'maxWidth': '100%', 'height': 'auto'})
-
+                    html.Img(id="multi_dist_plot",style={'maxWidth': '100%', 'height': 'auto'}),
+                    dash_table.DataTable(id='bias-overview', page_size=25, page_action='native',
+                                         style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
+                                         style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
+                                                       'fontWeight': 'bold'
+                                                       }, style_table={'overflowX': 'auto'}),
                     ],
                     overlay_style={"visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
                     custom_spinner=html.H2(["Loading data and identifying bias...", dbc.Spinner(color="primary")]),

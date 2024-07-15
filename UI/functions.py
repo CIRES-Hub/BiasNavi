@@ -13,3 +13,8 @@ def draw_multi_dist_plot(data, target, attrs):
             attrs_to_plot.append(attr)
     fig = fl.plot.mult_distr_plot(data, target, attrs_to_plot)
     fig.savefig(f"./UI/assets/{global_vars.file_name}_mult_dist_plot.png")
+
+def calculate_demographic_report(data, target, attrs):
+    fscorer = fl.FairnessScorer(data, target,attrs)
+    return fscorer.distribution_score()
+
