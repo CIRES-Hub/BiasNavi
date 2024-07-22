@@ -348,7 +348,7 @@ def update_messages(n_clicks, n_submit, input_text, query_records):
     response = 'LLM: ' + output_text + '\n'
     global_vars.dialog.append("\n" + response)
     # Simulate a response from the system
-    new_response_message = html.Div(response, className="llm-msg")
+    new_response_message = dcc.Markdown(response, className="llm-msg")
     query_records.append(new_user_message)
     query_records.append(new_response_message)
     return query_records, False, media, time.time()
