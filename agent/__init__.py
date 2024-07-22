@@ -8,11 +8,11 @@ import os
 import time
 from enum import Enum
 import json
-from utils.conversation import Conversation
-from utils.system_log import SystemLogMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables import ConfigurableField
+from models.conversation import Conversation
+from models.system_log import SystemLogMessage
 import matplotlib
 matplotlib.use('Agg')
 
