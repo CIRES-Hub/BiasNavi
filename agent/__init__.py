@@ -13,7 +13,8 @@ from utils.system_log import SystemLogMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables import ConfigurableField
-
+import matplotlib
+matplotlib.use('Agg')
 
 class ConversationFormat(str, Enum):
     FULL_JSON = 'Full JSON'
@@ -67,6 +68,7 @@ class DatasetAgent:
             df,
             verbose=True,
             agent_type=AgentType.OPENAI_FUNCTIONS,
+            allow_dangerous_code=True,
             agent_executor_kwargs={"handle_parsing_errors": True}
         )
 

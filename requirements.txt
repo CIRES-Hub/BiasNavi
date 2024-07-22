@@ -12,11 +12,11 @@ langchain_experimental==0.0.62
 langchain_openai==0.1.16
 langchain_text_splitters==0.2.2
 matplotlib==3.5.2
-numpy==2.0.0
+numpy
 pandas==2.2.2
 pdfplumber==0.11.0
 plotly==5.9.0
-pyemd==0.5.1
+pyemd
 scikit_learn==1.2.2
 scipy==1.14.0
 seaborn==0.13.2
