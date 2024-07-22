@@ -1,11 +1,11 @@
-version: '3.3'
+version: "3.3"
 
 services:
   biasnavi-db:
     container_name: biasnavi-postgres
-    image: postgres:11.5-alpine
+    image: postgres:16-alpine
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - ./data/postgresql:/var/lib/postgresql/data
     environment:
@@ -18,10 +18,10 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_SERVER_MODE: "False"
     volumes:
-      - './pgadmin:/var/lib/pgadmin'
-    user: '$UID:$GID'
+      - "./pgadmin:/var/lib/pgadmin"
+    user: "$UID:$GID"
     ports:
       - "${PGADMIN_PORT:-5051}:80"
     depends_on:
