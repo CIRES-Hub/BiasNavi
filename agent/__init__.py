@@ -14,6 +14,7 @@ from langchain_core.runnables import ConfigurableField
 from models.conversation import Conversation
 from models.system_log import SystemLogMessage
 import matplotlib
+import re
 matplotlib.use('Agg')
 
 class ConversationFormat(str, Enum):
@@ -98,21 +99,34 @@ class DatasetAgent:
         return True
 
     def run(self, text):
+        self.elem_queue.clear()
+        self.execution_error.clear()
+
+        result = self.agent_with_trimmed_history.with_config(
+            configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text})[
+            'output']
         if self.model_name == LLMModel.GPT4O:
-            return \
-                self.agent_with_trimmed_history.with_config(
-                    configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text})[
-                    'output']
-        elif self.model_name == LLMModel.GPT3DOT5:
-            return \
-                self.agent_with_trimmed_history.with_config(
-                    configurable={"llm": "gpt3dot5", "session_id": self.session_id}).invoke({"input": text})[
-                    'output']
+            result = self.agent_with_trimmed_history.with_config(
+                configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text})[
+                'output']
+        if self.model_name == LLMModel.GPT3DOT5:
+            result = self.agent_with_trimmed_history.with_config(
+                configurable={"llm": "gpt3dot5", "session_id": self.session_id}).invoke({"input": text})[
+                'output']
+        tableFormat = r"(?s)\:.*\|"
+        tableInResult = re.search(tableFormat, result)
+        if (tableInResult):
+            startIdx = tableInResult.start()
+            endIdx = tableInResult.end()
+            result = result[:startIdx] + result[endIdx:]
+
+        if (len(self.execution_error) > 0):
+            result = f"""There was an error processing your request. Please provide a clearer query and try again. 
+                    (Error message: {str(self.execution_error[0])})"""
+        if (len(self.elem_queue) > 0):
+            return result, self.elem_queue
         else:
-            return \
-                self.agent_with_trimmed_history.with_config(
-                    configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text})[
-                    'output']
+            return result, None
 
     def set_llm_model(self, model):
         self.model_name = model
@@ -171,7 +185,7 @@ class DatasetAgent:
             raise NotImplementedError("Unsupported format")
         return history, extension
 
-    def persist_history(self,
+    def persist_history(self, user_id,
                         persistence_type: PersistenceType = PersistenceType.DATABASE,
                         c_format: ConversationFormat = ConversationFormat.SIMPLIFIED_JSON,
                         path: str = 'histories'):
@@ -183,9 +197,9 @@ class DatasetAgent:
         if persistence_type == PersistenceType.FILE:
             with open(os.path.join(path, str(self.session_id) + extension), 'w') as f:
                 f.write(history)
-        elif persistence_type == PersistenceType.DATABASE:
-            Conversation.upsert(str(self.session_id), str(self.session_id), self.file_name, self.model_name,
-                                json.loads(history)['messages'])
+        elif (persistence_type == PersistenceType.DATABASE):
+            Conversation.upsert(user_id, str(
+                self.session_id), self.file_name, self.model_name, json.loads(history)['messages'])
         else:
             raise NotImplementedError("Unsupported persistence type")
 

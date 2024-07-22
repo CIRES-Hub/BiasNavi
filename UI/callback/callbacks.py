@@ -1,15 +1,18 @@
+import time
+import dash
 from UI.app import app
 from dash.dependencies import Input, Output, State
 import plotly.express as px
 import base64
 from agent import ConversationFormat, DatasetAgent
 import datetime
-from dash import callback_context
+from dash import callback_context, MATCH
 import io
 from RAG import RAG
 from dash import dcc, html, dash_table
 import pandas as pd
 from UI.variable import global_vars
+from flask_login import current_user
 from UI.functions import *
 from utils.data_wrangler import DataWrangler
 
@@ -82,7 +85,7 @@ def hide_dataviews(n_clicks, label):
     if label == 'Show Data View':
         return {'display': 'block'}, "Hide Data View", 3, 6, 3
     else:
-        return {'display': 'none'}, "Show Data View", 6, 0, 6
+        return {'display': 'none'}, "Show Data Views", 6, 0, 6
 
 
 @app.callback(
@@ -276,7 +279,7 @@ def import_data_and_update_table(list_of_contents, list_of_names, click, start_r
 
 @app.callback(
     Output('bar-chart', 'figure'),
-    #Output('pie-chart', 'figure'),
+    Output('pie-chart', 'figure'),
     Input('column-names-dropdown', 'value'),
     prevent_initial_call=True
 )
@@ -289,16 +292,16 @@ def update_graph(selected_column):
         title=f'Bar Chart - Distribution of {selected_column}'
     )
 
-    # value_counts = global_vars.df[selected_column].value_counts().reset_index()
-    # value_counts.columns = [selected_column, 'count']
+    value_counts = global_vars.df[selected_column].value_counts().reset_index()
+    value_counts.columns = [selected_column, 'count']
 
-    # pie = px.pie(
-    #     value_counts,
-    #     names=selected_column,
-    #     values='count',
-    #     title=f'Pie Chart - Distribution of {selected_column}'
-    # )
-    return bar #, pie
+    pie = px.pie(
+        value_counts,
+        names=selected_column,
+        values='count',
+        title=f'Pie Chart - Distribution of {selected_column}'
+    )
+    return bar, pie
 
 
 # @app.callback(
@@ -321,18 +324,19 @@ def update_graph(selected_column):
 
 # Update the llm chatbox
 @app.callback(
-    Output('query-area', 'children'),
-    Output('error-query', 'is_open'),
-    Input('send-button', 'n_clicks'),
-    Input('query-input', 'n_submit'),
+    [Output("query-area", "children"),
+     Output("error-query", "is_open"),
+     Output('llm-media-area', 'children'),
+     Output("chat-update-trigger", "data")],
+    [Input('send-button', 'n_clicks'),
+     Input('query-input', 'n_submit')],
     [State('query-input', 'value'),
-     State('query-area', 'children'),
-     ],
-    prevent_initial_call=True
+     State('query-area', 'children')],
+    prevent_initial_input=True
 )
 def update_messages(n_clicks, n_submit, input_text, query_records):
     if n_clicks is None or input_text is None or global_vars.df is None:
-        return query_records, True
+        return query_records, True, None, dash.no_update
     new_user_message = html.Div(input_text + '\n', className="user-msg")
     global_vars.dialog.append("\nUSER: " + input_text + '\n')
     if not query_records:
@@ -340,13 +344,26 @@ def update_messages(n_clicks, n_submit, input_text, query_records):
     if global_vars.rag and global_vars.use_rag:
         input_text = global_vars.rag.invoke(input_text)
         global_vars.rag_prompt = input_text
-    response = 'LLM: ' + query_llm(input_text) + '\n'
+    output_text, media = query_llm(input_text)
+    response = 'LLM: ' + output_text + '\n'
     global_vars.dialog.append("\n" + response)
     # Simulate a response from the system
     new_response_message = html.Div(response, className="llm-msg")
     query_records.append(new_user_message)
     query_records.append(new_response_message)
-    return query_records, False
+    return query_records, False, media, time.time()
+
+
+@app.callback(
+    Output({'type': 'llm-media-modal', 'index': MATCH}, 'is_open'),
+    Input({'type': 'llm-media-figure', 'index': MATCH}, 'n_clicks'),
+    State({'type': 'llm-media-figure', 'index': MATCH}, 'id'),
+)
+def show_figure_modal(n_clicks, id):
+    if (n_clicks is not None and n_clicks > 0):
+        return True
+    else:
+        return False
 
 
 def query_llm(query):
@@ -354,9 +371,9 @@ def query_llm(query):
     #                 Answer this question step by step and generate a output with details and inference:
     #         """ + query
     print(query)
-    response = global_vars.agent.run(query)
-    global_vars.agent.persist_history()
-    return response
+    response, media = global_vars.agent.run(query)
+    global_vars.agent.persist_history(user_id=str(current_user.id))
+    return response, media
 
 # @app.callback(
 #     Output('query-output', 'children'),
