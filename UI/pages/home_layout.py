@@ -52,8 +52,8 @@ def layout():
                                 className='menu-item'
                             ),
                             dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("OpenAI GPT 3.5"), dbc.DropdownMenuItem("OpenAI GPT 4.0"),
-                                 dbc.DropdownMenuItem("Llama 3")],
+                                [dbc.DropdownMenuItem("GPT-3.5", id="menu-model-gpt3dot5"), dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
+                                 dbc.DropdownMenuItem("GPT-4o ✔", id="menu-model-gpt4o")],
                                 label="LLM Models",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
@@ -61,8 +61,7 @@ def layout():
                             ),
                             dbc.DropdownMenu(
                                 [dbc.DropdownMenuItem("Hide ChatBox", id="menu-hide-chatbox"),
-                                 dbc.DropdownMenuItem(
-                                     "Hide Data View", id="menu-hide-dataview"),
+                                 dbc.DropdownMenuItem("Hide Data View", id="menu-hide-dataview"),
                                  dbc.DropdownMenuItem("Hide Chart View", id="menu-hide-chartview")],
                                 label="View",
                                 nav=True,
@@ -117,14 +116,11 @@ def layout():
                         html.Div([
                             # Chat display area
                             html.Div([
-                                html.H4("Chat with LLM",
-                                        className="query-title")
+                                html.H4("Chat with BiasNavi", className="query-title")
                             ], className="query-header"),
                             html.Div([
-                                dcc.Dropdown(id='export-format-dropdown', options=[
-                                    v.value for v in ConversationFormat], value=ConversationFormat.SIMPLIFIED_JSON.value),
-                                html.Button("Export", id="download-button",
-                                            className="download-button"),
+                                dcc.Dropdown(id='export-format-dropdown', options=[v.value for v in ConversationFormat], value=ConversationFormat.SIMPLIFIED_JSON.value),
+                                html.Button("Export", id="download-button", className="download-button"),
                                 dcc.Download(id="export")
                             ], className="query-header"),
                             dbc.Toast(
@@ -203,7 +199,7 @@ def layout():
                 # data views
                 dbc.Col(width=6, id="middle-column", children=[
                     dbc.Card(body=True, className='card', children=[
-                        html.Div([
+                        dcc.Loading(id="table-loading", children=[html.Div([
                             dcc.Input(id='input-start-row', type='number', placeholder='Start row',
                                       style={'marginRight': '10px'}),
                             dcc.Input(id='input-end-row', type='number', placeholder='End row',
@@ -212,11 +208,21 @@ def layout():
                                         className='load-button')
                         ], style={'marginBottom': '16px', 'height': '45px'}),
                         dash_table.DataTable(id='table-overview', page_size=25, page_action='native',
-                                             style_cell={
-                                                 'textAlign': 'center', 'fontFamiliy': 'Arial'},
+                                         style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
+                                         style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
+                                                       'fontWeight': 'bold'
+                                                       }, style_table={'overflowX': 'auto'}),
+                        html.Div(id="bias-report",className="bias-report-area",children=[]),
+                        html.Img(id="multi_dist_plot",style={'maxWidth': '100%', 'height': 'auto'}),
+                        dash_table.DataTable(id='bias-overview', page_size=25, page_action='native',
+                                             style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
                                              style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
                                                            'fontWeight': 'bold'
                                                            }, style_table={'overflowX': 'auto'}),
+                        ],
+                        overlay_style={"visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
+                        custom_spinner=html.H2(["Loading data and identifying bias...", dbc.Spinner(color="primary")]),
+                        ),
                     ]),
                     dbc.Card(body=True, children=[
                         # dcc.Tabs(id='tabs-figures', value='single', children=[

@@ -19,7 +19,7 @@ if __name__ == '__main__':
         with server.app_context():
             db.session.rollback()
 
-    app.layout = get_layout()
+    # app.layout = get_layout()
 
     # Run the server
-    app.run(debug=True,dev_tools_hot_reload=False)
+    app.run(debug=True)
