@@ -1,7 +1,9 @@
-from UI.app import db
+from models.users import db
 from sqlalchemy.dialects.postgresql import JSON
+import uuid
 import datetime
 import sys
+
 
 class Conversation(db.Model):
     __tablename__ = 'conversation'
@@ -36,8 +38,16 @@ class Conversation(db.Model):
             filter(Conversation.session_id == session_id).first()
 
         if not conversation:
-            conversation = Conversation(user_id, session_id, dataset, model, messages)
+            conversation = Conversation(
+                user_id, session_id, dataset, model, messages)
         else:
             conversation.messages = messages
 
         conversation.save()
+
+    @staticmethod
+    def get_user_conversations(user_id):
+        conversations = db.session.query(Conversation).\
+            filter(Conversation.user_id == user_id).\
+            order_by(Conversation.updated_at.desc()).all()
+        return conversations

@@ -1,19 +1,22 @@
-from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
+from uuid import UUID
 from langchain_openai import ChatOpenAI
 from langchain.agents.agent_types import AgentType
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.messages.base import messages_to_dict
+import pandas as pd
 import os
 import time
 from enum import Enum
 import json
-from utils.conversation import Conversation
-from utils.system_log import SystemLogMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables import ConfigurableField
-
+from langchain_experimental.tools.python.tool import PythonAstREPLTool
+from agent.utils import create_pandas_dataframe_agent
+from models.conversation import Conversation
+from models.system_log import SystemLogMessage
+import re
 
 class ConversationFormat(str, Enum):
     FULL_JSON = 'Full JSON'
@@ -33,19 +36,22 @@ class LLMModel(str, Enum):
 
 
 class DatasetAgent:
-    def __init__(self, df, llm=None, file_name=None):
+
+    def __init__(self, df, llm=None, file_name=None, user_id=None):
+        self.user_id = user_id
         if llm is None:
-            self.llm = ChatOpenAI(temperature=0, model="gpt-4o").configurable_alternatives(
+            llm = ChatOpenAI(temperature=0, model="gpt-4o").configurable_alternatives(
                 ConfigurableField(id="llm"),
                 default_key="gpt-4o",
                 gpt3dot5=ChatOpenAI(model="gpt-3.5-turbo"),
                 gpt4=ChatOpenAI(model="gpt-4-turbo"),
                 gpt4o=ChatOpenAI(model="gpt-4o"),
             )
-        else:
-            self.llm = llm
-        self.model_name = "gpt4o"
+        self.llm = llm
+        self.model_name = llm.model_name
         self.session_id = round(time.time() * 1000)
+        self.elem_queue = []
+        self.execution_error: list[Exception] = []
         self.prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -66,8 +72,14 @@ class DatasetAgent:
             self.llm,
             df,
             verbose=True,
+            elem_queue=self.elem_queue,
+            execution_error=self.execution_error,
             agent_type=AgentType.OPENAI_FUNCTIONS,
-            agent_executor_kwargs={"handle_parsing_errors": True}
+            agent_executor_kwargs={"handle_parsing_errors": True},
+            prefix="You has already been provided with a dataframe df, all queries should be about that df. \
+                Do not create dataframe. Do not read from any other sources. Do not use pd.read_clipboard. \
+                If your response includes code, it will be executed, so you should define the code clearly. \
+                Code in response will be split by \n so it should only include \n at the end of each line"
         )
 
         self.chain = self.prompt | self.agent
@@ -96,21 +108,34 @@ class DatasetAgent:
         return True
 
     def run(self, text):
+        self.elem_queue.clear()
+        self.execution_error.clear()
+
+        result = self.agent_with_trimmed_history.with_config(
+            configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text})[
+            'output']
         if self.model_name == LLMModel.GPT4O:
-            return \
-                self.agent_with_trimmed_history.with_config(
-                    configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text})[
-                    'output']
-        elif self.model_name == LLMModel.GPT3DOT5:
-            return \
-                self.agent_with_trimmed_history.with_config(
-                    configurable={"llm": "gpt3dot5", "session_id": self.session_id}).invoke({"input": text})[
-                    'output']
+            result = self.agent_with_trimmed_history.with_config(
+                configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text})[
+                'output']
+        if self.model_name == LLMModel.GPT3DOT5:
+            result = self.agent_with_trimmed_history.with_config(
+                configurable={"llm": "gpt3dot5", "session_id": self.session_id}).invoke({"input": text})[
+                'output']
+        tableFormat = r"(?s)\:.*\|"
+        tableInResult = re.search(tableFormat, result)
+        if (tableInResult):
+            startIdx = tableInResult.start()
+            endIdx = tableInResult.end()
+            result = result[:startIdx] + result[endIdx:]
+
+        if (len(self.execution_error) > 0):
+            result = f"""There was an error processing your request. Please provide a clearer query and try again. 
+                    (Error message: {str(self.execution_error[0])})"""
+        if (len(self.elem_queue) > 0):
+            return result, self.elem_queue
         else:
-            return \
-                self.agent_with_trimmed_history.with_config(
-                    configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text})[
-                    'output']
+            return result, None
 
     def set_llm_model(self, model):
         self.model_name = model
@@ -169,7 +194,7 @@ class DatasetAgent:
             raise NotImplementedError("Unsupported format")
         return history, extension
 
-    def persist_history(self,
+    def persist_history(self, user_id,
                         persistence_type: PersistenceType = PersistenceType.DATABASE,
                         c_format: ConversationFormat = ConversationFormat.SIMPLIFIED_JSON,
                         path: str = 'histories'):
@@ -181,9 +206,9 @@ class DatasetAgent:
         if persistence_type == PersistenceType.FILE:
             with open(os.path.join(path, str(self.session_id) + extension), 'w') as f:
                 f.write(history)
-        elif persistence_type == PersistenceType.DATABASE:
-            Conversation.upsert(str(self.session_id), str(self.session_id), self.file_name, self.model_name,
-                                json.loads(history)['messages'])
+        elif (persistence_type == PersistenceType.DATABASE):
+            Conversation.upsert(user_id, str(
+                self.session_id), self.file_name, self.model_name, json.loads(history)['messages'])
         else:
             raise NotImplementedError("Unsupported persistence type")
 

@@ -1,8 +1,10 @@
-from UI.app import app, db, server
-from utils import *
+from UI.app import app, server
+from models.users import db
+from models import *
 from UI.callback import callbacks, client_callbacks
-from UI.layout.home_layout import get_layout
 import sys
+from dash import dcc, html, Input, Output
+import dash
 
 if __name__ == '__main__':
     # Init tables
@@ -15,8 +17,6 @@ if __name__ == '__main__':
         sys.stdout.flush()
         with server.app_context():
             db.session.rollback()
-
-    app.layout = get_layout()
 
     # Run the server
     app.run(debug=True,dev_tools_hot_reload=False)
