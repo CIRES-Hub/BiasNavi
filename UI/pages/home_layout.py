@@ -1,11 +1,11 @@
 import dash_bootstrap_components as dbc
-from models.conversation import Conversation
+from db_models.conversation import Conversation
 from dash import dcc, html, dash_table, callback, Input, Output, State, MATCH, ALL
 import dash_daq as daq
 import dash
 from flask_login import logout_user, current_user
 from dash.exceptions import PreventUpdate
-
+import time
 from agent import ConversationFormat
 dash.register_page(__name__, path='/home/', title='Home')
 
@@ -52,8 +52,8 @@ def layout():
                                 className='menu-item'
                             ),
                             dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("GPT-3.5", id="menu-model-gpt3dot5"), dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
-                                 dbc.DropdownMenuItem("GPT-4o ✔", id="menu-model-gpt4o")],
+                                [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpt4omini"), dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
+                                 dbc.DropdownMenuItem("GPT-4o", id="menu-model-gpt4o")],
                                 label="LLM Models",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
@@ -200,25 +200,32 @@ def layout():
                 dbc.Col(width=6, id="middle-column", children=[
                     dbc.Card(body=True, className='card', children=[
                         dcc.Loading(id="table-loading", children=[html.Div([
+                            html.H4(id="dataset-name"),
                             dcc.Input(id='input-start-row', type='number', placeholder='Start row',
-                                      style={'marginRight': '10px'}),
+                                      style={'margin': '10px'}),
                             dcc.Input(id='input-end-row', type='number', placeholder='End row',
-                                      style={'marginRight': '10px'}),
+                                      style={'margin': '10px'}),
                             html.Button('Show Rows', id='show-rows-button',
-                                        className='load-button')
-                        ], style={'marginBottom': '16px', 'height': '45px'}),
-                        dash_table.DataTable(id='table-overview', page_size=25, page_action='native',
-                                         style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
-                                         style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
-                                                       'fontWeight': 'bold'
-                                                       }, style_table={'overflowX': 'auto'}),
-                        html.Div(id="bias-report",className="bias-report-area",children=[]),
-                        html.Img(id="multi_dist_plot",style={'maxWidth': '100%', 'height': 'auto'}),
-                        dash_table.DataTable(id='bias-overview', page_size=25, page_action='native',
+                                        className='load-button',style={'margin': '10px'}),
+                            html.Button('Save Data', id='save-data-button',
+                                        n_clicks=0, className='save-data-button'),
+                            dcc.Download(id='download-data-csv')
+                        ],),
+                        html.Div(children=[
+                            dash_table.DataTable(id='table-overview', page_size=25, page_action='native', editable=True, row_deletable=True,
                                              style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
                                              style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
                                                            'fontWeight': 'bold'
-                                                           }, style_table={'overflowX': 'auto'}),
+                                                           }, style_table={'overflowX': 'auto'})],style={"margin": "15px","marginLeft":"0px"}),
+                        html.Div(id="bias-report",className="bias-report-area",children=[]),
+                        html.Img(id="multi_dist_plot",style={'maxWidth': '100%', 'height': 'auto'}),
+                            html.Div(children=[
+                                dash_table.DataTable(id='bias-overview', page_size=25, page_action='native',
+                                                     style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
+                                                     style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
+                                                                   'fontWeight': 'bold'
+                                                                   }, style_table={'overflowX': 'auto'})],
+                                style={"margin": "15px", "marginLeft":"0px"}),
                         ],
                         overlay_style={"visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
                         custom_spinner=html.H2(["Loading data and identifying bias...", dbc.Spinner(color="primary")]),
@@ -242,10 +249,20 @@ def layout():
                         html.Div([
                             # Chat display area
                             html.Div([
-                                html.H4("LLM Charts", className="query-title")
+                                html.H4("Charts", className="query-title")
                             ], className="query-header"),
                             html.Div([], id='llm-media-area')
                         ], className='llm-chart', style={'overflowX': 'auto'})
+                    ], className='card'),
+
+                    dbc.Card(children=[
+                        html.Div([
+                            # Chat display area
+                            html.Div([
+                                html.H4("Code", className="query-title")
+                            ], className="query-header"),
+                            html.Div([], id='llm-code-area')
+                        ], className='llm-code', style={'overflowX': 'auto'})
                     ], className='card'),
                 ]),
 
@@ -314,10 +331,16 @@ def update_chat_history(pathname, trigger):
 
 @callback(
     Output({"type": "collapse", "index": MATCH}, "is_open"),
+    Output({"type": "collapse-button", "index": MATCH}, "children"),
     Input({"type": "collapse-button", "index": MATCH}, "n_clicks"),
     State({"type": "collapse", "index": MATCH}, "is_open"),
 )
 def toggle_collapse(n_clicks, is_open):
+    text = "Show Messages"
     if n_clicks:
-        return not is_open
-    return is_open
+        if is_open:
+            text = "Show Messages"
+        else:
+            text = "Hide Messages"
+        return not is_open, text
+    return is_open, text

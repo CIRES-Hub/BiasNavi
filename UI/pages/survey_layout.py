@@ -1,4 +1,4 @@
-from models.users import User, db
+from db_models.users import User, db
 from flask_login import current_user
 from dash import callback, Input, Output, State, callback_context
 import dash_bootstrap_components as dbc
@@ -6,8 +6,8 @@ from dash import html, dcc, callback, Input, Output, State, callback_context
 import dash
 from dash.exceptions import PreventUpdate
 from werkzeug.security import generate_password_hash
-from models.users import User
-from models.databases import db
+from db_models.users import User
+from db_models.databases import db
 from flask_login import login_user
 
 dash.register_page(__name__, path='/survey/', title='Survey')

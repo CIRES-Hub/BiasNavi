@@ -1,4 +1,4 @@
-from models.users import db
+from db_models.users import db
 from sqlalchemy.dialects.postgresql import JSON
 import uuid
 import datetime
@@ -12,8 +12,8 @@ class Conversation(db.Model):
     model = db.Column(db.String(128))
     dataset = db.Column(db.String(256))
     messages = db.Column(JSON)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.datetime.now)
 
     def __init__(self, user_id, session_id, dataset, model, messages):
         self.user_id = user_id

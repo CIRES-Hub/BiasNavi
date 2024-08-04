@@ -3,8 +3,8 @@ import dash_bootstrap_components as dbc
 from dash import html, dcc, callback, Input, Output, State, callback_context
 import dash
 from dash.exceptions import PreventUpdate
-from models.users import User
-from models.databases import db
+from db_models.users import User
+from db_models.databases import db
 from UI.app import server
 import time
 

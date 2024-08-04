@@ -16,5 +16,5 @@ def draw_multi_dist_plot(data, target, attrs):
 
 def calculate_demographic_report(data, target, attrs):
     fscorer = fl.FairnessScorer(data, target,attrs)
-    return fscorer.distribution_score()
+    return fscorer.distribution_score(method="dist_to_rest")
 

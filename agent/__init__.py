@@ -14,8 +14,8 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables import ConfigurableField
 from langchain_experimental.tools.python.tool import PythonAstREPLTool
 from agent.utils import create_pandas_dataframe_agent
-from models.conversation import Conversation
-from models.system_log import SystemLogMessage
+from db_models.conversation import Conversation
+from db_models.system_log import SystemLogMessage
 import re
 
 class ConversationFormat(str, Enum):
@@ -30,9 +30,9 @@ class PersistenceType(str, Enum):
 
 
 class LLMModel(str, Enum):
-    GPT4O = 'gpt4o'
+    GPT4o = 'gpt4o'
     GPT4 = 'gpt4'
-    GPT3DOT5 = 'gpt3dot5'
+    GPT4omini = 'gpt4omini'
 
 
 class DatasetAgent:
@@ -40,10 +40,10 @@ class DatasetAgent:
     def __init__(self, df, llm=None, file_name=None, user_id=None):
         self.user_id = user_id
         if llm is None:
-            llm = ChatOpenAI(temperature=0, model="gpt-4o").configurable_alternatives(
+            llm = ChatOpenAI(temperature=0.5, model="gpt-4o-mini").configurable_alternatives(
                 ConfigurableField(id="llm"),
-                default_key="gpt-4o",
-                gpt3dot5=ChatOpenAI(model="gpt-3.5-turbo"),
+                default_key="gpt-4o-mini",
+                gpt4omini=ChatOpenAI(model="gpt-4o-mini"),
                 gpt4=ChatOpenAI(model="gpt-4-turbo"),
                 gpt4o=ChatOpenAI(model="gpt-4o"),
             )
@@ -114,13 +114,13 @@ class DatasetAgent:
         result = self.agent_with_trimmed_history.with_config(
             configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text})[
             'output']
-        if self.model_name == LLMModel.GPT4O:
+        if self.model_name == LLMModel.GPT4o:
             result = self.agent_with_trimmed_history.with_config(
                 configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text})[
                 'output']
-        if self.model_name == LLMModel.GPT3DOT5:
+        if self.model_name == LLMModel.GPT4omini:
             result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpt3dot5", "session_id": self.session_id}).invoke({"input": text})[
+                configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text})[
                 'output']
         tableFormat = r"(?s)\:.*\|"
         tableInResult = re.search(tableFormat, result)

@@ -53,96 +53,6 @@ def rag_switch(value):
 
 
 @app.callback(
-    [Output('left-column', 'style'),
-     Output('menu-hide-chatbox', 'children'),
-     Output('left-column', 'width', allow_duplicate=True),
-     Output('middle-column', 'width', allow_duplicate=True),
-     Output('right-column', 'width', allow_duplicate=True),
-     ],
-    [Input('menu-hide-chatbox', 'n_clicks')],
-    [State('menu-hide-chatbox', 'children')],
-    prevent_initial_call=True
-)
-def hide_chatbox(n_clicks, label):
-    if label == 'Show ChatBox':
-        return {'display': 'block'}, "Hide ChatBox", 3, 6, 3
-    else:
-        return {'display': 'none'}, "Show ChatBox", 0, 9, 3
-
-
-@app.callback(
-    [Output('middle-column', 'style'),
-     Output('menu-hide-dataview', 'children'),
-     Output('left-column', 'width', allow_duplicate=True),
-     Output('middle-column', 'width', allow_duplicate=True),
-     Output('right-column', 'width', allow_duplicate=True),
-     ],
-    [Input('menu-hide-dataview', 'n_clicks')],
-    [State('menu-hide-dataview', 'children')],
-    prevent_initial_call=True
-)
-def hide_dataviews(n_clicks, label):
-    if label == 'Show Data View':
-        return {'display': 'block'}, "Hide Data View", 3, 6, 3
-    else:
-        return {'display': 'none'}, "Show Data Views", 6, 0, 6
-
-
-@app.callback(
-    [Output('right-column', 'style'),
-     Output('menu-hide-chartview', 'children'),
-     Output('left-column', 'width', allow_duplicate=True),
-     Output('middle-column', 'width', allow_duplicate=True),
-     Output('right-column', 'width', allow_duplicate=True),
-     ],
-    [Input('menu-hide-chartview', 'n_clicks')],
-    [State('menu-hide-chartview', 'children')],
-    prevent_initial_call=True
-)
-def hide_chartview(n_clicks, label):
-    if label == 'Show Chart View':
-        return {'display': 'block'}, "Hide Chart View", 3, 6, 3
-    else:
-        return {'display': 'none'}, "Show Chart View", 3, 9, 0
-
-
-@app.callback(
-    [Output('menu-model-gpt3dot5', 'children', allow_duplicate=True),
-     Output('menu-model-gpt4', 'children', allow_duplicate=True),
-     Output('menu-model-gpt4o', 'children', allow_duplicate=True)],
-    Input('menu-model-gpt3dot5', 'n_clicks'),
-    prevent_initial_call=True
-)
-def change_llm_model_gpt3dot5(n_clicks):
-    global_vars.agent.set_llm_model('gpt3dot5')
-    return "GPT-3.5 ✔", "GPT-4", "GPT-4o"
-
-
-@app.callback(
-    [Output('menu-model-gpt3dot5', 'children', allow_duplicate=True),
-     Output('menu-model-gpt4', 'children', allow_duplicate=True),
-     Output('menu-model-gpt4o', 'children', allow_duplicate=True)],
-    Input('menu-model-gpt4', 'n_clicks'),
-    prevent_initial_call=True
-)
-def change_llm_model_gpt3dot5(n_clicks):
-    global_vars.agent.set_llm_model('gpt4')
-    return "GPT-3.5", "GPT-4 ✔", "GPT-4o"
-
-
-@app.callback(
-    [Output('menu-model-gpt3dot5', 'children', allow_duplicate=True),
-     Output('menu-model-gpt4', 'children', allow_duplicate=True),
-     Output('menu-model-gpt4o', 'children', allow_duplicate=True)],
-    Input('menu-model-gpt4o', 'n_clicks'),
-    prevent_initial_call=True
-)
-def change_llm_model_gpt3dot5(n_clicks):
-    global_vars.agent.set_llm_model('gpt4o')
-    return "GPT-3.5", "GPT-4", "GPT-4o ✔"
-
-
-@app.callback(
     Output('RAG-area', 'children'),
     Input('upload-rag', 'contents'),
     State('upload-rag', 'filename'),
@@ -206,76 +116,121 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
 
 
 @app.callback(
-    Output('table-overview', 'data'),
-    Output('column-names-dropdown', 'options'),
-    Output('error-file-format', 'is_open'),
-    Output('bias-report','children'),
-    Output('table-overview','style_data_conditional'),
-    Output('multi_dist_plot','src'),
-    Output('bias-overview', 'data'),
-    Input('upload-data', 'contents'),
-    State('upload-data', 'filename'),
-    Input('show-rows-button', 'n_clicks'),
-    State('input-start-row', 'value'),
-    State('input-end-row', 'value'),
+    [Output('table-overview', 'data'),
+     Output('table-overview', 'columns'),
+     Output('column-names-dropdown', 'options'),
+     Output('error-file-format', 'is_open'),
+     Output('bias-report', 'children'),
+     Output('table-overview', 'style_data_conditional'),
+     Output('multi_dist_plot', 'src'),
+     Output('bias-overview', 'data'),
+     Output('dataset-name', 'children')],
+    [Input('upload-data', 'contents'),
+     Input('show-rows-button', 'n_clicks')],
+    [State('upload-data', 'filename'),
+     State('input-start-row', 'value'),
+     State('input-end-row', 'value')],
     prevent_initial_call=True
 )
-def import_data_and_update_table(list_of_contents, list_of_names, click, start_row, end_row):
+def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, start_row, end_row):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
-    styles = []
+
     if triggered_id == 'upload-data':
+        if not list_of_contents or not list_of_names:
+            return [], [], [], False, [], [], "", [], ""
 
-        if list_of_contents is not None:
-            # Assuming that only the first file is processed
-            contents = list_of_contents[0]
-            filename = list_of_names[0]
-            global_vars.file_name = filename
-            global_vars.dialog.append("DATASET: " + filename + '\n')
-            global_vars.dialog.append("=" * 100 + '\n')
-            # Decode the contents of the file
-            content_type, content_string = contents.split(',')
-            decoded = base64.b64decode(content_string)
-            bias_identification = None
+        # Process the first file only
+        contents = list_of_contents[0]
+        filename = list_of_names[0]
 
-            if 'csv' in filename:
-                # Assume that the user uploaded a CSV
-                raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
-                global_vars.df = DataWrangler.fill_missing_values(raw_data)
-                #global_vars.df = DataWrangler.drop_rows_with_missing_values(raw_data)
-                global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name)
-                sensitive_attrs = identify_sensitive_attributes(global_vars.df,"decile_score")
-                for attr in sensitive_attrs:
-                    styles.append({
-                        'if': {'column_id': attr},
-                        'backgroundColor': 'tomato',
-                        'color': 'white'
-                    })
-                bias_identification = " ".join(sensitive_attrs)
-                draw_multi_dist_plot(global_vars.df,"decile_score",sensitive_attrs)
-                bias_report = calculate_demographic_report(global_vars.df,"decile_score",["sex","race"])
-            else:
-                return (), [], True, [], styles, "", ()
-            # Return the data in a format that Dash DataTable can use
+        content_type, content_string = contents.split(',')
+        decoded = base64.b64decode(content_string)
 
-            return (global_vars.df.head(15).to_dict('records'), [col for col in global_vars.df.columns], False,
-                    html.Div([html.H5("Identified sensitive attributes"),html.P([html.B(f"{bias_identification}. ", style={'color': 'tomato'}),
-                                                                                f"When making decisions, it should be cautious to use these attributes."])]), styles,
-                                                                                f"../assets/{global_vars.file_name}_mult_dist_plot.png", bias_report.to_dict('records'))
+        if 'csv' not in filename:
+            return [], [], True, [], [], "", [], ""
 
-        else:
-            return (), [], False, [], styles, "", ()  # If no file was uploaded
+        raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+        global_vars.file_name = filename
+        global_vars.dialog.append("DATASET: " + filename + '\n')
+        global_vars.dialog.append("=" * 100 + '\n')
+        global_vars.df = raw_data  #DataWrangler.fill_missing_values(raw_data)
+        global_vars.agent = DatasetAgent(global_vars.df, file_name=filename)
 
-    else:
+        sensitive_attrs = identify_sensitive_attributes(global_vars.df, "decile_score")
+        styles = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in
+                  sensitive_attrs]
+        bias_identification = " ".join(sensitive_attrs)
+
+        draw_multi_dist_plot(global_vars.df, "decile_score", sensitive_attrs)
+        bias_stats = calculate_demographic_report(global_vars.df, "decile_score", ["sex", "race"])
+
+        bias_report_content = html.Div([
+            html.H5("Identified sensitive attributes"),
+            html.P([
+                html.B(f"{bias_identification}. ", style={'color': 'tomato'}),
+                "When making decisions, it should be cautious to use these attributes."
+            ])
+        ])
+        return (
+            global_vars.df.head(15).to_dict('records'),
+            [{"name": col, "id": col,'deletable': True, 'renamable': True} for col in global_vars.df.columns],
+            [{'label': col, 'value': col} for col in global_vars.df.columns],
+            False,
+            bias_report_content,
+            styles,
+            f"../assets/{filename}_mult_dist_plot.png",
+            bias_stats.to_dict('records'),
+            f"Dataset: {filename} (maximum row number:{len(global_vars.df)})"
+        )
+
+    elif triggered_id == 'show-rows-button':
+        if global_vars.df is None:
+            return [], [], [], False, [], [], "", [], ""
+
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
 
-        # Check that start_row and end_row are within bounds and in the correct order
         if start_row < 0 or end_row > len(global_vars.df) or start_row >= end_row:
-            return [], (), False
-        # Slicing the DataFrame
-        xdf = global_vars.df.iloc[start_row:end_row]
-        return xdf.to_dict('records'), [col for col in global_vars.df.columns], False, [], styles
+            return (
+                [],
+                [{"name": col, "id": col,'deletable': True, 'renamable': True} for col in global_vars.df.columns],
+                [{'label': col, 'value': col} for col in global_vars.df.columns],
+                False,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update
+            )
 
+        xdf = global_vars.df.iloc[start_row:end_row]
+        return (
+            xdf.to_dict('records'),
+            [{"name": col, "id": col,'deletable': True, 'renamable': True} for col in global_vars.df.columns],
+            [{'label': col, 'value': col} for col in global_vars.df.columns],
+            False,
+            dash.no_update,
+            dash.no_update,
+            dash.no_update,
+            dash.no_update,
+            dash.no_update
+        )
+
+    return [], [], [], False, [], [], "", [], ""
+
+@app.callback(
+    Output('download-data-csv', 'data'),
+    [Input('save-data-button', 'n_clicks')],
+    [State('table-overview', 'data')]
+)
+def download_csv(n_clicks, rows):
+    if n_clicks > 0:
+        # Convert the data to a DataFrame and generate the CSV file
+        df = pd.DataFrame(rows)
+        now = datetime.datetime.now()
+        formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
+        return dcc.send_data_frame(df.to_csv, f'{formatted_date_time}_edited_{global_vars.file_name}')
+    return None
 
 @app.callback(
     Output('bar-chart', 'figure'),
@@ -304,30 +259,13 @@ def update_graph(selected_column):
     return bar, pie
 
 
-# @app.callback(
-#     Output('query-area', 'value'),
-#     Input('send-button', 'n_clicks'),
-#     State('query-input', 'value'),
-#     State('query-area', 'value'),
-#     prevent_initial_call=True
-# )
-# def update_output(n_clicks,input_text, existing_text, ):
-#     if n_clicks is None:
-#         return ""  # If the button hasn't been clicked, do nothing
-#     if df is None:
-#         return "Please load a dataset first."
-#     if input_text is None or input_text == '':
-#         return "Please enter a valid query."
-#     response = 'LLM: '+query_llm(input_text)
-#     new_text = (existing_text if existing_text else '') + "\n"+"Me: "+input_text+"\n"+response
-#     return new_text
-
 # Update the llm chatbox
 @app.callback(
     [Output("query-area", "children"),
      Output("error-query", "is_open"),
      Output('llm-media-area', 'children'),
-     Output("chat-update-trigger", "data")],
+     Output("chat-update-trigger", "data"),
+     Output("query-input", "value"),],
     [Input('send-button', 'n_clicks'),
      Input('query-input', 'n_submit')],
     [State('query-input', 'value'),
@@ -336,7 +274,7 @@ def update_graph(selected_column):
 )
 def update_messages(n_clicks, n_submit, input_text, query_records):
     if n_clicks is None or input_text is None or global_vars.df is None:
-        return query_records, True, None, dash.no_update
+        return query_records, True, None, dash.no_update, ""
     new_user_message = html.Div(input_text + '\n', className="user-msg")
     global_vars.dialog.append("\nUSER: " + input_text + '\n')
     if not query_records:
@@ -345,13 +283,13 @@ def update_messages(n_clicks, n_submit, input_text, query_records):
         input_text = global_vars.rag.invoke(input_text)
         global_vars.rag_prompt = input_text
     output_text, media = query_llm(input_text)
-    response = 'LLM: ' + output_text + '\n'
+    response = 'Assistant: ' + output_text + '\n'
     global_vars.dialog.append("\n" + response)
     # Simulate a response from the system
     new_response_message = dcc.Markdown(response, className="llm-msg")
     query_records.append(new_user_message)
     query_records.append(new_response_message)
-    return query_records, False, media, time.time()
+    return query_records, False, media, time.time(), ""
 
 
 @app.callback(

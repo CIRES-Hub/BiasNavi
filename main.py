@@ -1,10 +1,8 @@
 from UI.app import app, server
-from models.users import db
-from models import *
-from UI.callback import callbacks, client_callbacks
+from db_models.users import db
+from db_models import *
+from UI.callback import callbacks, client_callbacks,menu_callbacks
 import sys
-from dash import dcc, html, Input, Output
-import dash
 
 if __name__ == '__main__':
     # Init tables

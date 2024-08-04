@@ -64,7 +64,7 @@ def pearson(sr_a: pd.Series, sr_b: pd.Series) -> float:
 
 def r2_mcfadden(sr_a: pd.Series, sr_b: pd.Series) -> float:
     """Metric used for categorical-numerical continuous. It trains two multinomial logistic
-    regression models on the data, one using the numerical series as the feature and the other
+    regression db_models on the data, one using the numerical series as the feature and the other
     only using the intercept term as the input. The categorical column is used for the target
     labels. It then calculates the null and the model likelihoods based on them, which are
     used to compute the pseudo-R2 McFadden score, which is used as a correlation coefficient.

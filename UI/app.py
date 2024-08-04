@@ -4,7 +4,7 @@ import configparser
 import sys
 import os
 from flask import Flask, redirect
-from models.users import db, User
+from db_models.users import db, User
 from flask_login import LoginManager, current_user
 from dash import Input, Output, dcc, html
 from uuid import UUID

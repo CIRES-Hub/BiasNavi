@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID, ARRAY
 import uuid
 import sys
 from flask_login import UserMixin, login_user
-from models.databases import db
+from db_models.databases import db
 
 
 class User(db.Model, UserMixin):
