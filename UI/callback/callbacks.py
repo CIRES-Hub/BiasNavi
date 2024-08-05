@@ -1,8 +1,8 @@
 import time
 import dash
 from UI.app import app
-from models.users import User
-from models.databases import db
+from db_models.users import User
+from db_models.databases import db
 from dash.dependencies import Input, Output, State
 import plotly.express as px
 import base64
@@ -278,7 +278,7 @@ def update_graph(selected_column):
      Output('llm-media-area', 'children'),
      Output("chat-update-trigger", "data"),
      Output("next-suggested-questions", "children"),
-     Output("query-input", "value"),],
+     Output("query-input", "value")],
     [Input('send-button', 'n_clicks'),
      Input('query-input', 'n_submit'),
      Input({"type": 'next-suggested-question', "index": ALL}, 'n_clicks'),],
@@ -290,7 +290,7 @@ def update_graph(selected_column):
 )
 def update_messages(n_clicks, n_submit, input_3, input_text, query_records, suggested_questions):
     if ((n_clicks is None or input_text is None) and input_3 is None) or global_vars.df is None:
-        return query_records, True, None, dash.no_update, suggested_questions
+        return query_records, True, None, dash.no_update, suggested_questions, ""
     trigger = ctx.triggered_id
     query = ''
     if not isinstance(trigger, str) and 'next-suggested-question' in trigger.type:
@@ -323,7 +323,7 @@ def update_messages(n_clicks, n_submit, input_3, input_text, query_records, sugg
     query_records.append(new_user_message)
     query_records.append(new_response_message)
     print(suggested_questions)
-    return query_records, False, media, time.time(), suggested_questions
+    return query_records, False, media, time.time(), suggested_questions, ""
 
 
 @app.callback(

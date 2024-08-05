@@ -1,6 +1,7 @@
 from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 from db_models.conversation import Conversation
+from db_models.users import User
 from dash import dcc, html, dash_table, callback, Input, Output, State, MATCH, ALL
 import dash_daq as daq
 import dash
