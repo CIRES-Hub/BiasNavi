@@ -211,7 +211,7 @@
 }
 
 .user-msg{
-    text-align: justify;
+    text-align: right;
     padding: 10px;
     background-color: darkslateblue;
     color: white;
@@ -225,7 +225,7 @@
 }
 
 .llm-msg{
-    text-align: justify;
+    text-align: left;
     padding: 10px;
     background-color: #f5f4ed;
     color: black;
@@ -271,4 +271,147 @@
 .figure-modal {
     width: 80vw !important; 
     max-width: none !important;
+}
+
+.next-suggested-question {
+    display: block;
+    padding: 10px;
+    background: #f1e3ff;
+    box-shadow: none;
+    border-radius: 20px;
+    text-align: justify;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+.chat-history-card {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.chat-history-card .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.chat-message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.user-message {
+    background-color: #e6f2ff;
+    margin-left: 20%;
+    text-align: right;
+    word-wrap: break-word;
+}
+
+.assistant-message {
+    background-color: #f0f0f0;
+    margin-right: 20%;
+    text-align:left;
+    word-wrap: break-word;
+    width: 100%;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.8em;
+    color: #666;
+}
+
+.message-role {
+    font-weight: bold;
+}
+
+.message-time {
+    font-style: italic;
+}
+
+.message-content {
+    word-wrap: break-word;
+}
+
+.profile-area {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.profile-avatar {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: #f0f0f0;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+}
+
+.profile-header {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-name {
+    margin: 0;
+    font-weight: bold;
+    font-size: 1rem;
+    color: #000000;
+}
+
+.profile-title {
+    margin: 0;
+    color: #666666;
+    font-size: 0.875rem;
+}
+
+.profile-more-info-button {
+    background-color: #0a66c2;
+    color: #ffffff;
+    border: none;
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    width: 100%;  /* Changed from 'align-self': 'flex-start' */
+    margin-top: 8px;
+}
+
+.edit-icon {
+    cursor: pointer;
+    color: #0a66c2;
+    font-size: 0.8rem;
+    vertical-align: middle;
+}
+
+.scrollable-conversation-body {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+.scrollable-conversation-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollable-conversation-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.scrollable-conversation-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.scrollable-conversation-body::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }

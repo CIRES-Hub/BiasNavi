@@ -35,6 +35,14 @@ layout = dbc.Container(
 
                         dbc.Form([
                             dbc.Row([
+                                dbc.Label("Username",
+                                          className="font-weight-bold"),
+                                html.Div(
+                                    dbc.Input(
+                                        id="username-input", placeholder="Enter your username", style=custom_style["input-field"]), style=custom_style["input-wrapper"]
+                                ),
+                            ], className="mb-3"),
+                            dbc.Row([
                                 dbc.Label("Professional Role",
                                           className="font-weight-bold"),
                                 html.Div(
@@ -137,13 +145,14 @@ layout = dbc.Container(
     Output("survey-result", "children"),
     Input("submit-button", "n_clicks"),
     Input("skip-button", "n_clicks"),
+    State("username-input", "value"),
     State("professional-role-input", "value"),
     State("industry-sector-dropdown", "value"),
     State("expertise-level-dropdown", "value"),
     State("areas-of-interest-checklist", "value"),
     prevent_initial_call=True
 )
-def update_survey_info(submit_clicks, skip_clicks, professional_role, industry_sector, expertise_level, areas_of_interest):
+def update_survey_info(submit_clicks, skip_clicks, user_name, professional_role, industry_sector, expertise_level, areas_of_interest):
     ctx = callback_context
     if not ctx.triggered:
         raise PreventUpdate
@@ -159,6 +168,7 @@ def update_survey_info(submit_clicks, skip_clicks, professional_role, industry_s
             user = User.query.get(current_user.id)
 
             # Update and commit
+            user.username = user_name
             user.professional_role = professional_role
             user.industry_sector = industry_sector
             user.expertise_level = expertise_level

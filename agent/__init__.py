@@ -18,6 +18,7 @@ from db_models.conversation import Conversation
 from db_models.system_log import SystemLogMessage
 import re
 
+
 class ConversationFormat(str, Enum):
     FULL_JSON = 'Full JSON'
     SIMPLIFIED_JSON = 'Simplified JSON'
@@ -76,7 +77,7 @@ class DatasetAgent:
             execution_error=self.execution_error,
             agent_type=AgentType.OPENAI_FUNCTIONS,
             agent_executor_kwargs={"handle_parsing_errors": True},
-            prefix="You has already been provided with a dataframe df, all queries should be about that df. \
+            prefix="You have already been provided with a dataframe df, all queries should be about that df. \
                 Do not create dataframe. Do not read from any other sources. Do not use pd.read_clipboard. \
                 If your response includes code, it will be executed, so you should define the code clearly. \
                 Code in response will be split by \n so it should only include \n at the end of each line"
@@ -93,8 +94,8 @@ class DatasetAgent:
         self.file_name = file_name
 
         self.agent_with_trimmed_history = (
-                RunnablePassthrough.assign(messages_trimmed=self.trim_messages)
-                | self.agent_with_chat_history
+            RunnablePassthrough.assign(messages_trimmed=self.trim_messages)
+            | self.agent_with_chat_history
         )
 
     def trim_messages(self, chain_input):
@@ -122,15 +123,16 @@ class DatasetAgent:
             result = self.agent_with_trimmed_history.with_config(
                 configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text})[
                 'output']
-        tableFormat = r"(?s)\:.*\|"
-        tableInResult = re.search(tableFormat, result)
-        if (tableInResult):
-            startIdx = tableInResult.start()
-            endIdx = tableInResult.end()
-            result = result[:startIdx] + result[endIdx:]
+
+         # Improve table removal logic
+        table_pattern = r'(?s)\|.*?\|\n\|[-:]+\|\n(.*?)\n\n'
+        result = re.sub(table_pattern, '', result)
+
+        # Remove any remaining table-like structures
+        result = re.sub(r'(?m)^\s*\|.*\|$', '', result)
 
         if (len(self.execution_error) > 0):
-            result = f"""There was an error processing your request. Please provide a clearer query and try again. 
+            result = f"""There was an error processing your request. Please provide a clearer query and try again.
                     (Error message: {str(self.execution_error[0])})"""
         if (len(self.elem_queue) > 0):
             return result, self.elem_queue
@@ -173,12 +175,14 @@ class DatasetAgent:
         history = "DATASET: " + raw_history['dataset'] + '\n'
         history += "=" * 100 + '\n'
         for message in raw_history['messages']:
-            history += self._get_agent_type(message['type']).upper() + ": " + message['data']['content'] + '\n'
+            history += self._get_agent_type(message['type']).upper(
+            ) + ": " + message['data']['content'] + '\n'
         return history
 
     def get_history(self, c_format):
         if not isinstance(c_format, ConversationFormat):
-            raise ValueError(f'Only {[v.value for v in ConversationFormat]} are allowed.')
+            raise ValueError(
+                f'Only {[v.value for v in ConversationFormat]} are allowed.')
         history = None
         extension = None
         if c_format == ConversationFormat.FULL_JSON:
@@ -201,7 +205,8 @@ class DatasetAgent:
         if not os.path.exists(path):
             os.makedirs(path)
         if persistence_type == PersistenceType.DATABASE and c_format == ConversationFormat.TEXT:
-            raise TypeError("Only JSON-like conversations can be written to the database")
+            raise TypeError(
+                "Only JSON-like conversations can be written to the database")
         history, extension = self.get_history(c_format=c_format)
         if persistence_type == PersistenceType.FILE:
             with open(os.path.join(path, str(self.session_id) + extension), 'w') as f:
@@ -218,4 +223,5 @@ class DatasetAgent:
                    c_format: ConversationFormat = ConversationFormat.SIMPLIFIED_JSON,
                    path: str = 'histories'):
         self.history.add_message(SystemLogMessage(content=message))
-        self.persist_history(persistence_type=persistence_type, c_format=c_format, path=path)
+        self.persist_history(persistence_type=persistence_type,
+                             c_format=c_format, path=path)

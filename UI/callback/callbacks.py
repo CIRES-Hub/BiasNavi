@@ -1,12 +1,14 @@
 import time
 import dash
 from UI.app import app
+from models.users import User
+from models.databases import db
 from dash.dependencies import Input, Output, State
 import plotly.express as px
 import base64
 from agent import ConversationFormat, DatasetAgent
 import datetime
-from dash import callback_context, MATCH
+from dash import callback_context, MATCH, ALL,ctx
 import io
 from RAG import RAG
 from dash import dcc, html, dash_table
@@ -15,6 +17,9 @@ from UI.variable import global_vars
 from flask_login import current_user
 from UI.functions import *
 from utils.data_wrangler import DataWrangler
+import dash_bootstrap_components as dbc
+from flask_login import current_user
+from dash.exceptions import PreventUpdate
 
 
 @app.callback(
@@ -33,7 +38,8 @@ def func(n_clicks, format):
     # return dict(content="".join(global_vars.dialog), filename=f"query-history-{formatted_date_time}.txt")
     if (global_vars.agent is None):
         return None, True
-    history, extension = global_vars.agent.get_history(c_format=ConversationFormat(format))
+    history, extension = global_vars.agent.get_history(
+        c_format=ConversationFormat(format))
     return dict(content=history, filename=f"query-history-{formatted_date_time}" + extension), False
 
 
@@ -153,8 +159,14 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
         global_vars.file_name = filename
         global_vars.dialog.append("DATASET: " + filename + '\n')
         global_vars.dialog.append("=" * 100 + '\n')
+        global_vars.df = DataWrangler.fill_missing_values(raw_data)
         global_vars.df = raw_data  #DataWrangler.fill_missing_values(raw_data)
         global_vars.agent = DatasetAgent(global_vars.df, file_name=filename)
+        if  all([current_user.professional_role, current_user.industry_sector, current_user.expertise_level]):
+            query_llm('. \n '.join([f'my professional role is {current_user.professional_role}' if current_user.professional_role else '',
+                        f'I am working in {current_user.industry_sector} industry' if current_user.industry_sector else '',
+                        f'my level of expertise in data analysis is {current_user.expertise_level}' if current_user.expertise_level else ''
+                    ]))
 
         sensitive_attrs = identify_sensitive_attributes(global_vars.df, "decile_score")
         styles = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in
@@ -265,31 +277,53 @@ def update_graph(selected_column):
      Output("error-query", "is_open"),
      Output('llm-media-area', 'children'),
      Output("chat-update-trigger", "data"),
+     Output("next-suggested-questions", "children"),
      Output("query-input", "value"),],
     [Input('send-button', 'n_clicks'),
-     Input('query-input', 'n_submit')],
+     Input('query-input', 'n_submit'),
+     Input({"type": 'next-suggested-question', "index": ALL}, 'n_clicks'),],
     [State('query-input', 'value'),
-     State('query-area', 'children')],
-    prevent_initial_input=True
+     State('query-area', 'children'),
+     State('next-suggested-questions', 'children')],
+    prevent_initial_input=True,
+    prevent_initial_call=True
 )
-def update_messages(n_clicks, n_submit, input_text, query_records):
-    if n_clicks is None or input_text is None or global_vars.df is None:
-        return query_records, True, None, dash.no_update, ""
-    new_user_message = html.Div(input_text + '\n', className="user-msg")
-    global_vars.dialog.append("\nUSER: " + input_text + '\n')
+def update_messages(n_clicks, n_submit, input_3, input_text, query_records, suggested_questions):
+    if ((n_clicks is None or input_text is None) and input_3 is None) or global_vars.df is None:
+        return query_records, True, None, dash.no_update, suggested_questions
+    trigger = ctx.triggered_id
+    query = ''
+    if not isinstance(trigger, str) and 'next-suggested-question' in trigger.type:
+        query = global_vars.suggested_questions[int(trigger.index[-1])]
+    else:
+        query = input_text
+    new_user_message = html.Div(query + '\n', className="user-msg")
+    global_vars.dialog.append("\nUSER: " + query + '\n')
+    suggested_questions = []
     if not query_records:
         query_records = []
     if global_vars.rag and global_vars.use_rag:
-        input_text = global_vars.rag.invoke(input_text)
-        global_vars.rag_prompt = input_text
-    output_text, media = query_llm(input_text)
+        input_text = global_vars.rag.invoke(query)
+        global_vars.rag_prompt = query
+    output_text, media, new_suggested_questions = query_llm(query)
+
+    if new_suggested_questions is not None:
+        for i  in range(len(new_suggested_questions)):
+            if new_suggested_questions[i]:
+                new_suggested_question = html.Div(dbc.CardBody([
+                    html.P(" Suggestion", style={'font-weight': 'bold', "margin-bottom": "0px"}),
+                    html.P(new_suggested_questions[i], style={"margin-bottom": "0px"})],
+                    style={"padding": 0}), className="next-suggested-question", id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)
+                suggested_questions.append(new_suggested_question)
+
     response = 'Assistant: ' + output_text + '\n'
     global_vars.dialog.append("\n" + response)
     # Simulate a response from the system
     new_response_message = dcc.Markdown(response, className="llm-msg")
     query_records.append(new_user_message)
     query_records.append(new_response_message)
-    return query_records, False, media, time.time(), ""
+    print(suggested_questions)
+    return query_records, False, media, time.time(), suggested_questions
 
 
 @app.callback(
@@ -305,13 +339,12 @@ def show_figure_modal(n_clicks, id):
 
 
 def query_llm(query):
-    # prompt = """
-    #                 Answer this question step by step and generate a output with details and inference:
-    #         """ + query
-    print(query)
     response, media = global_vars.agent.run(query)
+    response_suggested_questions, _ = global_vars.agent.run("Generate 2 relevant follow-up questions in format 1.question 1, 2. question 2")
+    suggested_questions = parse_suggested_questions(response_suggested_questions)
     global_vars.agent.persist_history(user_id=str(current_user.id))
-    return response, media
+    global_vars.suggested_questions = suggested_questions
+    return response, media, suggested_questions
 
 # @app.callback(
 #     Output('query-output', 'children'),
@@ -322,3 +355,41 @@ def query_llm(query):
 #     # Process query and update output here
 #     # ...
 #     pass
+
+
+# Update Username
+@app.callback(
+    Output("edit-username-modal", "is_open"),
+    Output("new-username-input", "value"),
+    Input("edit-username-icon", "n_clicks"),
+    Input("cancel-username-edit", "n_clicks"),
+    Input("save-username-button", "n_clicks"),
+    State("edit-username-modal", "is_open"),
+    prevent_initial_call=True
+)
+def toggle_username_modal(edit_clicks, cancel_clicks, save_clicks, is_open):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return is_open, ""
+    else:
+        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        if button_id == "edit-username-icon":
+            return True, current_user.username or ""
+        elif button_id in ["cancel-username-edit", "save-username-button"]:
+            return False, ""
+    return is_open, ""
+
+
+@app.callback(
+    Output("username-edit-success", "data"),
+    Input("save-username-button", "n_clicks"),
+    State("new-username-input", "value"),
+    prevent_initial_call=True
+)
+def save_new_username(n_clicks, new_username):
+    if n_clicks > 0 and new_username:
+        user = User.query.get(current_user.id)
+        user.username = new_username
+        db.session.commit()
+        return True
+    return False
