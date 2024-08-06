@@ -10,6 +10,7 @@ class User(db.Model, UserMixin):
     # primary keys are required by SQLAlchemy
     __tablename__ = 'Users'
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username = db.Column(db.String(255))
     email = db.Column(db.String(100), unique=True)
     password_hash = db.Column(db.String(500))
     is_active = db.Column(db.Boolean, default=True)
