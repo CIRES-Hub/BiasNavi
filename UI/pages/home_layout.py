@@ -232,34 +232,47 @@ def layout():
                                              style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
                                              style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
                                                            'fontWeight': 'bold'
-                                                           }, style_table={'overflowX': 'auto'})],style={"margin": "15px","marginLeft":"0px"}),
-                        html.Div(id="bias-report",className="bias-report-area",children=[]),
-                        html.Img(id="multi_dist_plot",style={'maxWidth': '100%', 'height': 'auto'}),
-                            html.Div(children=[
-                                dash_table.DataTable(id='bias-overview', page_size=25, page_action='native',
-                                                     style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
-                                                     style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
-                                                                   'fontWeight': 'bold'
-                                                                   }, style_table={'overflowX': 'auto'})],
-                                style={"margin": "15px", "marginLeft":"0px"}),
-                        ],
-                            overlay_style={
-                                "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
-                            custom_spinner=html.H2(
-                                ["Loading data and identifying bias...", dbc.Spinner(color="primary")]),
+                                                           }, style_table={'overflowX': 'auto'})],style={"margin": "15px","marginLeft":"0px"}),],
+                        overlay_style={
+                            "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
+                        custom_spinner=html.H2(
+                            ["Loading data...", dbc.Spinner(color="primary")]),
                         ),
                     ]),
-                    dbc.Card(body=True, children=[
-                        # dcc.Tabs(id='tabs-figures', value='single', children=[
-                        #     dcc.Tab(label='Tab one', value='single'),
-                        #     dcc.Tab(label='Tab two', value='pair'),
-                        # ]),
-                        # html.Div(id='tabs-output'),
-                        "Select the attribute to visualize:\n",
-                        dcc.Dropdown(id='column-names-dropdown'),
-                        dcc.Graph(id='bar-chart'),
-                        dcc.Graph(id='pie-chart')
-                    ], className='visualization')
+                    dbc.Card(body=True, className="card", children=[
+                        dcc.Loading(id="report-loading", children=[html.Div([
+                        html.H2("Bias Report",style={'color': 'darkred','marginBottom': '20px'}),
+                        html.Div(children=[html.P(" Choose a column as the target attribute to generate bias report."),
+                                           dcc.Dropdown(id='column-names-dropdown')],style={'marginBottom': '20px'}),
+                        html.Div(id="bias-report", className="bias-report-area", children=[]),
+                        html.Div(id='plot-exception-msg'),
+                        html.Div(id='graphs-container'),
+                        html.Div(children=[
+                            dash_table.DataTable(id='bias-overview', page_size=25, page_action='native',
+                                                 style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
+                                                 style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
+                                                               'fontWeight': 'bold'
+                                                               }, style_table={'overflowX': 'auto'})],
+                            style={"margin": "15px", "marginLeft": "0px"}),
+                            ])
+                        ],
+                        overlay_style={
+                            "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
+                        custom_spinner=html.H2(
+                            ["Generating report...", dbc.Spinner(color="primary")]),
+                        ),
+                    ]),
+                    # dbc.Card(body=True, children=[
+                    #     # dcc.Tabs(id='tabs-figures', value='single', children=[
+                    #     #     dcc.Tab(label='Tab one', value='single'),
+                    #     #     dcc.Tab(label='Tab two', value='pair'),
+                    #     # ]),
+                    #     # html.Div(id='tabs-output'),
+                    #     "Select the attribute to visualize:\n",
+                    #     dcc.Dropdown(id='column-names-dropdown'),
+                    #     dcc.Graph(id='bar-chart'),
+                    #     dcc.Graph(id='pie-chart')
+                    # ], className='visualization')
                 ]),
 
                 dbc.Col(width=3, id="right-column", children=[
@@ -398,10 +411,10 @@ def update_user_profile(trigger, edit_success):
     return dbc.Card([
         dbc.CardBody([
             dbc.Row([
-                dbc.Col([
-                    html.Img(src='/assets/default-avatar.png',
-                             className='profile-avatar mx-auto d-block',),
-                ], width=12, className='mb-3'),
+                # dbc.Col([
+                #     html.Img(src='/assets/default-avatar.png',
+                #              className='profile-avatar mx-auto d-block',),
+                # ], width=12, className='mb-3'),
                 dbc.Col([
                     html.Div([
                         html.H5(user.username or user.email, id="username-display",
@@ -430,9 +443,8 @@ def update_user_profile(trigger, edit_success):
                     ["More Info ", html.I(
                         className="fas fa-chevron-down", id="more-info-icon")],
                     id="profile-more-info-button",
-                    color="primary",
                     size="sm",
-                    className="w-100"
+                    className="profile-more-info-button"
                 ),
             ], className='align-items-center'),
             dbc.Collapse(

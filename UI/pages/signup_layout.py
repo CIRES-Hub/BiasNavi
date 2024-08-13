@@ -21,14 +21,14 @@ layout = dbc.Container(fluid=True, children=[
                               type="password", className="mb-3"),
                     dbc.Row([
                         dbc.Col(
-                            dbc.Button("Sign Up", id="signup-button",
-                                       color="primary", n_clicks=0, class_name="w-100"),
-                            width=6
-                        ),
-                        dbc.Col(
                             dbc.Button(
                                 "Log in", id="login-button", color="secondary", n_clicks=0, class_name="w-100"),
                             width=6, className="ms-auto"
+                        ),
+                        dbc.Col(
+                            dbc.Button("Sign Up", id="signup-button",
+                                       color="primary", n_clicks=0, class_name="w-100"),
+                            width=6
                         )
                     ], className="d-flex justify-content-between"),
                     html.Div(id="auth-result", className="mt-3"),

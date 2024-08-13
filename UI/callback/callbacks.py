@@ -8,7 +8,7 @@ import plotly.express as px
 import base64
 from agent import ConversationFormat, DatasetAgent
 import datetime
-from dash import callback_context, MATCH, ALL,ctx
+from dash import callback_context, MATCH, ALL, ctx
 import io
 from RAG import RAG
 from dash import dcc, html, dash_table
@@ -126,10 +126,6 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
      Output('table-overview', 'columns'),
      Output('column-names-dropdown', 'options'),
      Output('error-file-format', 'is_open'),
-     Output('bias-report', 'children'),
-     Output('table-overview', 'style_data_conditional'),
-     Output('multi_dist_plot', 'src'),
-     Output('bias-overview', 'data'),
      Output('dataset-name', 'children')],
     [Input('upload-data', 'contents'),
      Input('show-rows-button', 'n_clicks')],
@@ -143,7 +139,7 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
 
     if triggered_id == 'upload-data':
         if not list_of_contents or not list_of_names:
-            return [], [], [], False, [], [], "", [], ""
+            return [], [], [], False, ""
 
         # Process the first file only
         contents = list_of_contents[0]
@@ -153,7 +149,7 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], True, [], [], "", [], ""
+            return [], [], [], False, ""
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -162,42 +158,25 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
         global_vars.df = DataWrangler.fill_missing_values(raw_data)
         global_vars.df = raw_data  #DataWrangler.fill_missing_values(raw_data)
         global_vars.agent = DatasetAgent(global_vars.df, file_name=filename)
-        if  all([current_user.professional_role, current_user.industry_sector, current_user.expertise_level]):
-            query_llm('. \n '.join([f'my professional role is {current_user.professional_role}' if current_user.professional_role else '',
-                        f'I am working in {current_user.industry_sector} industry' if current_user.industry_sector else '',
-                        f'my level of expertise in data analysis is {current_user.expertise_level}' if current_user.expertise_level else ''
-                    ]))
+        if all([current_user.professional_role, current_user.industry_sector, current_user.expertise_level]):
+            query_llm('. \n '.join(
+                [f'my professional role is {current_user.professional_role}' if current_user.professional_role else '',
+                 f'I am working in {current_user.industry_sector} industry' if current_user.industry_sector else '',
+                 f'my level of expertise in data analysis is {current_user.expertise_level}' if current_user.expertise_level else ''
+                 ]))
 
-        sensitive_attrs = identify_sensitive_attributes(global_vars.df, "decile_score")
-        styles = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in
-                  sensitive_attrs]
-        bias_identification = " ".join(sensitive_attrs)
 
-        draw_multi_dist_plot(global_vars.df, "decile_score", sensitive_attrs)
-        bias_stats = calculate_demographic_report(global_vars.df, "decile_score", ["sex", "race"])
-
-        bias_report_content = html.Div([
-            html.H5("Identified sensitive attributes"),
-            html.P([
-                html.B(f"{bias_identification}. ", style={'color': 'tomato'}),
-                "When making decisions, it should be cautious to use these attributes."
-            ])
-        ])
         return (
             global_vars.df.head(15).to_dict('records'),
-            [{"name": col, "id": col,'deletable': True, 'renamable': True} for col in global_vars.df.columns],
+            [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             False,
-            bias_report_content,
-            styles,
-            f"../assets/{filename}_mult_dist_plot.png",
-            bias_stats.to_dict('records'),
             f"Dataset: {filename} (maximum row number:{len(global_vars.df)})"
         )
 
     elif triggered_id == 'show-rows-button':
         if global_vars.df is None:
-            return [], [], [], False, [], [], "", [], ""
+            return [], [], [], False, ""
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
@@ -205,30 +184,23 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
         if start_row < 0 or end_row > len(global_vars.df) or start_row >= end_row:
             return (
                 [],
-                [{"name": col, "id": col,'deletable': True, 'renamable': True} for col in global_vars.df.columns],
+                [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
                 [{'label': col, 'value': col} for col in global_vars.df.columns],
                 False,
-                dash.no_update,
-                dash.no_update,
-                dash.no_update,
-                dash.no_update,
                 dash.no_update
             )
 
         xdf = global_vars.df.iloc[start_row:end_row]
         return (
             xdf.to_dict('records'),
-            [{"name": col, "id": col,'deletable': True, 'renamable': True} for col in global_vars.df.columns],
+            [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             False,
-            dash.no_update,
-            dash.no_update,
-            dash.no_update,
-            dash.no_update,
             dash.no_update
         )
 
-    return [], [], [], False, [], [], "", [], ""
+    return [], [], [], False, ""
+
 
 @app.callback(
     Output('download-data-csv', 'data'),
@@ -244,31 +216,32 @@ def download_csv(n_clicks, rows):
         return dcc.send_data_frame(df.to_csv, f'{formatted_date_time}_edited_{global_vars.file_name}')
     return None
 
-@app.callback(
-    Output('bar-chart', 'figure'),
-    Output('pie-chart', 'figure'),
-    Input('column-names-dropdown', 'value'),
-    prevent_initial_call=True
-)
-def update_graph(selected_column):
-    value_counts = global_vars.df[selected_column].value_counts()
-    bar = px.bar(
-        x=value_counts.index,
-        y=value_counts.values,
-        labels={'x': selected_column, 'y': 'Count'},
-        title=f'Bar Chart - Distribution of {selected_column}'
-    )
 
-    value_counts = global_vars.df[selected_column].value_counts().reset_index()
-    value_counts.columns = [selected_column, 'count']
-
-    pie = px.pie(
-        value_counts,
-        names=selected_column,
-        values='count',
-        title=f'Pie Chart - Distribution of {selected_column}'
-    )
-    return bar, pie
+# @app.callback(
+#     Output('bar-chart', 'figure'),
+#     Output('pie-chart', 'figure'),
+#     Input('column-names-dropdown', 'value'),
+#     prevent_initial_call=True
+# )
+# def update_graph(selected_column):
+#     value_counts = global_vars.df[selected_column].value_counts()
+#     bar = px.bar(
+#         x=value_counts.index,
+#         y=value_counts.values,
+#         labels={'x': selected_column, 'y': 'Count'},
+#         title=f'Bar Chart - Distribution of {selected_column}'
+#     )
+#
+#     value_counts = global_vars.df[selected_column].value_counts().reset_index()
+#     value_counts.columns = [selected_column, 'count']
+#
+#     pie = px.pie(
+#         value_counts,
+#         names=selected_column,
+#         values='count',
+#         title=f'Pie Chart - Distribution of {selected_column}'
+#     )
+#     return bar, pie
 
 
 # Update the llm chatbox
@@ -281,7 +254,7 @@ def update_graph(selected_column):
      Output("query-input", "value")],
     [Input('send-button', 'n_clicks'),
      Input('query-input', 'n_submit'),
-     Input({"type": 'next-suggested-question', "index": ALL}, 'n_clicks'),],
+     Input({"type": 'next-suggested-question', "index": ALL}, 'n_clicks'), ],
     [State('query-input', 'value'),
      State('query-area', 'children'),
      State('next-suggested-questions', 'children')],
@@ -308,12 +281,13 @@ def update_messages(n_clicks, n_submit, input_3, input_text, query_records, sugg
     output_text, media, new_suggested_questions = query_llm(query)
 
     if new_suggested_questions is not None:
-        for i  in range(len(new_suggested_questions)):
+        for i in range(len(new_suggested_questions)):
             if new_suggested_questions[i]:
                 new_suggested_question = html.Div(dbc.CardBody([
-                    html.P(" Suggestion", style={'font-weight': 'bold', "margin-bottom": "0px"}),
+                    html.P(f"Suggested Question {i+1}", style={'font-weight': 'bold', "margin-bottom": "0px"}),
                     html.P(new_suggested_questions[i], style={"margin-bottom": "0px"})],
-                    style={"padding": 0}), className="next-suggested-question", id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)
+                    style={"padding": 0}), className="next-suggested-question",
+                    id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)
                 suggested_questions.append(new_suggested_question)
 
     response = 'Assistant: ' + output_text + '\n'
@@ -340,11 +314,13 @@ def show_figure_modal(n_clicks, id):
 
 def query_llm(query):
     response, media = global_vars.agent.run(query)
-    response_suggested_questions, _ = global_vars.agent.run("Generate 2 relevant follow-up questions in format 1.question 1, 2. question 2")
+    response_suggested_questions, _ = global_vars.agent.run(
+        "Generate 2 relevant follow-up questions in format 1.question 1, 2. question 2")
     suggested_questions = parse_suggested_questions(response_suggested_questions)
     global_vars.agent.persist_history(user_id=str(current_user.id))
     global_vars.suggested_questions = suggested_questions
     return response, media, suggested_questions
+
 
 # @app.callback(
 #     Output('query-output', 'children'),
@@ -393,3 +369,58 @@ def save_new_username(n_clicks, new_username):
         db.session.commit()
         return True
     return False
+
+
+@app.callback(
+    Output('graphs-container', 'children'),
+    Output('plot-exception-msg', 'children'),
+    Output('bias-overview', 'data'),
+    Output('bias-report', 'children'),
+    Output('table-overview', 'style_data_conditional'),
+    Input('column-names-dropdown', 'value'),
+    prevent_initial_call=True
+)
+def generate_bias_report(target):
+    if global_vars.df[target].unique().size > 100:
+        return [], html.P(["Warning: The selected target has more than 100 unique values, which cannot be plotted due to heavy computation load."], style={'color': 'red'}),[],"",[]
+
+    sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
+    styles = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in
+              sensitive_attrs]
+    bias_identification = " ".join(sensitive_attrs)
+
+    # draw_multi_dist_plot(global_vars.df, "decile_score", sensitive_attrs)
+
+    bias_report_content = html.Div([
+        html.H5("Identified sensitive attributes"),
+        html.P([
+            html.B(f"{bias_identification}. ", style={'color': 'tomato'}),
+            "When making decisions, it should be cautious to use these attributes."
+        ])
+    ])
+    refined_attrs = []
+    warning = False
+    filtered_attrs = []
+    for attr in sensitive_attrs:
+        if global_vars.df[attr].unique().size < 50:
+            refined_attrs.append(attr)
+        else:
+            warning = True
+            filtered_attrs.append(attr)
+    bias_stats = calculate_demographic_report(global_vars.df, target, refined_attrs)
+    figures = draw_multi_dist_plot(global_vars.df, target, refined_attrs)
+    graphs = []
+    for i, fig in enumerate(figures):
+        # Create a plotly figure (example figure)
+        # fig = go.Figure(data=[go.Scatter(x=[1, 2, 3], y=[i + 1, i + 2, i + 3], mode='lines+markers')])
+        # fig.update_layout(title=f'Graph {i + 1}')
+
+        # Create a dcc.Graph component with the figure
+        graph = dcc.Graph(id=f'graph-{i}', figure=fig)
+
+        # Append the graph to the list of graphs
+        graphs.append(graph)
+    warning_msg = ""
+    if warning:
+        warning_msg = html.P([f"Warning: The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 50 unique values cannot be visualized due to heavy computation load."], style={'color': 'red'})
+    return graphs, warning_msg, bias_stats.to_dict('records'),bias_report_content,styles
