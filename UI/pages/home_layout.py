@@ -232,20 +232,33 @@ def layout():
                                              style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
                                              style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
                                                            'fontWeight': 'bold'
-                                                           }, style_table={'overflowX': 'auto'})],style={"margin": "15px","marginLeft":"0px"}),],
+                                                           },
+                                             style_table={'overflowX': 'auto'},
+                                             style_data_conditional=[
+                                                 {
+                                                     'if': {'row_index': 'odd'},
+                                                     'backgroundColor': '#f2f2f2'
+                                                 },
+                                                 {
+                                                     'if': {'row_index': 'even'},
+                                                     'backgroundColor': 'white'
+                                                 }
+                                             ]
+                                             )],
+                                            style={"margin": "15px","marginLeft":"0px"}),],
                         overlay_style={
                             "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
-                        custom_spinner=html.H2(
+                        custom_spinner=html.H1(
                             ["Loading data...", dbc.Spinner(color="primary")]),
                         ),
                     ]),
                     dbc.Card(body=True, className="card", children=[
                         dcc.Loading(id="report-loading", children=[html.Div([
-                        html.H2("Bias Report",style={'color': 'darkred','marginBottom': '20px'}),
+                        html.H2("Bias Report",style={'color': 'darkred','marginBottom': '20px','textAlign':'center'}),
                         html.Div(children=[html.P(" Choose a column as the target attribute to generate bias report."),
-                                           dcc.Dropdown(id='column-names-dropdown')],style={'marginBottom': '20px'}),
+                                           dcc.Dropdown(id='column-names-dropdown'),
+                                           html.Div(id='plot-exception-msg'),],style={'marginBottom': '20px'}),
                         html.Div(id="bias-report", className="bias-report-area", children=[]),
-                        html.Div(id='plot-exception-msg'),
                         html.Div(id='graphs-container'),
                         html.Div(children=[
                             dash_table.DataTable(id='bias-overview', page_size=25, page_action='native',
