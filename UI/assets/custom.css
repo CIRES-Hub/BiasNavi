@@ -78,7 +78,6 @@
 
 .query-title{
     font-weight: bold;
-
     padding: 10px;
 }
 
@@ -414,4 +413,9 @@
 
 .scrollable-conversation-body::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+.data-table tr:hover {
+    background-color: lightblue !important;
+    color: black !important;
 }

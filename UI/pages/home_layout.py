@@ -67,7 +67,7 @@ def layout():
                                 [dbc.DropdownMenuItem("Hide ChatBox", id="menu-hide-chatbox"),
                                  dbc.DropdownMenuItem(
                                      "Hide Data View", id="menu-hide-dataview"),
-                                 dbc.DropdownMenuItem("Hide Chart View", id="menu-hide-chartview")],
+                                 dbc.DropdownMenuItem("Hide Right View", id="menu-hide-chartview")],
                                 label="View",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
@@ -223,8 +223,10 @@ def layout():
                                       style={'margin': '10px'}),
                             html.Button('Show Rows', id='show-rows-button',
                                         className='load-button',style={'margin': '10px'}),
-                            html.Button('Save Data', id='save-data-button',
-                                        n_clicks=0, className='save-data-button'),
+                            html.Button('Save Snapshot', id='save-data-button',
+                                        n_clicks=0, className='send-button'),
+                            html.Button('Download Data', id='download-data-button',
+                                        n_clicks=0, className='RAG-button',style={'marginLeft':'10px'}),
                             dcc.Download(id='download-data-csv')
                         ],),
                         html.Div(children=[
@@ -242,7 +244,7 @@ def layout():
                                                  {
                                                      'if': {'row_index': 'even'},
                                                      'backgroundColor': 'white'
-                                                 }
+                                                 },
                                              ]
                                              )],
                                             style={"margin": "15px","marginLeft":"0px"}),],
@@ -261,11 +263,22 @@ def layout():
                         html.Div(id="bias-report", className="bias-report-area", children=[]),
                         html.Div(id='graphs-container'),
                         html.Div(children=[
-                            dash_table.DataTable(id='bias-overview', page_size=25, page_action='native',
+                            dash_table.DataTable(id='bias-overview', page_size=25, page_action='native', sort_action = 'native',
                                                  style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
                                                  style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
                                                                'fontWeight': 'bold'
-                                                               }, style_table={'overflowX': 'auto'})],
+                                                               }, style_table={'overflowX': 'auto'},
+                                                 style_data_conditional=[
+                                                     {
+                                                         'if': {'row_index': 'odd'},
+                                                         'backgroundColor': '#f2f2f2'
+                                                     },
+                                                     {
+                                                         'if': {'row_index': 'even'},
+                                                         'backgroundColor': 'white'
+                                                     },
+                                                 ]
+                                                 )],
                             style={"margin": "15px", "marginLeft": "0px"}),
                             ])
                         ],
@@ -289,9 +302,66 @@ def layout():
                 ]),
 
                 dbc.Col(width=3, id="right-column", children=[
+
                     dbc.Card(children=[
                         html.Div([
-                            # Chat display area
+                            html.Div([
+                                html.H4("Dataset Snapshots", className="query-title")
+                            ], className="query-header"),
+                            html.Div([
+                                dash_table.DataTable(
+                                    id = "snapshot-table",
+                                    columns=[
+                                        {"name": "Ver.", "id": "ver"},
+                                        {"name": "Description", "id": "desc"},
+                                        {"name": "Timestamp", "id": "time"},
+                                        {"name": "Action", "id": "action"}
+                                    ],
+                                    style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
+                                    style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
+                                                  'fontWeight': 'bold'
+                                                  }, style_table={'overflowX': 'auto'},
+                                    style_data_conditional=[
+                                        {
+                                            'if': {'row_index': 'odd'},
+                                            'backgroundColor': '#f2f2f2'
+                                        },
+                                        {
+                                            'if': {'row_index': 'even'},
+                                            'backgroundColor': 'white'
+                                        },
+                                    ]
+                                )
+                            ], id='snapshot-area')
+                        ], className='llm-chart', style={'overflowX': 'auto'})
+                    ], className='card'),
+
+                    dbc.Card(children=[
+                        html.Div([
+                            html.Div([
+                                html.H4("Dataset Evaluation", className="query-title")
+                            ], className="query-header"),
+                            html.Div([
+                                dcc.Dropdown(
+                                    ['all'],
+                                    ['all'],
+                                    multi=True,
+                                    id='training-selection'
+                                ),
+                                dcc.Dropdown(
+                                    ['Classification','Regression'],
+                                    ['Classification'],
+                                    multi=False,
+                                    id='task-selection'
+                                ),
+                                html.Button('Evaluate', id='eval-button',
+                                            n_clicks=0, className='send-button')
+                            ], id='evaluation-options')
+                        ], className='llm-chart', style={'overflowX': 'auto'})
+                    ], className='card'),
+
+                    dbc.Card(children=[
+                        html.Div([
                             html.Div([
                                 html.H4("Charts", className="query-title")
                             ], className="query-header"),
@@ -301,7 +371,6 @@ def layout():
 
                     dbc.Card(children=[
                         html.Div([
-                            # Chat display area
                             html.Div([
                                 html.H4("Code", className="query-title")
                             ], className="query-header"),

@@ -122,24 +122,26 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
 
 
 @app.callback(
-    [Output('table-overview', 'data'),
+    [Output('table-overview', 'data', allow_duplicate=True,),
      Output('table-overview', 'columns'),
      Output('column-names-dropdown', 'options'),
      Output('error-file-format', 'is_open'),
-     Output('dataset-name', 'children')],
+     Output('dataset-name', 'children'),
+     Output('snapshot-table','data')],
     [Input('upload-data', 'contents'),
      Input('show-rows-button', 'n_clicks')],
     [State('upload-data', 'filename'),
      State('input-start-row', 'value'),
-     State('input-end-row', 'value')],
-    prevent_initial_call=True
+     State('input-end-row', 'value'),
+     State('snapshot-table','data')],
+    prevent_initial_call=True,
 )
-def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, start_row, end_row):
+def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, start_row, end_row, snapshot_data):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
 
     if triggered_id == 'upload-data':
         if not list_of_contents or not list_of_names:
-            return [], [], [], False, ""
+            return [], [], [], False, "",[]
 
         # Process the first file only
         contents = list_of_contents[0]
@@ -149,13 +151,16 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, ""
+            return [], [], [], False, "", []
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
         global_vars.dialog.append("DATASET: " + filename + '\n')
         global_vars.dialog.append("=" * 100 + '\n')
-        global_vars.df = DataWrangler.fill_missing_values(raw_data)
+        curtime = datetime.datetime.now()
+        formatted_date_time = curtime.strftime("%Y-%m-%d %H:%M:%S")
+        global_vars.data_snapshots.append(raw_data)
+        #global_vars.df = DataWrangler.fill_missing_values(raw_data)
         global_vars.df = raw_data  #DataWrangler.fill_missing_values(raw_data)
         global_vars.agent = DatasetAgent(global_vars.df, file_name=filename)
         if all([current_user.professional_role, current_user.industry_sector, current_user.expertise_level]):
@@ -171,12 +176,13 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             False,
-            f"Dataset: {filename} (maximum row number:{len(global_vars.df)})"
+            f"Dataset: {filename} (maximum row number:{len(global_vars.df)})",
+            [{'ver':'1','desc':'Original','time':formatted_date_time,'action':'Restore'}]
         )
 
     elif triggered_id == 'show-rows-button':
         if global_vars.df is None:
-            return [], [], [], False, ""
+            return [], [], [], False, "", []
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
@@ -187,6 +193,7 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
                 [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
                 [{'label': col, 'value': col} for col in global_vars.df.columns],
                 False,
+                dash.no_update,
                 dash.no_update
             )
 
@@ -196,15 +203,29 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             False,
-            dash.no_update
+            dash.no_update,
+            dash.no_update,
         )
 
-    return [], [], [], False, ""
+    return [], [], [], False, "", []
 
 
 @app.callback(
+    Output('table-overview', 'columns', allow_duplicate=True,),
+    Output('table-overview', 'data', allow_duplicate=True,),
+    Input('snapshot-table', 'active_cell'),
+    prevent_initial_call=True,
+)
+def restore_data_snapshot(active_cell):
+    if active_cell and active_cell['column_id'] == 'action':
+        row_id = active_cell['row']
+        chosen_snapshot = global_vars.data_snapshots[row_id]
+        return [{"name": i, "id": i,'deletable': True, 'renamable': True} for i in chosen_snapshot.columns], chosen_snapshot.to_dict('records')
+    return dash.no_update
+
+@app.callback(
     Output('download-data-csv', 'data'),
-    [Input('save-data-button', 'n_clicks')],
+    [Input('download-data-button', 'n_clicks')],
     [State('table-overview', 'data')]
 )
 def download_csv(n_clicks, rows):
@@ -384,10 +405,9 @@ def save_new_username(n_clicks, new_username):
 def generate_bias_report(target,styles):
     if global_vars.df[target].unique().size > 100:
         return [], html.P(["Warning: The selected target has more than 100 unique values, which cannot be plotted due to heavy computation load."], style={'color': 'red'}),[],"",styles
-
     sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
     column_style = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in sensitive_attrs]
-    styles+=column_style
+    styles += column_style
     bias_identification = " ".join(sensitive_attrs)
 
     # draw_multi_dist_plot(global_vars.df, "decile_score", sensitive_attrs)
@@ -400,6 +420,9 @@ def generate_bias_report(target,styles):
             "When making decisions, it should be cautious to use these attributes."
         ])
     ])
+    if target in sensitive_attrs:
+        return [], html.P(["Warning: The selected target attribute must not be in the sensitive attributes."], style={'color': 'red'}),[],bias_report_content,styles
+
     refined_attrs = []
     warning = False
     filtered_attrs = []
