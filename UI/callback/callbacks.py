@@ -127,7 +127,8 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
      Output('column-names-dropdown', 'options'),
      Output('error-file-format', 'is_open'),
      Output('dataset-name', 'children'),
-     Output('snapshot-table','data')],
+     Output('snapshot-table','data'),
+     Output('dataset-selection','options')],
     [Input('upload-data', 'contents'),
      Input('show-rows-button', 'n_clicks')],
     [State('upload-data', 'filename'),
@@ -151,7 +152,7 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, "", []
+            return [], [], [], False, "", [],[]
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -172,17 +173,18 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
 
 
         return (
-            global_vars.df.head(15).to_dict('records'),
+            global_vars.df.to_dict('records'),
             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             False,
             f"Dataset: {filename} (maximum row number:{len(global_vars.df)})",
-            [{'ver':'1','desc':'Original','time':formatted_date_time,'action':'Restore'}]
+            [{'ver':'1','desc':'Original','time':formatted_date_time}],
+            ['1']
         )
 
     elif triggered_id == 'show-rows-button':
         if global_vars.df is None:
-            return [], [], [], False, "", []
+            return [], [], [], False, "", [],[]
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
@@ -194,7 +196,8 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
                 [{'label': col, 'value': col} for col in global_vars.df.columns],
                 False,
                 dash.no_update,
-                dash.no_update
+                dash.no_update,
+                dash.no_update,
             )
 
         xdf = global_vars.df.iloc[start_row:end_row]
@@ -205,23 +208,78 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
             False,
             dash.no_update,
             dash.no_update,
+            dash.no_update,
         )
 
-    return [], [], [], False, "", []
+    return [], [], [], False, "", [],[]
+
+@app.callback(
+    Output("snapshot-modal", "is_open"),
+    [Input("open-modal-button", "n_clicks"),
+     Input("close-snapshot-modal", "n_clicks"),
+     Input("save-snapshot-button", "n_clicks")],
+    [State("snapshot-modal", "is_open")]
+)
+def toggle_snapshot_modal(open_click, close_click, save_click, is_open):
+    if open_click or close_click or save_click:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output('snapshot-table','data', allow_duplicate=True),
+    Output('dataset-selection','options', allow_duplicate=True),
+    [Input("save-snapshot-button", "n_clicks")],
+    [State("snapshot-name-input", "value"),
+     State('table-overview', 'data'),
+     State('snapshot-table', 'data'),
+     State('dataset-selection','options')],
+    prevent_initial_call=True,
+)
+def save_data_snapshot(n_clicks, new_name, rows, snapshots, dataset_version):
+    if n_clicks > 0 and new_name:
+        df = pd.DataFrame(rows)
+        global_vars.data_snapshots.append(df)
+        now = datetime.datetime.now()
+        formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
+        snapshots.append(
+            {'ver': f'{len(snapshots) + 1}', 'desc': new_name, 'time': formatted_date_time})
+        dataset_version.append(f'{len(snapshots)}')
+        return snapshots, dataset_version
+    return dash.no_update, dash.no_update
+
+@app.callback(
+    Output('snapshot-table', 'data',allow_duplicate=True),
+    Output('dataset-selection','options', allow_duplicate=True),
+    Input('delete-snapshot-button', 'n_clicks'),
+    State('snapshot-table', 'selected_rows'),
+    State('snapshot-table', 'data'),
+    prevent_initial_call=True,
+)
+def delete_snapshot(n_clicks, selected_rows, snapshots):
+    if n_clicks > 0 and selected_rows:
+        # Find the index of the selected row and delete it from the data
+        row_to_delete = selected_rows[0]
+        del snapshots[row_to_delete]
+        del global_vars.data_snapshots[row_to_delete]
+        snapshots = [{'ver': f'{i + 1}', 'desc':item['desc'], 'time':item['time']} for i,item in enumerate(snapshots)]
+        return snapshots, [f'{i+1}' for i in range(len(snapshots))]
+    return dash.no_update, dash.no_update
 
 
 @app.callback(
     Output('table-overview', 'columns', allow_duplicate=True,),
     Output('table-overview', 'data', allow_duplicate=True,),
-    Input('snapshot-table', 'active_cell'),
+    Input('restore-snapshot-button', 'n_clicks'),
+    State('snapshot-table', 'selected_rows'),
     prevent_initial_call=True,
 )
-def restore_data_snapshot(active_cell):
-    if active_cell and active_cell['column_id'] == 'action':
-        row_id = active_cell['row']
+def restore_data_snapshot(n_clicks, selected_rows):
+    if n_clicks > 0 and selected_rows:
+        row_id = selected_rows[0]
         chosen_snapshot = global_vars.data_snapshots[row_id]
         return [{"name": i, "id": i,'deletable': True, 'renamable': True} for i in chosen_snapshot.columns], chosen_snapshot.to_dict('records')
-    return dash.no_update
+    return dash.no_update,dash.no_update
+
 
 @app.callback(
     Output('download-data-csv', 'data'),
@@ -236,6 +294,7 @@ def download_csv(n_clicks, rows):
         formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
         return dcc.send_data_frame(df.to_csv, f'{formatted_date_time}_edited_{global_vars.file_name}')
     return None
+
 
 
 # @app.callback(
@@ -305,7 +364,7 @@ def update_messages(n_clicks, n_submit, input_3, input_text, query_records, sugg
         for i in range(len(new_suggested_questions)):
             if new_suggested_questions[i]:
                 new_suggested_question = html.Div(dbc.CardBody([
-                    html.P(f"Suggested Question {i+1}", style={'font-weight': 'bold', "margin-bottom": "0px"}),
+                    html.P("Suggested Next Question", style={'font-weight': 'bold', "margin-bottom": "0px"}),
                     html.P(new_suggested_questions[i], style={"margin-bottom": "0px"})],
                     style={"padding": 0}), className="next-suggested-question",
                     id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)

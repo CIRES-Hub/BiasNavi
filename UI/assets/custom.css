@@ -81,11 +81,26 @@
     padding: 10px;
 }
 
-.query-div{
+.center-align-div{
     display: flex;
     justify-content: center;
     align-items: center;
     margin-bottom: 10px;
+    gap: 10px;
+}
+
+.left-align-div{
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin: 10px;
+    gap: 10px;
+}
+
+.right-align-div{
+    display: flex;
+    justify-content: flex-end;
+    margin: 10px;
     gap: 10px;
 }
 
@@ -142,8 +157,19 @@
     margin-bottom: 20px;
 }
 
-.send-button {
+.primary-button {
     background-color: #007bff; /* Blue background */
+    color: white;
+    border-radius: 10px;
+    border: none;
+    padding: 5px 20px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+
+}
+
+.delete-button {
+    background-color: red; /* Blue background */
     color: white;
     border-radius: 10px;
     border: none;
@@ -164,7 +190,7 @@
 
 }
 
-.RAG-button {
+.secondary-button {
     background-color: green;
     color: white;
     border-radius: 10px;
@@ -193,7 +219,7 @@
     background-color: whitesmoke;
 }
 /* Send button hover effect */
-.send-button:hover {
+.primary-button:hover {
     background-color: #0056b3;
 }
 
@@ -201,16 +227,16 @@
     background-color: #ff8000;
 }
 
-.RAG-button:hover {
+.secondary-button:hover {
     background-color: seagreen;
 }
 
-.query-title{
-    margin: 0 10px 0 10px;
+.secondary-title{
+    margin: 0 10px 10px 0;
 }
 
 .user-msg{
-    text-align: right;
+    text-align: left;
     padding: 10px;
     background-color: darkslateblue;
     color: white;

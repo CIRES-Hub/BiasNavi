@@ -125,7 +125,7 @@ def layout():
                             # Chat display area
                             html.Div([
                                 html.H4("Chat with BiasNavi",
-                                        className="query-title")
+                                        className="secondary-title")
                             ], className="query-header"),
                             html.Div([
                                 dcc.Dropdown(id='export-format-dropdown', options=[
@@ -169,10 +169,10 @@ def layout():
                             html.Div([
 
                                 html.Button('Send', id='send-button',
-                                            n_clicks=0, className='send-button'),
+                                            n_clicks=0, className='primary-button'),
                                 dcc.Upload(id="upload-rag",
                                            children=html.Button(
-                                               'RAG', id='RAG-button', n_clicks=0, className='RAG-button'),
+                                               'RAG', id='RAG-button', n_clicks=0, className='secondary-button'),
                                            multiple=True), html.Div(id='rag-output'),
                                 daq.ToggleSwitch(
                                     id='rag-switch',
@@ -181,7 +181,7 @@ def layout():
                                 ),
                                 html.Div(id='rag-switch-output',
                                          style={'marginLeft': '10px'}),
-                            ], className="query-div"),
+                            ], className="center-align-div"),
                         ], className='query')
                     ], className='card'),
 
@@ -189,7 +189,7 @@ def layout():
                     dbc.Card(id="rag-card", style={'display': 'block'}, children=[
                         html.Div([
                             # RAG display area
-                            html.H4("RAG Documents", className="query-title"),
+                            html.H4("RAG Documents", className="secondary-title"),
                             dcc.Loading(
                                 id="loading-2",
                                 children=[
@@ -202,7 +202,7 @@ def layout():
                     ], className='card'),
                     dbc.Card([
                         html.H4("Chat History",
-                                className="query-title"),
+                                className="secondary-title"),
 
                         dbc.CardBody([
                             html.Div(id="chat-history-content")
@@ -218,19 +218,39 @@ def layout():
                         dcc.Loading(id="table-loading", children=[html.Div([
                             html.H4(id="dataset-name"),
                             dcc.Input(id='input-start-row', type='number', placeholder='Start row',
-                                      style={'margin': '10px'}),
+                                      style={'margin': '10px','width':'10%'}),
                             dcc.Input(id='input-end-row', type='number', placeholder='End row',
-                                      style={'margin': '10px'}),
+                                      style={'margin': '10px','width':'10%'}),
                             html.Button('Show Rows', id='show-rows-button',
                                         className='load-button',style={'margin': '10px'}),
-                            html.Button('Save Snapshot', id='save-data-button',
-                                        n_clicks=0, className='send-button'),
+                            html.Button('Save Snapshot', id='open-modal-button',
+                                        n_clicks=0, className='primary-button'),
                             html.Button('Download Data', id='download-data-button',
-                                        n_clicks=0, className='RAG-button',style={'marginLeft':'10px'}),
-                            dcc.Download(id='download-data-csv')
+                                        n_clicks=0, className='secondary-button',style={'marginLeft':'10px'}),
+                            dcc.Download(id='download-data-csv'),
+                            dbc.Modal(
+                                [
+                                    dbc.ModalHeader("Name This Dataset Snapshot"),
+                                    dbc.ModalBody([
+                                        dcc.Input(
+                                            id="snapshot-name-input",
+                                            type="text",
+                                            placeholder="Enter a name",
+                                            style={"width": "100%"}
+                                        ),
+                                    ]),
+                                    dbc.ModalFooter([
+                                        dbc.Button("Save", id="save-snapshot-button", className="ml-auto", n_clicks=0),
+                                        dbc.Button("Close", id="close-snapshot-modal", className="ml-auto", n_clicks=0),
+                                    ]),
+                                ],
+                                id="snapshot-modal",
+                                is_open=False,
+                            ),
+
                         ],),
                         html.Div(children=[
-                            dash_table.DataTable(id='table-overview', page_size=25, page_action='native', editable=True, row_deletable=True,
+                            dash_table.DataTable(id='table-overview', page_size=20, page_action='native', editable=True, row_deletable=True,
                                              style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
                                              style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
                                                            'fontWeight': 'bold'
@@ -306,16 +326,16 @@ def layout():
                     dbc.Card(children=[
                         html.Div([
                             html.Div([
-                                html.H4("Dataset Snapshots", className="query-title")
+                                html.H4("Dataset Snapshots", className="secondary-title")
                             ], className="query-header"),
                             html.Div([
                                 dash_table.DataTable(
                                     id = "snapshot-table",
+                                    row_selectable='single',
                                     columns=[
-                                        {"name": "Ver.", "id": "ver"},
+                                        {"name": "Version", "id": "ver"},
                                         {"name": "Description", "id": "desc"},
-                                        {"name": "Timestamp", "id": "time"},
-                                        {"name": "Action", "id": "action"}
+                                        {"name": "Timestamp", "id": "time"}
                                     ],
                                     style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
                                     style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
@@ -331,7 +351,12 @@ def layout():
                                             'backgroundColor': 'white'
                                         },
                                     ]
-                                )
+                                ),
+                                html.Div([html.Button('Restore', id='restore-snapshot-button',
+                                                      n_clicks=0, className='primary-button'),
+                                          html.Button('Delete', id='delete-snapshot-button',
+                                                      n_clicks=0, className='delete-button'),
+                                          ],className='right-align-div'),
                             ], id='snapshot-area')
                         ], className='llm-chart', style={'overflowX': 'auto'})
                     ], className='card'),
@@ -339,23 +364,24 @@ def layout():
                     dbc.Card(children=[
                         html.Div([
                             html.Div([
-                                html.H4("Dataset Evaluation", className="query-title")
+                                html.H4("Dataset Evaluation", className="secondary-title")
                             ], className="query-header"),
                             html.Div([
-                                dcc.Dropdown(
-                                    ['all'],
-                                    ['all'],
-                                    multi=True,
-                                    id='training-selection'
+                                html.Div([
+                                    'Dataset Version:',
+                                    dcc.Dropdown(
+                                    id='dataset-selection',
+                                    style={'width': '100%'},
                                 ),
+                                'Task:',
                                 dcc.Dropdown(
                                     ['Classification','Regression'],
-                                    ['Classification'],
-                                    multi=False,
+                                    'Classification',
+                                    style={'width': '100%'},
                                     id='task-selection'
-                                ),
-                                html.Button('Evaluate', id='eval-button',
-                                            n_clicks=0, className='send-button')
+                                ),],className='left-align-div'),
+                                html.Div(html.Button('Evaluate', id='eval-button',
+                                            n_clicks=0, className='primary-button'),className='right-align-div'),
                             ], id='evaluation-options')
                         ], className='llm-chart', style={'overflowX': 'auto'})
                     ], className='card'),
@@ -363,7 +389,7 @@ def layout():
                     dbc.Card(children=[
                         html.Div([
                             html.Div([
-                                html.H4("Charts", className="query-title")
+                                html.H4("Charts", className="secondary-title")
                             ], className="query-header"),
                             html.Div([], id='llm-media-area')
                         ], className='llm-chart', style={'overflowX': 'auto'})
@@ -372,7 +398,7 @@ def layout():
                     dbc.Card(children=[
                         html.Div([
                             html.Div([
-                                html.H4("Code", className="query-title")
+                                html.H4("Code", className="secondary-title")
                             ], className="query-header"),
                             html.Div([], id='llm-code-area')
                         ], className='llm-code', style={'overflowX': 'auto'})
