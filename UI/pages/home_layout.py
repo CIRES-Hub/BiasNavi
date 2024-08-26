@@ -14,8 +14,10 @@ import time
 import datetime
 
 from agent import ConversationFormat
+
 dash.register_page(__name__, path='/home/', title='Home')
-import docker 
+import docker
+
 
 def layout():
     if not current_user.is_authenticated:
@@ -51,7 +53,8 @@ def layout():
                                 className='menu-item'
                             ),
                             dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("Predefined Prompt 1"), dbc.DropdownMenuItem("Predefined Prompt 2"),
+                                [dbc.DropdownMenuItem("Predefined Prompt 1"),
+                                 dbc.DropdownMenuItem("Predefined Prompt 2"),
                                  dbc.DropdownMenuItem("Custom Prompt")],
                                 label="Prompts",
                                 nav=True,
@@ -59,7 +62,8 @@ def layout():
                                 className='menu-item'
                             ),
                             dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpt4omini"), dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
+                                [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpt4omini"),
+                                 dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
                                  dbc.DropdownMenuItem("GPT-4o", id="menu-model-gpt4o")],
                                 label="LLM Models",
                                 nav=True,
@@ -132,7 +136,8 @@ def layout():
                             ], className="query-header"),
                             html.Div([
                                 dcc.Dropdown(id='export-format-dropdown', options=[
-                                             v.value for v in ConversationFormat], value=ConversationFormat.SIMPLIFIED_JSON.value),
+                                    v.value for v in ConversationFormat],
+                                             value=ConversationFormat.SIMPLIFIED_JSON.value),
                                 html.Button(
                                     "Export", id="download-button", className="download-button"),
                                 dcc.Download(id="export")
@@ -221,15 +226,15 @@ def layout():
                         dcc.Loading(id="table-loading", children=[html.Div([
                             html.H4(id="dataset-name"),
                             dcc.Input(id='input-start-row', type='number', placeholder='Start row',
-                                      style={'margin': '10px','width':'10%'}),
+                                      style={'margin': '10px', 'width': '10%'}),
                             dcc.Input(id='input-end-row', type='number', placeholder='End row',
-                                      style={'margin': '10px','width':'10%'}),
+                                      style={'margin': '10px', 'width': '10%'}),
                             html.Button('Show Rows', id='show-rows-button',
-                                        className='load-button',style={'margin': '10px'}),
+                                        className='load-button', style={'margin': '10px'}),
                             html.Button('Save Snapshot', id='open-modal-button',
                                         n_clicks=0, className='primary-button'),
                             html.Button('Download Data', id='download-data-button',
-                                        n_clicks=0, className='secondary-button',style={'marginLeft':'10px'}),
+                                        n_clicks=0, className='secondary-button', style={'marginLeft': '10px'}),
                             dcc.Download(id='download-data-csv'),
                             dbc.Modal(
                                 [
@@ -251,65 +256,84 @@ def layout():
                                 is_open=False,
                             ),
 
-                        ],),
-                        html.Div(children=[
-                            dash_table.DataTable(id='table-overview', page_size=20, page_action='native', editable=True, row_deletable=True,
-                                             style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
-                                             style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
-                                                           'fontWeight': 'bold'
-                                                           },
-                                             style_table={'overflowX': 'auto'},
-                                             style_data_conditional=[
-                                                 {
-                                                     'if': {'row_index': 'odd'},
-                                                     'backgroundColor': '#f2f2f2'
-                                                 },
-                                                 {
-                                                     'if': {'row_index': 'even'},
-                                                     'backgroundColor': 'white'
-                                                 },
-                                             ]
-                                             )],
-                                            style={"margin": "15px","marginLeft":"0px"}),],
-                        overlay_style={
-                            "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
-                        custom_spinner=html.H1(
-                            ["Loading data...", dbc.Spinner(color="primary")]),
-                        ),
+                        ], ),
+                            html.Div(children=[
+                                dash_table.DataTable(id='table-overview', page_size=20, page_action='native',
+                                                     editable=True, row_deletable=True, column_selectable='single',
+                                                     style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
+                                                     style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
+                                                                   'fontWeight': 'bold'
+                                                                   },
+                                                     style_table={'overflowX': 'auto'},
+                                                     style_data_conditional=[
+                                                         {
+                                                             'if': {'row_index': 'odd'},
+                                                             'backgroundColor': '#f2f2f2'
+                                                         },
+                                                         {
+                                                             'if': {'row_index': 'even'},
+                                                             'backgroundColor': 'white'
+                                                         },
+                                                     ]
+                                                     )],
+                                style={"margin": "15px", "marginLeft": "0px"}),
+                        ],
+                                    overlay_style={
+                                        "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
+                                    custom_spinner=html.H1(
+                                        ["Loading data...", dbc.Spinner(color="primary")]),
+                                    ),
+                        html.Div(id='datatable-interactivity-container')
                     ]),
+
                     dbc.Card(body=True, className="card", children=[
-                        dcc.Loading(id="report-loading", children=[html.Div([
-                        html.H2("Bias Report",style={'color': 'darkred','marginBottom': '20px','textAlign':'center'}),
-                        html.Div(children=[html.P(" Choose a column as the target attribute to generate bias report."),
-                                           dcc.Dropdown(id='column-names-dropdown'),
-                                           html.Div(id='plot-exception-msg'),],style={'marginBottom': '20px'}),
-                        html.Div(id="bias-report", className="bias-report-area", children=[]),
-                        html.Div(id='graphs-container'),
-                        html.Div(children=[
-                            dash_table.DataTable(id='bias-overview', page_size=25, page_action='native', sort_action = 'native',
-                                                 style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
-                                                 style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
-                                                               'fontWeight': 'bold'
-                                                               }, style_table={'overflowX': 'auto'},
-                                                 style_data_conditional=[
-                                                     {
-                                                         'if': {'row_index': 'odd'},
-                                                         'backgroundColor': '#f2f2f2'
-                                                     },
-                                                     {
-                                                         'if': {'row_index': 'even'},
-                                                         'backgroundColor': 'white'
-                                                     },
-                                                 ]
-                                                 )],
-                            style={"margin": "15px", "marginLeft": "0px"}),
+                        dcc.Loading(id="report-loading", children=[
+                            html.Div([
+                                html.H2("Bias Report",
+                                        style={'color': 'darkred', 'marginBottom': '20px', 'textAlign': 'center'}),
+                                html.Div(children=[
+                                    html.P(" Choose a column as the target attribute to generate bias report."),
+                                    dcc.Dropdown(id='column-names-dropdown'),
+                                    html.Div(id='plot-exception-msg'), ], style={'marginBottom': '20px'}),
+                                html.Div(id="bias-report", className="bias-report-area", children=[]),
+                                dcc.Tabs(id="report-tabs", value='tab-1', children=[
+                                    dcc.Tab(label='Charts', children=[
+                                        html.Div(id='graphs-container'),
+                                    ]),
+                                    dcc.Tab(label='Statistics', children=[
+                                        html.Div(children=[
+                                            html.Br(),
+                                            html.H3("Statistics", style={'textAlign': 'center'}),
+                                            dash_table.DataTable(id='bias-overview', page_size=25, page_action='native',
+                                                                 sort_action='native',
+                                                                 style_cell={'textAlign': 'center',
+                                                                             'fontFamiliy': 'Arial'},
+                                                                 style_header={'backgroundColor': 'darkslateblue',
+                                                                               'color': 'white',
+                                                                               'fontWeight': 'bold'
+                                                                               }, style_table={'overflowX': 'auto'},
+                                                                 style_data_conditional=[
+                                                                     {
+                                                                         'if': {'row_index': 'odd'},
+                                                                         'backgroundColor': '#f2f2f2'
+                                                                     },
+                                                                     {
+                                                                         'if': {'row_index': 'even'},
+                                                                         'backgroundColor': 'white'
+                                                                     },
+                                                                 ]
+                                                                 )
+                                        ])
+                                    ]),
+                                ])
+
                             ])
                         ],
-                        overlay_style={
-                            "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
-                        custom_spinner=html.H2(
-                            ["Generating report...", dbc.Spinner(color="primary")]),
-                        ),
+                                    overlay_style={
+                                        "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
+                                    custom_spinner=html.H2(
+                                        ["Generating report...", dbc.Spinner(color="primary")]),
+                                    ),
                     ]),
                     # dbc.Card(body=True, children=[
                     #     # dcc.Tabs(id='tabs-figures', value='single', children=[
@@ -333,7 +357,7 @@ def layout():
                             ], className="query-header"),
                             html.Div([
                                 dash_table.DataTable(
-                                    id = "snapshot-table",
+                                    id="snapshot-table",
                                     row_selectable='single',
                                     columns=[
                                         {"name": "Version", "id": "ver"},
@@ -359,7 +383,7 @@ def layout():
                                                       n_clicks=0, className='primary-button'),
                                           html.Button('Delete', id='delete-snapshot-button',
                                                       n_clicks=0, className='delete-button'),
-                                          ],className='right-align-div'),
+                                          ], className='right-align-div'),
                             ], id='snapshot-area')
                         ], className='llm-chart', style={'overflowX': 'auto'})
                     ], className='card'),
@@ -373,18 +397,19 @@ def layout():
                                 html.Div([
                                     'Dataset Version:',
                                     dcc.Dropdown(
-                                    id='dataset-selection',
-                                    style={'width': '100%'},
-                                ),
-                                'Task:',
-                                dcc.Dropdown(
-                                    ['Classification','Regression'],
-                                    'Classification',
-                                    style={'width': '100%'},
-                                    id='task-selection'
-                                ),],className='left-align-div'),
-                                html.Div(html.Button('Evaluate', id='eval-button',
-                                            n_clicks=0, className='primary-button'),className='right-align-div'),
+                                        id='dataset-selection',
+                                        style={'width': '100%'},
+                                    ),
+                                    'Task:',
+                                    dcc.Dropdown(
+                                        ['Classification', 'Regression'],
+                                        'Classification',
+                                        style={'width': '100%'},
+                                        id='task-selection'
+                                    ), ], className='left-align-div'),
+                                html.Div(html.Button('Run', id='eval-button',
+                                                     n_clicks=0, className='primary-button'),
+                                         className='right-align-div'),
                             ], id='evaluation-options')
                         ], className='llm-chart', style={'overflowX': 'auto'})
                     ], className='card'),
@@ -401,15 +426,16 @@ def layout():
 
                     dbc.Card(children=[
                         html.H4("Python Sandbox", style={'paddingLeft': 0}),
-                        html.Div([dash_editor_components.PythonEditor(id='commands-input', 
-                            style={'height': '400px'}, value="")], className='commands_editor'),
-                        html.Div([dbc.Button("Run", id="run-commands", n_clicks=0)], 
-                            style={'width': '100%', 'display': 'flex', 'justifyContent': 'end'}),
+                        html.Div([dash_editor_components.PythonEditor(id='commands-input',
+                                                                      style={'height': '400px'}, value="")],
+                                 className='commands_editor'),
+                        html.Div([dbc.Button("Run", id="run-commands", n_clicks=0, className='primary-button')],
+                                 className='right-align-div'),
                         dcc.Loading(
-                                id="loading-1",
-                                children=[html.P(id='console-area', className='query-area console-area')],
-                                type="default",
-                            ),
+                            id="loading-1",
+                            children=[html.P(id='console-area', className='query-area console-area')],
+                            type="default",
+                        ),
                     ], style={'padding': '15px'})
                 ]),
             ])
@@ -461,7 +487,8 @@ def update_chat_history(pathname, trigger):
             dbc.CardHeader([
                 html.H5(f"Dataset: {conv.dataset}", className="mb-0"),
                 html.Small(f"Model: {conv.model}", className="text-muted"),
-                html.Small(f"Last updated: {conv.updated_at.strftime('%Y-%m-%d %H:%M:%S')}", className="text-muted d-block")
+                html.Small(f"Last updated: {conv.updated_at.strftime('%Y-%m-%d %H:%M:%S')}",
+                           className="text-muted d-block")
             ]),
             dbc.CardBody([
                 dbc.Collapse(
@@ -492,7 +519,8 @@ def update_chat_history(pathname, trigger):
         ]
 
         history_blocks.append(
-            dbc.Card(card_content, className="mb-3 chat-history-card"))
+                                dbc.Card(card_content, className="mb-3 chat-history-card")
+                            )
 
     return history_blocks
 
@@ -535,7 +563,7 @@ def update_user_profile(trigger, edit_success):
                         html.H5(user.username or user.email, id="username-display",
                                 className='profile-name d-inline-block mb-0 me-2'),
                         html.I(className="fas fa-edit edit-icon",
-                               id="edit-username-icon",)
+                               id="edit-username-icon", )
                     ], className="d-flex align-items-center justify-content-center mb-1"),
 
                     dbc.Modal([
