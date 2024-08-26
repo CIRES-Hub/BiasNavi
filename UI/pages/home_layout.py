@@ -1,5 +1,7 @@
 from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
+import dash_editor_components.PythonEditor
+import docker.errors
 from db_models.conversation import Conversation
 from db_models.users import User
 from dash import dcc, html, dash_table, callback, Input, Output, State, MATCH, ALL
@@ -7,12 +9,13 @@ import dash_daq as daq
 import dash
 from flask_login import logout_user, current_user
 from dash.exceptions import PreventUpdate
+import dash_editor_components
 import time
 import datetime
 
 from agent import ConversationFormat
 dash.register_page(__name__, path='/home/', title='Home')
-
+import docker 
 
 def layout():
     if not current_user.is_authenticated:
@@ -388,6 +391,7 @@ def layout():
 
                     dbc.Card(children=[
                         html.Div([
+                            # Chat display area
                             html.Div([
                                 html.H4("Charts", className="secondary-title")
                             ], className="query-header"),
@@ -396,15 +400,18 @@ def layout():
                     ], className='card'),
 
                     dbc.Card(children=[
-                        html.Div([
-                            html.Div([
-                                html.H4("Code", className="secondary-title")
-                            ], className="query-header"),
-                            html.Div([], id='llm-code-area')
-                        ], className='llm-code', style={'overflowX': 'auto'})
-                    ], className='card'),
+                        html.H4("Python Sandbox", style={'paddingLeft': 0}),
+                        html.Div([dash_editor_components.PythonEditor(id='commands-input', 
+                            style={'height': '400px'}, value="")], className='commands_editor'),
+                        html.Div([dbc.Button("Run", id="run-commands", n_clicks=0)], 
+                            style={'width': '100%', 'display': 'flex', 'justifyContent': 'end'}),
+                        dcc.Loading(
+                                id="loading-1",
+                                children=[html.P(id='console-area', className='query-area console-area')],
+                                type="default",
+                            ),
+                    ], style={'padding': '15px'})
                 ]),
-
             ])
         ], className="body")
     ])
@@ -592,3 +599,13 @@ def toggle_collapse(n, is_open):
     if n:
         return ("fas fa-chevron-up" if not is_open else "fas fa-chevron-down"), not is_open
     return "fas fa-chevron-down", is_open
+
+
+@callback(
+    Output("commands-input", "disabled"),
+    Output("run-commands", "disabled"),
+    Input("run-commands", "n_clicks"),
+    prevent_initial_call=True
+)
+def toggle_disable(n_clicks):
+    return True, True

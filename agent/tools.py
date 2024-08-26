@@ -23,11 +23,13 @@ class CustomizedPythonAstREPLTool(PythonAstREPLTool):
 
     elem_queue: list = Field(default_factory=list)
     execution_error: list[Exception] = []
+    list_commands: list[str] = []
 
-    def __init__(self, elem_queue, execution_error, **kwargs):
+    def __init__(self, elem_queue, execution_error, list_commands, **kwargs):
         super(PythonAstREPLTool, self).__init__(**kwargs)
         self.elem_queue = elem_queue
         self.execution_error = execution_error
+        self.list_commands = list_commands
 
     def add_figure(self, processed_item: Figure):
 
@@ -72,6 +74,8 @@ class CustomizedPythonAstREPLTool(PythonAstREPLTool):
             tree = ast.parse(query)
             module = ast.Module(tree.body[:-1], type_ignores=[])
             exec(ast.unparse(module), self.globals, self.locals)  # type: ignore
+            print(ast.unparse(ast.Module(tree.body, type_ignores=[])))
+            self.list_commands.append(ast.unparse(ast.Module(tree.body, type_ignores=[])))
             module_end = ast.Module(tree.body[-1:], type_ignores=[])
             module_end_str = ast.unparse(module_end)  # type: ignore
             io_buffer = StringIO()
