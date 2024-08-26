@@ -4,3 +4,4 @@ config.ini
 data/
 pgadmin/
 venv
+tmp/

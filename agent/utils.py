@@ -49,6 +49,7 @@ def create_pandas_dataframe_agent(
     engine: Literal["pandas", "modin"] = "pandas",
     elem_queue: List[Any] = [],
     execution_error: List[bool] = [],
+    list_commands: List[str] = [],
     **kwargs: Any,
 ) -> AgentExecutor:
     """Construct a Pandas agent from an LLM and dataframe(s).
@@ -137,7 +138,7 @@ def create_pandas_dataframe_agent(
             df_locals[f"df{i + 1}"] = dataframe
     else:
         df_locals["df"] = df
-    tools = [CustomizedPythonAstREPLTool(elem_queue, execution_error, locals=df_locals)] + list(extra_tools)
+    tools = [CustomizedPythonAstREPLTool(elem_queue, execution_error, list_commands, locals=df_locals)] + list(extra_tools)
 
     if agent_type == AgentType.ZERO_SHOT_REACT_DESCRIPTION:
         if include_df_in_prompt is not None and suffix is not None:
