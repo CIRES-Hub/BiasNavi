@@ -1,5 +1,6 @@
 import time
 import dash
+import docker.errors
 from UI.app import app
 from db_models.users import User
 from db_models.databases import db
@@ -8,7 +9,7 @@ import plotly.express as px
 import base64
 from agent import ConversationFormat, DatasetAgent
 import datetime
-from dash import callback_context, MATCH, ALL, ctx
+from dash import callback_context, MATCH, ALL,ctx
 import io
 from RAG import RAG
 from dash import dcc, html, dash_table
@@ -20,7 +21,11 @@ from utils.data_wrangler import DataWrangler
 import dash_bootstrap_components as dbc
 from flask_login import current_user
 from dash.exceptions import PreventUpdate
-
+import docker
+import ast
+import os
+import os 
+import shutil
 
 @app.callback(
     Output("export", "data"),
@@ -122,24 +127,27 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
 
 
 @app.callback(
-    [Output('table-overview', 'data'),
+    [Output('table-overview', 'data', allow_duplicate=True,),
      Output('table-overview', 'columns'),
      Output('column-names-dropdown', 'options'),
      Output('error-file-format', 'is_open'),
-     Output('dataset-name', 'children')],
+     Output('dataset-name', 'children'),
+     Output('snapshot-table','data'),
+     Output('dataset-selection','options')],
     [Input('upload-data', 'contents'),
      Input('show-rows-button', 'n_clicks')],
     [State('upload-data', 'filename'),
      State('input-start-row', 'value'),
-     State('input-end-row', 'value')],
-    prevent_initial_call=True
+     State('input-end-row', 'value'),
+     State('snapshot-table','data')],
+    prevent_initial_call=True,
 )
-def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, start_row, end_row):
+def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, start_row, end_row, snapshot_data):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
 
     if triggered_id == 'upload-data':
         if not list_of_contents or not list_of_names:
-            return [], [], [], False, ""
+            return [], [], [], False, "",[]
 
         # Process the first file only
         contents = list_of_contents[0]
@@ -149,13 +157,16 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, ""
+            return [], [], [], False, "", [],[]
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
         global_vars.dialog.append("DATASET: " + filename + '\n')
         global_vars.dialog.append("=" * 100 + '\n')
-        global_vars.df = DataWrangler.fill_missing_values(raw_data)
+        curtime = datetime.datetime.now()
+        formatted_date_time = curtime.strftime("%Y-%m-%d %H:%M:%S")
+        global_vars.data_snapshots.append(raw_data)
+        #global_vars.df = DataWrangler.fill_missing_values(raw_data)
         global_vars.df = raw_data  #DataWrangler.fill_missing_values(raw_data)
         global_vars.agent = DatasetAgent(global_vars.df, file_name=filename)
         if all([current_user.professional_role, current_user.industry_sector, current_user.expertise_level]):
@@ -167,16 +178,18 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
 
 
         return (
-            global_vars.df.head(15).to_dict('records'),
+            global_vars.df.to_dict('records'),
             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             False,
-            f"Dataset: {filename} (maximum row number:{len(global_vars.df)})"
+            f"Dataset: {filename} (maximum row number:{len(global_vars.df)})",
+            [{'ver':'1','desc':'Original','time':formatted_date_time}],
+            ['1']
         )
 
     elif triggered_id == 'show-rows-button':
         if global_vars.df is None:
-            return [], [], [], False, ""
+            return [], [], [], False, "", [],[]
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
@@ -187,7 +200,9 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
                 [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
                 [{'label': col, 'value': col} for col in global_vars.df.columns],
                 False,
-                dash.no_update
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
             )
 
         xdf = global_vars.df.iloc[start_row:end_row]
@@ -196,15 +211,84 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             False,
-            dash.no_update
+            dash.no_update,
+            dash.no_update,
+            dash.no_update,
         )
 
-    return [], [], [], False, ""
+    return [], [], [], False, "", [],[]
+
+@app.callback(
+    Output("snapshot-modal", "is_open"),
+    [Input("open-modal-button", "n_clicks"),
+     Input("close-snapshot-modal", "n_clicks"),
+     Input("save-snapshot-button", "n_clicks")],
+    [State("snapshot-modal", "is_open")]
+)
+def toggle_snapshot_modal(open_click, close_click, save_click, is_open):
+    if open_click or close_click or save_click:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output('snapshot-table','data', allow_duplicate=True),
+    Output('dataset-selection','options', allow_duplicate=True),
+    [Input("save-snapshot-button", "n_clicks")],
+    [State("snapshot-name-input", "value"),
+     State('table-overview', 'data'),
+     State('snapshot-table', 'data'),
+     State('dataset-selection','options')],
+    prevent_initial_call=True,
+)
+def save_data_snapshot(n_clicks, new_name, rows, snapshots, dataset_version):
+    if n_clicks > 0 and new_name:
+        df = pd.DataFrame(rows)
+        global_vars.data_snapshots.append(df)
+        now = datetime.datetime.now()
+        formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
+        snapshots.append(
+            {'ver': f'{len(snapshots) + 1}', 'desc': new_name, 'time': formatted_date_time})
+        dataset_version.append(f'{len(snapshots)}')
+        return snapshots, dataset_version
+    return dash.no_update, dash.no_update
+
+@app.callback(
+    Output('snapshot-table', 'data',allow_duplicate=True),
+    Output('dataset-selection','options', allow_duplicate=True),
+    Input('delete-snapshot-button', 'n_clicks'),
+    State('snapshot-table', 'selected_rows'),
+    State('snapshot-table', 'data'),
+    prevent_initial_call=True,
+)
+def delete_snapshot(n_clicks, selected_rows, snapshots):
+    if n_clicks > 0 and selected_rows:
+        # Find the index of the selected row and delete it from the data
+        row_to_delete = selected_rows[0]
+        del snapshots[row_to_delete]
+        del global_vars.data_snapshots[row_to_delete]
+        snapshots = [{'ver': f'{i + 1}', 'desc':item['desc'], 'time':item['time']} for i,item in enumerate(snapshots)]
+        return snapshots, [f'{i+1}' for i in range(len(snapshots))]
+    return dash.no_update, dash.no_update
+
+
+@app.callback(
+    Output('table-overview', 'columns', allow_duplicate=True,),
+    Output('table-overview', 'data', allow_duplicate=True,),
+    Input('restore-snapshot-button', 'n_clicks'),
+    State('snapshot-table', 'selected_rows'),
+    prevent_initial_call=True,
+)
+def restore_data_snapshot(n_clicks, selected_rows):
+    if n_clicks > 0 and selected_rows:
+        row_id = selected_rows[0]
+        chosen_snapshot = global_vars.data_snapshots[row_id]
+        return [{"name": i, "id": i,'deletable': True, 'renamable': True} for i in chosen_snapshot.columns], chosen_snapshot.to_dict('records')
+    return dash.no_update,dash.no_update
 
 
 @app.callback(
     Output('download-data-csv', 'data'),
-    [Input('save-data-button', 'n_clicks')],
+    [Input('download-data-button', 'n_clicks')],
     [State('table-overview', 'data')]
 )
 def download_csv(n_clicks, rows):
@@ -215,6 +299,7 @@ def download_csv(n_clicks, rows):
         formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
         return dcc.send_data_frame(df.to_csv, f'{formatted_date_time}_edited_{global_vars.file_name}')
     return None
+
 
 
 # @app.callback(
@@ -251,10 +336,10 @@ def download_csv(n_clicks, rows):
      Output('llm-media-area', 'children'),
      Output("chat-update-trigger", "data"),
      Output("next-suggested-questions", "children"),
-     Output("query-input", "value")],
+     Output("commands-input", "value")],
     [Input('send-button', 'n_clicks'),
      Input('query-input', 'n_submit'),
-     Input({"type": 'next-suggested-question', "index": ALL}, 'n_clicks'), ],
+     Input({"type": 'next-suggested-question', "index": ALL}, 'n_clicks')],
     [State('query-input', 'value'),
      State('query-area', 'children'),
      State('next-suggested-questions', 'children')],
@@ -284,7 +369,7 @@ def update_messages(n_clicks, n_submit, input_3, input_text, query_records, sugg
         for i in range(len(new_suggested_questions)):
             if new_suggested_questions[i]:
                 new_suggested_question = html.Div(dbc.CardBody([
-                    html.P(f"Suggested Question {i+1}", style={'font-weight': 'bold', "margin-bottom": "0px"}),
+                    html.P("Suggested Next Question", style={'font-weight': 'bold', "margin-bottom": "0px"}),
                     html.P(new_suggested_questions[i], style={"margin-bottom": "0px"})],
                     style={"padding": 0}), className="next-suggested-question",
                     id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)
@@ -296,9 +381,9 @@ def update_messages(n_clicks, n_submit, input_3, input_text, query_records, sugg
     new_response_message = dcc.Markdown(response, className="llm-msg")
     query_records.append(new_user_message)
     query_records.append(new_response_message)
-    print(suggested_questions)
-    return query_records, False, media, time.time(), suggested_questions, ""
-
+    list_commands = global_vars.agent.list_commands
+    return query_records, False, media, time.time(), suggested_questions, ('\n').join(list_commands) if len(list_commands) > 0 else ""
+    
 
 @app.callback(
     Output({'type': 'llm-media-modal', 'index': MATCH}, 'is_open'),
@@ -313,14 +398,11 @@ def show_figure_modal(n_clicks, id):
 
 
 def query_llm(query):
-    response, media = global_vars.agent.run(query)
-    response_suggested_questions, _ = global_vars.agent.run(
-        "Generate 2 relevant follow-up questions in format 1.question 1, 2. question 2")
-    suggested_questions = parse_suggested_questions(response_suggested_questions)
+    print(query)
+    response, media, suggestions = global_vars.agent.run(query)
     global_vars.agent.persist_history(user_id=str(current_user.id))
-    global_vars.suggested_questions = suggested_questions
-    return response, media, suggested_questions
-
+    global_vars.suggested_questions = suggestions
+    return response, media, suggestions
 
 # @app.callback(
 #     Output('query-output', 'children'),
@@ -384,10 +466,9 @@ def save_new_username(n_clicks, new_username):
 def generate_bias_report(target,styles):
     if global_vars.df[target].unique().size > 100:
         return [], html.P(["Warning: The selected target has more than 100 unique values, which cannot be plotted due to heavy computation load."], style={'color': 'red'}),[],"",styles
-
     sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
     column_style = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in sensitive_attrs]
-    styles+=column_style
+    styles += column_style
     bias_identification = " ".join(sensitive_attrs)
 
     # draw_multi_dist_plot(global_vars.df, "decile_score", sensitive_attrs)
@@ -400,6 +481,9 @@ def generate_bias_report(target,styles):
             "When making decisions, it should be cautious to use these attributes."
         ])
     ])
+    if target in sensitive_attrs:
+        return [], html.P(["Warning: The selected target attribute must not be in the sensitive attributes."], style={'color': 'red'}),[],bias_report_content,styles
+
     refined_attrs = []
     warning = False
     filtered_attrs = []
@@ -427,3 +511,111 @@ def generate_bias_report(target,styles):
     if warning:
         warning_msg = html.P([f"Warning: The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 100 unique values cannot be visualized due to heavy computation load."], style={'color': 'red'})
     return graphs, warning_msg, bias_stats.to_dict('records'),bias_report_content,styles
+
+
+@app.callback(
+    [Output("console-area", "children"),
+    Output("commands-input", "disabled", allow_duplicate=True),
+    Output("run-commands", "disabled", allow_duplicate=True)],
+    Input("run-commands", "n_clicks"),
+    State("commands-input", "value"),
+    prevent_initial_call=True
+)
+def execute_commands(n_click, commands):
+    if global_vars.df is None and n_click > 0:
+        return ["Have you imported a dataset and entered a query?", False, False]
+    if n_click > 0 and commands is not None:
+        try:
+            print("Running sandbox...")
+            user_id = str(current_user.id)
+            current_path = os.path.dirname(os.path.realpath(__file__))
+            parent_path = os.path.dirname(current_path)
+            user_data_dir = os.path.join(os.path.dirname(parent_path), 'tmp', user_id)
+
+            if not os.path.exists(user_data_dir):
+                print("Creating user's directory...")
+                os.makedirs(user_data_dir, exist_ok=True)
+                shutil.copyfile(os.path.join(parent_path, 'assets', 'sandbox_main.py'), os.path.join(user_data_dir, 'sandbox_main.py'))
+                print("Create user's directory successfully")
+            else:
+                if not os.path.exists(os.path.join(user_data_dir, 'sandbox_main.py')):
+                    shutil.copyfile(os.path.join(parent_path, 'assets', 'sandbox_main.py'), os.path.join(user_data_dir, 'sandbox_main.py'))
+                
+            user_output_file = os.path.join(user_data_dir, f"_output_{user_id}.out")
+            user_error_file = os.path.join(user_data_dir, f"_error_{user_id}.err")
+            container_name = 'biasnavi-' + user_id
+                        
+            with open(os.path.join(user_data_dir, 'sandbox_commands.py'), "w") as f:
+                f.write(commands)
+                
+            global_vars.df.to_csv(os.path.join(user_data_dir, "df.csv"))
+            if os.path.exists(user_output_file):
+                os.remove(user_output_file)
+            if os.path.exists(user_error_file):
+                os.remove(user_error_file)
+                
+            client = docker.from_env()
+            print("Running commands inside container")
+            user_container = client.containers.get(container_name)
+            user_container.exec_run(cmd="python sandbox_main.py " + user_id, workdir='/home/sandbox/' + user_id)
+            print("Run commands inside container successfully")
+            
+            output = []
+            if os.path.isfile(user_output_file):
+                with open(user_output_file, "r") as f:
+                    output.append(html.P(f.read(), style={"color": "black"}))
+                    
+            if os.path.isfile(user_error_file):
+                with open(user_error_file, "r") as f:
+                    output.append(html.P(f.read(), style={"color": "red"}))
+            return [output, False, False]
+        
+        except Exception as e:
+            if (isinstance(e, docker.errors.NotFound)):
+                try: 
+                    print("Recreate container")
+                    client = docker.from_env()
+                    container_name = 'biasnavi-' + user_id
+                    client.containers.run('daisyy512/hello-docker',
+                                                    name=container_name, 
+                                                    volumes=[user_data_dir + ':/home/sandbox/'+ user_id], 
+                                                    detach=True,
+                                                    tty=True)
+                    print("Create container successfully")
+                    user_container = client.containers.get(container_name)
+                    user_container.exec_run(cmd="python sandbox_main.py " + user_id, workdir='/home/sandbox/' + user_id)
+                    output = []
+                    if os.path.isfile(user_output_file):
+                        with open(user_output_file, "r") as f:
+                            output.append(html.P(f.read(), style={"color": "white"}))
+                            
+                    if os.path.isfile(user_error_file):
+                        with open(user_error_file, "r") as f:
+                            output.append(html.P(f.read(), style={"color": "red"}))
+                    return [output, False, False]
+                    
+                except Exception as e:
+                    print("Create container failed: ", e)    
+                    return ["Sandbox is not available", False, False]
+            elif (isinstance(e, docker.errors.APIError)): 
+                if e.status_code is not None and e.status_code == 409:
+                    user_container = client.containers.get(container_name)
+                    print("Restart container")
+                    user_container.start()
+                    user_container.exec_run(cmd="python sandbox_main.py " + user_id, workdir='/home/sandbox/' + user_id)
+                    
+                    output = []
+                    if os.path.isfile(user_output_file):
+                        with open(user_output_file, "r") as f:
+                            output.append(html.P(f.read(), style={"color": "white"}))
+                            
+                    if os.path.isfile(user_error_file):
+                        with open(user_error_file, "r") as f:
+                            output.append(html.P(f.read(), style={"color": "red"}))
+                    return [output, False, False]
+
+                return [str(e), False, False]
+            else:
+                print(type(e))
+                return [str(e), False, False]
+    return [dash.no_update, False, False]

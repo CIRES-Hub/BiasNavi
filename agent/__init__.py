@@ -9,15 +9,22 @@ import os
 import time
 from enum import Enum
 import json
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate, HumanMessagePromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables import ConfigurableField
 from langchain_experimental.tools.python.tool import PythonAstREPLTool
 from agent.utils import create_pandas_dataframe_agent
 from db_models.conversation import Conversation
-from db_models.system_log import SystemLogMessage
+from db_models.system_log import SystemLogMessage, AssistantLogMessage
 import re
+from langchain.pydantic_v1 import BaseModel, Field
+from langchain.output_parsers import PydanticOutputParser
+from flask_login import current_user
 
+class NextQuestionFormat(BaseModel):
+    response: str = Field(description="Answer to the user's query")
+    suggestion1: str = Field(description="Generate the next question that the user might ask")
+    suggestion2: str = Field(description="Generate the next question that the user might ask")
 
 class ConversationFormat(str, Enum):
     FULL_JSON = 'Full JSON'
@@ -53,6 +60,17 @@ class DatasetAgent:
         self.session_id = round(time.time() * 1000)
         self.elem_queue = []
         self.execution_error: list[Exception] = []
+        self.list_commands: list[str] = []
+        
+        self.parser = PydanticOutputParser(pydantic_object=NextQuestionFormat)
+        prompt = PromptTemplate(
+            template="Answer the user's query: {input}"
+            "{format_instructions}",
+            input_variables=["input"],
+            partial_variables={"format_instructions": self.parser.get_format_instructions()}
+        )
+        user_prompt = HumanMessagePromptTemplate(prompt=prompt)
+        
         self.prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -65,7 +83,7 @@ class DatasetAgent:
                     "Your goal is to ensure datasets are fair, transparent, and robust for accurate and equitable AI model/business development."
                 ),
                 MessagesPlaceholder(variable_name="chat_history"),
-                ("human", "{input}"),
+                user_prompt
             ]
         )
 
@@ -77,10 +95,12 @@ class DatasetAgent:
             execution_error=self.execution_error,
             agent_type=AgentType.OPENAI_FUNCTIONS,
             agent_executor_kwargs={"handle_parsing_errors": True},
+            list_commands=self.list_commands,
             prefix="You have already been provided with a dataframe df, all queries should be about that df. \
-                Do not create dataframe. Do not read from any other sources. Do not use pd.read_clipboard. \
+                Do not create dataframe. Do not read dataframe from any other sources. Do not use pd.read_clipboard. \
                 If your response includes code, it will be executed, so you should define the code clearly. \
-                Code in response will be split by \n so it should only include \n at the end of each line"
+                Code in response will be split by \n so it should only include \n at the end of each line. \
+                Do not execute code with 'functions', only use 'python_repl_ast'."
         )
 
         self.chain = self.prompt | self.agent
@@ -111,6 +131,7 @@ class DatasetAgent:
     def run(self, text):
         self.elem_queue.clear()
         self.execution_error.clear()
+        self.list_commands.clear()
 
         result = self.agent_with_trimmed_history.with_config(
             configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text})[
@@ -123,21 +144,28 @@ class DatasetAgent:
             result = self.agent_with_trimmed_history.with_config(
                 configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text})[
                 'output']
-
+        
+        # Parse response 
+        suggestions = []
+        suggestions.append(self.parser.parse(result).suggestion1)
+        suggestions.append(self.parser.parse(result).suggestion2)
+        result = self.parser.parse(result).response
+        
          # Improve table removal logic
         table_pattern = r'(?s)\|.*?\|\n\|[-:]+\|\n(.*?)\n\n'
         result = re.sub(table_pattern, '', result)
 
         # Remove any remaining table-like structures
         result = re.sub(r'(?m)^\s*\|.*\|$', '', result)
-
+        if (len(self.list_commands) > 0):
+            self.persist_commands(json.dumps({"query": self.list_commands[0]}))
         if (len(self.execution_error) > 0):
             result = f"""There was an error processing your request. Please provide a clearer query and try again.
                     (Error message: {str(self.execution_error[0])})"""
         if (len(self.elem_queue) > 0):
-            return result, self.elem_queue
+            return result, self.elem_queue, suggestions
         else:
-            return result, None
+            return result, None, suggestions
 
     def set_llm_model(self, model):
         self.model_name = model
@@ -155,6 +183,8 @@ class DatasetAgent:
             return 'assistant'
         elif role == 'system-log':
             return 'system'
+        elif role == 'assistant-command':
+            return 'assistant-command'
         return role
 
     def _get_simplified_history(self) -> dict:
@@ -225,3 +255,28 @@ class DatasetAgent:
         self.history.add_message(SystemLogMessage(content=message))
         self.persist_history(persistence_type=persistence_type,
                              c_format=c_format, path=path)
+    
+    def persist_commands(self,
+                         message,
+                         persistent_type: PersistenceType = PersistenceType.DATABASE,
+                         c_format: ConversationFormat = ConversationFormat.SIMPLIFIED_JSON,
+                         path: str = 'histories'):
+        self.history.add_message(AssistantLogMessage(content=message))
+        
+        if not os.path.exists(path):
+            os.makedirs(path)
+        if persistent_type == PersistenceType.DATABASE and c_format == ConversationFormat.TEXT:
+            raise TypeError(
+                "Only JSON-like conversations can be written to the database")
+            
+        history = json.dumps(self._get_simplified_history())
+        extension = '.json'
+        
+        if persistent_type == PersistenceType.FILE:
+            with open(os.path.join(path, str(self.session_id) + extension), 'w') as f:
+                f.write(history)
+        elif (persistent_type == PersistenceType.DATABASE):
+            Conversation.upsert(str(current_user.id), str(
+                self.session_id), self.file_name, self.model_name, json.loads(history)['messages'])
+        else:
+            raise NotImplementedError("Unsupported persistence type")

@@ -65,10 +65,10 @@ def hide_dataviews(n_clicks, label):
     prevent_initial_call=True
 )
 def hide_chartview(n_clicks, label):
-    if label == 'Show Chart View':
-        return {'display': 'block'}, "Hide Chart View", 3, 6, 3
+    if label == 'Show Right View':
+        return {'display': 'block'}, "Hide Right View", 3, 6, 3
     else:
-        return {'display': 'none'}, "Show Chart View", 3, 9, 0
+        return {'display': 'none'}, "Show Right View", 3, 9, 0
 
 
 @app.callback(

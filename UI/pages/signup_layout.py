@@ -6,6 +6,9 @@ from werkzeug.security import generate_password_hash
 from db_models.users import User
 from db_models.databases import db
 from flask_login import login_user
+import docker
+import os 
+import shutil 
 
 dash.register_page(__name__, path='/signup/', title='Signup')
 
@@ -70,6 +73,21 @@ def handle_auth(signup_clicks, login_clicks, email, password):
         new_user = User(email=email)
         new_user.set_password(password)
         new_user.signup()
+        user_id = str(new_user.id)
+        try: 
+            client = docker.from_env()
+            current_path = os.path.dirname(os.path.realpath(__file__))
+            user_data_dir = os.path.dirname(current_path) + '/../tmp/' + user_id
+            os.makedirs(user_data_dir, exist_ok=True)
+            shutil.copyfile(os.path.dirname(current_path) + '/assets/main.py', user_data_dir + '/main.py')
+            client.containers.run('daisyy512/hello-docker', 
+                                            name='biasnavi-' + user_id, 
+                                            volumes=[user_data_dir + ':/home/sandbox/'+ user_id],
+                                            detach=True,
+                                            tty=True)
+            print("Create container successfully")
+        except Exception as e:
+            print("Create container failed: ", e)
         return '/survey', "Signup successful!"
 
     elif button_id == "login-button":

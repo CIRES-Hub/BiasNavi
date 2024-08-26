@@ -43,6 +43,7 @@ def distr_plot(
             name=sorted_labels[i],
             marker=dict(color=colors[i]),
             showlegend=True,
+            opacity=0.7
         ))
 
     fig.update_layout(

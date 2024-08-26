@@ -10,6 +10,7 @@ class Variables(object):
         self.dialog = []
         self.file_name = None
         self.suggested_questions = None
+        self.data_snapshots = []
 
 
 global_vars = Variables()
