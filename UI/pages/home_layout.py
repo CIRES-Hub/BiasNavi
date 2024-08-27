@@ -460,7 +460,8 @@ def layout():
                                 )
                             ], style={"display": "flex", "alignItems": "center","justifyContent": "space-between","width": "100%"}),
                             dbc.Tooltip(
-                                "Use the variable df to refer to the Pandas dataframe of the current dataset snapshot.",
+                                "The variable df is a reference of the Pandas dataframe of the current dataset. "
+                                "Any Modification on it will be reflected in the data view",
                                 target="tooltip-code",
                             ),
                         ]),
