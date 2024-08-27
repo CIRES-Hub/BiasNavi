@@ -353,8 +353,27 @@ def layout():
                     dbc.Card(children=[
                         html.Div([
                             html.Div([
-                                html.H4("Dataset Snapshots", className="secondary-title")
-                            ], className="query-header"),
+                                html.Div([
+                                    html.H4("Dataset Snapshots", style={'paddingLeft': 0}),
+                                    html.Span(
+                                        html.I(className="fas fa-question-circle"),
+                                        id="tooltip-snapshot",
+                                        style={
+                                            "fontSize": "20px",
+                                            "color": "#aaa",
+                                            "cursor": "pointer",
+                                            "margin-left": "5px",
+                                            "alignSelf": "center"
+                                        }
+                                    )
+                                ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                                          "width": "100%"}),
+                                dbc.Tooltip(
+                                    "Click the Restore button to use the selected snapshot in the middle data view.",
+                                    target="tooltip-snapshot",
+                                ),
+                            ]),
+
                             html.Div([
                                 dash_table.DataTable(
                                     id="snapshot-table",
@@ -425,7 +444,26 @@ def layout():
                     ], className='card'),
 
                     dbc.Card(children=[
-                        html.H4("Python Sandbox", style={'paddingLeft': 0}),
+                        html.Div([
+                            html.Div([
+                                html.H4("Python Sandbox", style={'paddingLeft': 0}),
+                                html.Span(
+                                    html.I(className="fas fa-question-circle"),
+                                    id="tooltip-code",
+                                    style={
+                                        "fontSize": "20px",
+                                        "color": "#aaa",
+                                        "cursor": "pointer",
+                                        "margin-left": "5px",
+                                        "alignSelf": "center"
+                                    }
+                                )
+                            ], style={"display": "flex", "alignItems": "center","justifyContent": "space-between","width": "100%"}),
+                            dbc.Tooltip(
+                                "Use the variable df to refer to the Pandas dataframe of the current dataset snapshot.",
+                                target="tooltip-code",
+                            ),
+                        ]),
                         html.Div([dash_editor_components.PythonEditor(id='commands-input',
                                                                       style={'height': '400px'}, value="")],
                                  className='commands_editor'),
