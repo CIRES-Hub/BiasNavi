@@ -7,6 +7,8 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, mean_squared_error
 from sklearn.svm import SVR
+
+
 def detect_text_columns(df, text_length_threshold=50):
     text_columns = []
     for col in df.columns:
@@ -117,12 +119,14 @@ class DatasetEval:
                 disparity_df = self.calculate_disparity(y_pred)
                 print("\nDisparity Results:")
                 print(disparity_df)
+                return accuracy, disparity_df
 
         else:
             # For regression
             y_pred = model.predict(self.X_test)
             mse = mean_squared_error(self.y_test, y_pred)
             print(f"Model Mean Squared Error: {mse:.4f}")
+            return mse
 
     def calculate_disparity(self, y_pred):
         """Calculate disparity (fairness) for multi-class classification results."""

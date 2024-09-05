@@ -353,7 +353,7 @@ def download_csv(n_clicks, rows):
 )
 def update_messages(n_clicks, n_submit, input_3, input_text, query_records, suggested_questions):
     if ((n_clicks is None or input_text is None) and input_3 is None) or global_vars.df is None:
-        return query_records, True, None, dash.no_update, suggested_questions, "",""
+        return query_records, True, None, dash.no_update, suggested_questions, "", ""
     trigger = ctx.triggered_id
     query = ''
     if not isinstance(trigger, str) and 'next-suggested-question' in trigger.type:
@@ -388,7 +388,7 @@ def update_messages(n_clicks, n_submit, input_3, input_text, query_records, sugg
     query_records.append(new_response_message)
     list_commands = global_vars.agent.list_commands
     return query_records, False, media, time.time(), suggested_questions, ('\n').join(list_commands) if len(
-        list_commands) > 0 else "",""
+        list_commands) > 0 else "", ""
 
 
 @app.callback(
@@ -473,8 +473,8 @@ def save_new_username(n_clicks, new_username):
 def generate_bias_report(target, styles):
     if global_vars.df[target].unique().size > 100:
         return [], html.P([
-                              "Warning: The selected target has more than 100 unique values, which cannot be plotted due to heavy computation load."],
-                          style={'color': 'red'}), [], "", styles
+            "Warning: The selected target has more than 100 unique values, which cannot be plotted due to heavy computation load."],
+            style={'color': 'red'}), [], "", styles
     sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
     if not sensitive_attrs:
         return [], html.P(["No sensitive attributes are detected."]), [], [], styles
@@ -521,12 +521,14 @@ def generate_bias_report(target, styles):
 
         # Append the graph to the list of graphs
         graphs.append(graph)
-    graphs += [html.Div(html.Button('Explain Charts', id='explain_graph_button', n_clicks=0, className='primary-button'),className='right-align-div'),]
+    graphs += [
+        html.Div(html.Button('Explain Charts', id='explain_graph_button', n_clicks=0, className='primary-button'),
+                 className='right-align-div'), ]
     warning_msg = ""
     if warning:
         warning_msg = html.P([
-                                 f"Warning: The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 100 unique values cannot be visualized due to heavy computation load."],
-                             style={'color': 'red'})
+            f"Warning: The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 100 unique values cannot be visualized due to heavy computation load."],
+            style={'color': 'red'})
     return graphs, warning_msg, bias_stats.to_dict('records'), bias_report_content, styles
 
 
@@ -656,7 +658,7 @@ def update_histogram(active_cell):
 
     # Update the layout properly
     fig.update_layout(
-        xaxis={"automargin": True, "tickmode": "auto",},
+        xaxis={"automargin": True, "tickmode": "auto", },
         yaxis={"automargin": True},
         height=250,
         margin={"t": 10, "l": 10, "r": 10},
@@ -665,3 +667,18 @@ def update_histogram(active_cell):
 
     # Return the Graph component
     return dcc.Graph(id=column_id, figure=fig)
+
+
+@app.callback(
+    [Output('label-selection', 'options'),
+     Output('sensi-attr-selection', 'options')],
+    [Input('dataset-selection', 'value')]
+)
+def update_columns(df_id):
+    if df_id is None:
+        return [], []
+
+    # Get the columns of the selected DataFrame
+    columns = [{'label': col, 'value': col} for col in global_vars.data_snapshots[int(df_id)-1].columns]
+
+    return columns, columns

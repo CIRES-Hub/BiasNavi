@@ -412,24 +412,46 @@ def layout():
                             html.Div([
                                 html.H4("Dataset Evaluation", className="secondary-title")
                             ], className="query-header"),
-                            html.Div([
-                                html.Div([
-                                    'Dataset Version:',
-                                    dcc.Dropdown(
-                                        id='dataset-selection',
-                                        style={'width': '100%'},
-                                    ),
-                                    'Task:',
-                                    dcc.Dropdown(
-                                        ['Classification', 'Regression'],
-                                        'Classification',
-                                        style={'width': '100%'},
-                                        id='task-selection'
-                                    ), ], className='left-align-div'),
-                                html.Div(html.Button('Run', id='eval-button',
-                                                     n_clicks=0, className='primary-button'),
-                                         className='right-align-div'),
-                            ], id='evaluation-options')
+                            dcc.Tabs(id="eval-tabs", value='tab-1', children=[
+                                dcc.Tab(label='Settings', children=[
+                                    html.Div([
+                                        html.Div([
+                                            'Dataset Version:',
+                                            dcc.Dropdown(
+                                                id='dataset-selection',
+                                                style={'width': '100%'},
+                                            ),
+                                            'Target Column:',
+                                            dcc.Dropdown(
+                                                id='label-selection',
+                                                style={'width': '100%'},
+                                            ),], className='left-align-div'),
+                                        html.Div([
+                                            'Sensitive Attribute:',
+                                            dcc.Dropdown(
+                                                id='sensi-attr-selection',
+                                                style={'width': '100%'},
+                                                multi=True
+                                            ),
+                                            'Task:',
+                                            dcc.Dropdown(
+                                                ['Classification', 'Regression'],
+                                                'Classification',
+                                                style={'width': '100%'},
+                                                id='task-selection'
+                                            ), ], className='left-align-div'),
+                                        html.Div(html.Button('Run', id='eval-button',
+                                                             n_clicks=0, className='primary-button'),
+                                                 className='right-align-div'),
+                                    ], id='evaluation-options'),
+                                ]),
+
+                                dcc.Tab(label='Results', children=[
+                                    html.Div(id='eval-results'),
+                                ]),
+                            ]),
+
+
                         ], className='llm-chart', style={'overflowX': 'auto'})
                     ], className='card'),
 
