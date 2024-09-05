@@ -35,7 +35,7 @@ import shutil
     Input("export-format-dropdown", "value"),
     prevent_initial_call=True,
 )
-def func(n_clicks, format):
+def export_conversation(n_clicks, format):
     now = datetime.datetime.now()
     formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
@@ -340,7 +340,8 @@ def download_csv(n_clicks, rows):
      Output('llm-media-area', 'children'),
      Output("chat-update-trigger", "data"),
      Output("next-suggested-questions", "children"),
-     Output("commands-input", "value")],
+     Output("commands-input", "value"),
+     Output('query-input', 'value')],
     [Input('send-button', 'n_clicks'),
      Input('query-input', 'n_submit'),
      Input({"type": 'next-suggested-question', "index": ALL}, 'n_clicks')],
@@ -352,7 +353,7 @@ def download_csv(n_clicks, rows):
 )
 def update_messages(n_clicks, n_submit, input_3, input_text, query_records, suggested_questions):
     if ((n_clicks is None or input_text is None) and input_3 is None) or global_vars.df is None:
-        return query_records, True, None, dash.no_update, suggested_questions, ""
+        return query_records, True, None, dash.no_update, suggested_questions, "",""
     trigger = ctx.triggered_id
     query = ''
     if not isinstance(trigger, str) and 'next-suggested-question' in trigger.type:
@@ -387,7 +388,7 @@ def update_messages(n_clicks, n_submit, input_3, input_text, query_records, sugg
     query_records.append(new_response_message)
     list_commands = global_vars.agent.list_commands
     return query_records, False, media, time.time(), suggested_questions, ('\n').join(list_commands) if len(
-        list_commands) > 0 else ""
+        list_commands) > 0 else "",""
 
 
 @app.callback(

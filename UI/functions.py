@@ -3,6 +3,7 @@ import os
 from UI.variable import global_vars
 import re
 
+
 #identify bias
 def identify_sensitive_attributes(data, target):
     fscorer = fl.FairnessScorer(data, target)
