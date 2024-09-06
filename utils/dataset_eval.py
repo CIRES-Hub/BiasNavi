@@ -1,12 +1,14 @@
 import pandas as pd
-from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, mean_squared_error
-from sklearn.svm import SVR
+from sklearn.svm import SVC, SVR
+from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 
 
 def detect_text_columns(df, text_length_threshold=50):
@@ -19,15 +21,18 @@ def detect_text_columns(df, text_length_threshold=50):
     return text_columns
 
 
+
 class DatasetEval:
-    def __init__(self, data, label, ratio=0.5, task_type='classification', fixed=True, text_length_threshold=50,
-                 sensitive_attribute=None):
+    def __init__(self, data, label, ratio=0.5, task_type='Classification', fixed=True, text_length_threshold=50,
+                 sensitive_attribute=None, model_type='SVM'):
+        self.data = data
+        self.label = label
         self.y_test = None
         self.y_train = None
         self.X_test = None
         self.X_train = None
-        self.task_type = task_type  # Store task_type as an instance variable
-        self.sensitive_attribute = sensitive_attribute  # Sensitive attribute for bias analysis
+        self.task_type = task_type
+        self.sensitive_attribute = sensitive_attribute
 
         if data is None:
             raise ValueError('The dataframe is None.')
@@ -35,32 +40,30 @@ class DatasetEval:
         if label not in data.columns:
             raise ValueError('The label is not in the dataset.')
 
-        if data[label].dtype in ['float64', 'float32'] and task_type == 'classification':
+        if data[label].dtype in ['float64', 'float32'] and task_type == 'Classification':
             raise ValueError('The target attribute is continuous (float) but the task is set to classification. '
                              'Consider binning the target or setting the task to regression.')
 
         if data[label].dtype == 'object' or data[label].dtype.name == 'bool' or data[label].dtype.name == 'category':
-            if task_type == 'regression':
+            if task_type == 'Regression':
                 raise TypeError('The target attribute is categorical and cannot be used for regression task.')
 
-        if task_type == 'classification':
-            label_encoder = LabelEncoder()
-            self.label = label_encoder.fit_transform(data[label])
+        if task_type == 'Classification':
+            self.label_encoder = LabelEncoder()
+            self.label = self.label_encoder.fit_transform(data[label])
         else:
             self.label = data[label]
 
-        # Detect and drop columns with long text
         long_text_columns = detect_text_columns(data, text_length_threshold)
         self.samples = data.drop(columns=long_text_columns + [label])
 
-        model = self.preprocess(self.samples)
+        self.pipline = self.preprocess(self.samples, model_type)
         self.split_dataset(data, label, ratio, fixed)
-        self.train_and_test(model)
 
-    def preprocess(self, data):
+
+    def preprocess(self, data, model_type):
         d_copy = data.copy()
-        numeric_features = d_copy.select_dtypes(include=['int64', 'float64']).columns
-        categorical_features = d_copy.select_dtypes(include=['object']).columns
+        d_copy = d_copy.drop(self.sensitive_attribute,axis=1)
         datetime_features = d_copy.select_dtypes(include=['datetime64']).columns
         for col in datetime_features:
             d_copy[col + '_year'] = d_copy[col].dt.year
@@ -68,8 +71,10 @@ class DatasetEval:
             d_copy[col + '_day'] = d_copy[col].dt.day
             d_copy[col + '_hour'] = d_copy[col].dt.hour
             d_copy[col + '_weekday'] = d_copy[col].dt.weekday
-            d_copy = d_copy.drop(columns=[col])  # Drop the original datetime column after extraction
+            d_copy = d_copy.drop(columns=[col])
 
+        numeric_features = d_copy.select_dtypes(include=['int64', 'float64']).columns
+        categorical_features = d_copy.select_dtypes(include=['object']).columns
         numeric_transformer = Pipeline(steps=[
             ('imputer', SimpleImputer(strategy='mean')),
             ('scaler', StandardScaler())
@@ -85,16 +90,32 @@ class DatasetEval:
                 ('num', numeric_transformer, numeric_features),
                 ('cat', categorical_transformer, categorical_features),
             ],
-            remainder='drop'  # This will drop any columns not specified in transformers (like datetime columns)
+            remainder='drop'
         )
 
-        if self.task_type == 'classification':
-            model = Pipeline(steps=[('preprocessor', preprocessor),
-                                    ('classifier', LogisticRegression())])
+        # Choose model based on task and user input
+        if self.task_type == 'Classification':
+            if model_type == 'Logistic':
+                model = LogisticRegression(max_iter=500)
+            elif model_type == 'SVM':
+                model = SVC(max_iter=500)
+            elif model_type == 'gradient_boosting':
+                model = GradientBoostingClassifier()
+            elif model_type == 'MLP':
+                model = MLPClassifier(max_iter=500)
+            else:
+                raise ValueError(f"Unknown model type: {model_type}")
         else:
-            model = Pipeline(steps=[('preprocessor', preprocessor),
-                                    ('regressor', SVR())])
-        return model
+            if model_type == 'SVM':
+                model = SVR()
+            elif model_type == 'gradient_boosting':
+                model = GradientBoostingRegressor()
+            elif model_type == 'MLP':
+                model = MLPRegressor(max_iter=500)
+            else:
+                raise ValueError(f"Unknown model type: {model_type}")
+
+        return Pipeline(steps=[('preprocessor', preprocessor), ('model', model)])
 
     def split_dataset(self, data, label, ratio, fixed):
         if fixed:
@@ -104,38 +125,40 @@ class DatasetEval:
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
                 data.drop(label, axis=1), self.label, test_size=ratio)
 
-    def train_and_test(self, model):
+    def train_and_test(self):
         # Train the model
-        model.fit(self.X_train, self.y_train)
+        self.pipline.fit(self.X_train, self.y_train)
 
-        if self.task_type == 'classification':
+        if self.task_type == 'Classification':
             # Standard accuracy evaluation
-            y_pred = model.predict(self.X_test)
+            y_pred = self.pipline.predict(self.X_test)
             accuracy = accuracy_score(self.y_test, y_pred)
-            print(f"Model Accuracy: {accuracy:.4f}")
+            res = f"Model Accuracy: {accuracy:.4f}"
+            print(res)
 
             # If a sensitive attribute is defined, calculate disparity
             if self.sensitive_attribute:
                 disparity_df = self.calculate_disparity(y_pred)
                 print("\nDisparity Results:")
-                print(disparity_df)
-                return accuracy, disparity_df
+                for tab in disparity_df:
+                    print(tab)
+                return res, disparity_df
+            else:
+                return res,[]
 
         else:
             # For regression
-            y_pred = model.predict(self.X_test)
+            y_pred = self.pipline.predict(self.X_test)
             mse = mean_squared_error(self.y_test, y_pred)
             print(f"Model Mean Squared Error: {mse:.4f}")
             return mse
 
     def calculate_disparity(self, y_pred):
         """Calculate disparity (fairness) for multi-class classification results."""
-        if self.sensitive_attribute not in self.X_test.columns:
-            raise ValueError(f"Sensitive attribute '{self.sensitive_attribute}' is not in the dataset.")
 
         # Add the predicted class to the test set
         result_df = self.X_test.copy()
-        result_df['predicted_class'] = y_pred
+        result_df['predicted_class'] = self.label_encoder.inverse_transform(y_pred)
 
         # Get unique classes from the predicted labels
         unique_classes = result_df['predicted_class'].unique()
@@ -143,28 +166,29 @@ class DatasetEval:
         # Calculate the rate of predictions for each class within each group
         parity_results = []
         disparity_scores = {}
-        for cls in unique_classes:
-            # Calculate the prediction rate for each group
-            cls_df = result_df[result_df['predicted_class'] == cls]
-            parity_df = cls_df.groupby(self.sensitive_attribute).size() / result_df.groupby(
-                self.sensitive_attribute).size()
-            parity_df = parity_df.rename(f'Class_{cls}')
-            parity_results.append(parity_df)
+        data_frames = []
+        for sensi_attr in self.sensitive_attribute:
+            for cls in unique_classes:
+                # Calculate the prediction rate for each group
+                cls_df = result_df[result_df['predicted_class'] == cls]
+                parity_df = cls_df.groupby(sensi_attr).size() / result_df.groupby(
+                    sensi_attr).size()
+                parity_df = parity_df.rename(f'Class:{cls}')
+                parity_results.append(parity_df)
 
-            # Calculate disparity score (max - min prediction rate) for each class
-            max_rate = parity_df.max()
-            min_rate = parity_df.min()
-            disparity_score = max_rate - min_rate
-            disparity_scores[f'Class_{cls}'] = disparity_score
-
-        # Combine results for each class into one DataFrame
-        result_df = pd.concat(parity_results, axis=1).reset_index()
+                # Calculate disparity score (max - min prediction rate) for each class
+                max_rate = parity_df.max()
+                min_rate = parity_df.min()
+                disparity_score = max_rate - min_rate
+                disparity_scores[f'Class:{cls} Attribute:{sensi_attr}'] = disparity_score
+            data_frames.append(pd.concat(parity_results, axis=1).reset_index())
+            parity_results = []
 
         # Display disparity scores
         for cls, score in disparity_scores.items():
             print(f"{cls}: Disparity Score = {score:.4f}")
 
-        return result_df
+        return data_frames
 
     # def analyze_bias(self):
     #     # Check if the sensitive attribute exists in the dataset
@@ -270,10 +294,11 @@ class DatasetEval:
 #     'purchased': [0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1]  # Target variable
 # }
 # df = pd.DataFrame(testdata)
-df = pd.read_csv('../dataset/compas/compas-scores-two-years.csv')
-
-# Instantiate DatasetEval with 'gender' as the sensitive attribute
-de = DatasetEval(df, 'score_text', task_type='classification', sensitive_attribute='race')
+# df = pd.read_csv('../dataset/compas/compas-scores-two-years.csv')
+# #
+# # # Instantiate DatasetEval with 'gender' as the sensitive attribute
+# de = DatasetEval(df, 'score_text', task_type='Classification', sensitive_attribute=['sex'])
+# de.train_and_test()
 
 # Example usage with plotting
 

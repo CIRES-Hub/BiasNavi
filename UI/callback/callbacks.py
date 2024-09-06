@@ -22,11 +22,10 @@ import dash_bootstrap_components as dbc
 from flask_login import current_user
 from dash.exceptions import PreventUpdate
 import docker
-import ast
-import os
 import os
 import shutil
-
+from utils.dataset_eval import DatasetEval
+from dash.dash_table.Format import Format, Scheme
 
 @app.callback(
     Output("export", "data"),
@@ -672,13 +671,86 @@ def update_histogram(active_cell):
 @app.callback(
     [Output('label-selection', 'options'),
      Output('sensi-attr-selection', 'options')],
-    [Input('dataset-selection', 'value')]
+    [Input('dataset-selection', 'value')],
+    prevent_initial_call=True
 )
 def update_columns(df_id):
     if df_id is None:
         return [], []
 
     # Get the columns of the selected DataFrame
-    columns = [{'label': col, 'value': col} for col in global_vars.data_snapshots[int(df_id)-1].columns]
+    columns = [{'label': col, 'value': col} for col in global_vars.data_snapshots[int(df_id) - 1].columns]
 
     return columns, columns
+
+
+@app.callback(
+    Output('model-selection', 'options'),
+    Input('task-selection', 'value'),
+    prevent_initial_call=True
+)
+def update_model_dropdown(selected_task):
+    if selected_task == 'Classification':
+        return [{'label': 'SVM', 'value': 'SVM'}, {'label': 'Logistic', 'value': 'Logistic'},
+                {'label': 'MLP', 'value': 'MLP'}]
+    if selected_task == 'Regression':
+        return [{'label': 'SVM', 'value': 'SVM'}, {'label': 'MLP', 'value': 'MLP'}]
+
+
+@app.callback(
+    Output('eval-info', 'children'),
+    Output('eval-res', 'children'),
+    Output('fairness-scores', 'children'),
+    Input('eval-button','n_clicks'),
+    State('dataset-selection', 'value'),
+    State('sensi-attr-selection', 'value'),
+    State('label-selection', 'value'),
+    State('task-selection', 'value'),
+    State('model-selection', 'value'),
+    prevent_initial_call=True
+)
+def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
+    data = global_vars.data_snapshots[int(df_id) - 1]
+    if label in sens_attr:
+        return html.P('The label cannot be in the sensitive attributes!', style={"color": "red"}), [], [],
+    if data[label].dtype in ['float64', 'float32'] and task == 'classification':
+        return html.P('The target attribute is continuous (float) but the task is set to classification. '
+                      'Consider binning the target or setting the task to regression.'), [], [], []
+    if data[label].dtype == 'object' or data[label].dtype.name == 'bool' or data[label].dtype.name == 'category':
+        if task == 'regression':
+            return html.P('The target attribute is categorical and cannot be used for regression task.'), [], []
+    de = DatasetEval(data,label,ratio=0.2,task_type=task,sensitive_attribute=sens_attr,model_type=model)
+    res, scores = de.train_and_test()
+    tables = []
+    for tid,frame in enumerate(scores):
+        tables.append(dash_table.DataTable(
+            id=f'table-{tid + 1}',
+            columns=[
+                {
+                    'name': col, 'id': col, 'type': 'numeric',
+                    'format': Format(precision=4, scheme=Scheme.fixed)
+                }
+                for col in frame.columns
+            ],
+            data=frame.to_dict('records'),
+            style_cell={'textAlign': 'center',
+                        'fontFamiliy': 'Arial'},
+            style_header={'backgroundColor': 'darkslateblue',
+                          'color': 'white',
+                          'fontWeight': 'bold'
+                          }, style_table={'overflowX': 'auto'},
+            style_data_conditional=[
+                {
+                    'if': {'row_index': 'odd'},
+                    'backgroundColor': '#f2f2f2'
+                },
+                {
+                    'if': {'row_index': 'even'},
+                    'backgroundColor': 'white'
+                },
+            ]
+        ))
+
+    return [], [html.Hr(),html.H5("Results"),
+                res,html.P("Demographic Disparity",style={'fontWeight':'bold'})], tables
+

@@ -193,6 +193,16 @@ def layout():
                         ], className='query')
                     ], className='card'),
 
+                    dbc.Card(children=[
+                        html.Div([
+                            # Chat display area
+                            html.Div([
+                                html.H4("Charts", className="secondary-title")
+                            ], className="query-header"),
+                            html.Div([], id='llm-media-area')
+                        ], className='llm-chart', style={'overflowX': 'auto'})
+                    ], className='card'),
+
                     # RAG card
                     dbc.Card(id="rag-card", style={'display': 'block'}, children=[
                         html.Div([
@@ -412,56 +422,65 @@ def layout():
                             html.Div([
                                 html.H4("Dataset Evaluation", className="secondary-title")
                             ], className="query-header"),
-                            dcc.Tabs(id="eval-tabs", value='tab-1', children=[
-                                dcc.Tab(label='Settings', children=[
-                                    html.Div([
-                                        html.Div([
-                                            'Dataset Version:',
-                                            dcc.Dropdown(
-                                                id='dataset-selection',
-                                                style={'width': '100%'},
-                                            ),
-                                            'Target Column:',
-                                            dcc.Dropdown(
-                                                id='label-selection',
-                                                style={'width': '100%'},
-                                            ),], className='left-align-div'),
-                                        html.Div([
-                                            'Sensitive Attribute:',
-                                            dcc.Dropdown(
-                                                id='sensi-attr-selection',
-                                                style={'width': '100%'},
-                                                multi=True
-                                            ),
-                                            'Task:',
-                                            dcc.Dropdown(
-                                                ['Classification', 'Regression'],
-                                                'Classification',
-                                                style={'width': '100%'},
-                                                id='task-selection'
-                                            ), ], className='left-align-div'),
-                                        html.Div(html.Button('Run', id='eval-button',
-                                                             n_clicks=0, className='primary-button'),
-                                                 className='right-align-div'),
-                                    ], id='evaluation-options'),
-                                ]),
-
-                                dcc.Tab(label='Results', children=[
-                                    html.Div(id='eval-results'),
-                                ]),
-                            ]),
-
-
-                        ], className='llm-chart', style={'overflowX': 'auto'})
-                    ], className='card'),
-
-                    dbc.Card(children=[
-                        html.Div([
-                            # Chat display area
                             html.Div([
-                                html.H4("Charts", className="secondary-title")
-                            ], className="query-header"),
-                            html.Div([], id='llm-media-area')
+                                'Dataset Version:',
+                                dcc.Dropdown(
+                                    id='dataset-selection',
+                                    style={'width': '100%'},
+                                    clearable=False
+                                ),
+                                'Sensitive Attribute:',
+                                dcc.Dropdown(
+                                    id='sensi-attr-selection',
+                                    style={'width': '100%'},
+                                    multi=True,
+                                    clearable=False
+                                ),
+                                'Label:',
+                                dcc.Dropdown(
+                                    id='label-selection',
+                                    style={'width': '100%'},
+                                    clearable=False
+                                ),
+                            ], className='left-align-div'),
+                            html.Div([
+                                html.Div([
+                                    'Task:',
+                                    dcc.Dropdown(
+                                        ['Classification', 'Regression'],
+                                        'Classification',
+                                        style={'width': '100%'},
+                                        id='task-selection',
+                                        clearable=False
+                                    ),
+                                    'Model:',
+                                    dcc.Dropdown(
+                                        ['SVM', 'Logistic', 'MLP'],
+                                        'SVM',
+                                        style={'width': '100%'},
+                                        id='model-selection',
+                                        clearable=False
+                                    ),
+                                ], className='left-align-div'),
+                                html.Div(id='eval-info'),
+                            ], id='evaluation-options'),
+                            dcc.Loading(id="table-loading", children=[
+                                html.Div(html.Button('Run', id='eval-button',
+                                                     n_clicks=0, className='primary-button'),
+                                         className='right-align-div'),
+                                html.Div(
+                                    children=[
+                                        html.Div(id='eval-res', style={'marginBottom': '10px', 'marginTop': '10px'}),
+                                        html.Div(id='fairness-scores')
+
+                                    ]),
+                            ], overlay_style={
+                                "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
+                                        custom_spinner=html.H3(
+                                            ["Running...", dbc.Spinner(color="primary")]),
+                            ),
+
+
                         ], className='llm-chart', style={'overflowX': 'auto'})
                     ], className='card'),
 
@@ -698,3 +717,5 @@ def toggle_collapse(n, is_open):
 )
 def toggle_disable(n_clicks):
     return True, True
+
+
