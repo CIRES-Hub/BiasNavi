@@ -734,11 +734,12 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
             ],
             data=frame.to_dict('records'),
             style_cell={'textAlign': 'center',
-                        'fontFamiliy': 'Arial'},
+                        'fontFamily': 'Arial'},
             style_header={'backgroundColor': 'darkslateblue',
                           'color': 'white',
                           'fontWeight': 'bold'
-                          }, style_table={'overflowX': 'auto'},
+                          },
+            style_table={'overflowX': 'auto', 'marginTop': '20px'},  # Add margin here
             style_data_conditional=[
                 {
                     'if': {'row_index': 'odd'},
@@ -748,9 +749,36 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
                     'if': {'row_index': 'even'},
                     'backgroundColor': 'white'
                 },
+                # Highlight the last row
+                {
+                    'if': {'row_index': len(frame) - 1},
+                    'backgroundColor': '#ffeb3b',  # Yellow background color for highlighting
+                    'fontWeight': 'bold'
+                },
             ]
         ))
+    tooltip = html.Div([
+                html.Div([
+                    html.H5("Results", style={'paddingLeft': 0}),
+                    html.Span(
+                        html.I(className="fas fa-question-circle"),
+                        id="tooltip-eval",
+                        style={
+                            "fontSize": "20px",
+                            "color": "#aaa",
+                            "cursor": "pointer",
+                            "margin-left": "5px",
+                            "alignSelf": "center"
+                        }
+                    )
+                ], style={"display": "flex", "alignItems": "center","justifyContent": "space-between","width": "100%"}),
+                dbc.Tooltip(
+                    "The figures in the table represent the predicted probability that the subgroup is classified "
+                    "into the corresponding category. The disparity score is calculated as the difference between "
+                    "the maximum and minimum values in each column. A larger score indicates a higher degree of potential bias.",
+                    target="tooltip-eval",
+                ),
+            ])
 
-    return [], [html.Hr(),html.H5("Results"),
-                res,html.P("Demographic Disparity",style={'fontWeight':'bold'})], tables
+    return [], [html.Hr(), tooltip, res], tables
 

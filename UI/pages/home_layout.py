@@ -423,7 +423,7 @@ def layout():
                                 html.H4("Dataset Evaluation", className="secondary-title")
                             ], className="query-header"),
                             html.Div([
-                                'Dataset Version:',
+                                'Snapshot:',
                                 dcc.Dropdown(
                                     id='dataset-selection',
                                     style={'width': '100%'},
