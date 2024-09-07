@@ -21,12 +21,11 @@ def detect_text_columns(df, text_length_threshold=50):
     return text_columns
 
 
-
 class DatasetEval:
     def __init__(self, data, label, ratio=0.5, task_type='Classification', fixed=True, text_length_threshold=50,
                  sensitive_attribute=None, model_type='SVM'):
         self.data = data
-        self.label = label
+        self.target = label
         self.y_test = None
         self.y_train = None
         self.X_test = None
@@ -60,10 +59,9 @@ class DatasetEval:
         self.pipline = self.preprocess(self.samples, model_type)
         self.split_dataset(data, label, ratio, fixed)
 
-
     def preprocess(self, data, model_type):
         d_copy = data.copy()
-        d_copy = d_copy.drop(self.sensitive_attribute,axis=1)
+        d_copy = d_copy.drop(self.sensitive_attribute, axis=1)
         datetime_features = d_copy.select_dtypes(include=['datetime64']).columns
         for col in datetime_features:
             d_copy[col + '_year'] = d_copy[col].dt.year
@@ -144,7 +142,7 @@ class DatasetEval:
                     print(tab)
                 return res, disparity_df
             else:
-                return res,[]
+                return res, []
 
         else:
             # For regression
@@ -165,29 +163,27 @@ class DatasetEval:
 
         # Calculate the rate of predictions for each class within each group
         parity_results = []
-        disparity_scores = {}
         data_frames = []
         for sensi_attr in self.sensitive_attribute:
+            disparity_scores = ['Disparity Score']
             for cls in unique_classes:
                 # Calculate the prediction rate for each group
                 cls_df = result_df[result_df['predicted_class'] == cls]
                 parity_df = cls_df.groupby(sensi_attr).size() / result_df.groupby(
                     sensi_attr).size()
-                parity_df = parity_df.rename(f'Class:{cls}')
+                parity_df = parity_df.rename(f'{cls}')
                 parity_results.append(parity_df)
 
                 # Calculate disparity score (max - min prediction rate) for each class
                 max_rate = parity_df.max()
                 min_rate = parity_df.min()
                 disparity_score = max_rate - min_rate
-                disparity_scores[f'Class:{cls} Attribute:{sensi_attr}'] = disparity_score
-            data_frames.append(pd.concat(parity_results, axis=1).reset_index())
+                disparity_scores.append(disparity_score)
+            frame = pd.concat(parity_results, axis=1).reset_index()
+            disparity_row = pd.Series(disparity_scores, index=frame.columns)
+            frame.loc[len(frame)] = disparity_row
+            data_frames.append(frame)
             parity_results = []
-
-        # Display disparity scores
-        for cls, score in disparity_scores.items():
-            print(f"{cls}: Disparity Score = {score:.4f}")
-
         return data_frames
 
     # def analyze_bias(self):
@@ -240,9 +236,6 @@ class DatasetEval:
 
     # Calculate Demographic Parity for multi-class classification
 
-
-
-
     # @staticmethod
     # def plot_density_curve(result_df, sensitive_attribute):
     #     """
@@ -283,7 +276,6 @@ class DatasetEval:
     # result_df = de.analyze_bias()
     # plot_density_curve_plotly(result_df, de.sensitive_attribute)
 
-
 # Test with a sample dataset
 # testdata = {
 #     'age': [25, 45, 35, 50, 34, 23, 23, 40, 30, 22, 48, 34, 35, 38, 45],
@@ -301,4 +293,3 @@ class DatasetEval:
 # de.train_and_test()
 
 # Example usage with plotting
-
