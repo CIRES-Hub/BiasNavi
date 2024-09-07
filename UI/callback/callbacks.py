@@ -739,7 +739,7 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
                           'color': 'white',
                           'fontWeight': 'bold'
                           },
-            style_table={'overflowX': 'auto', 'marginTop': '20px'},  # Add margin here
+            style_table={'overflowX': 'auto', 'marginTop': '20px', 'marginLeft':'0px'},  # Add margin here
             style_data_conditional=[
                 {
                     'if': {'row_index': 'odd'},
