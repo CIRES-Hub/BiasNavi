@@ -8,7 +8,7 @@ from dash.exceptions import PreventUpdate
 from werkzeug.security import generate_password_hash
 from db_models.users import User
 from db_models.databases import db
-from flask_login import login_user
+from flask_login import current_user
 
 dash.register_page(__name__, path='/survey/', title='Survey')
 
@@ -22,7 +22,9 @@ custom_style = {
     }
 }
 
-layout = dbc.Container(
+def layout():
+    user = User.query.get(current_user.id)
+    return dbc.Container(
     fluid=True,
     className="body vh-100 d-flex align-items-center justify-content-center bg-light",
     children=[
@@ -39,7 +41,8 @@ layout = dbc.Container(
                                           className="font-weight-bold"),
                                 html.Div(
                                     dbc.Input(
-                                        id="username-input", placeholder="Enter your username", style=custom_style["input-field"]), style=custom_style["input-wrapper"]
+                                        id="username-input", placeholder="Enter your username", 
+                                        style=custom_style["input-field"], value=user.username), style=custom_style["input-wrapper"]
                                 ),
                             ], className="mb-3"),
                             dbc.Row([
@@ -48,6 +51,7 @@ layout = dbc.Container(
                                 html.Div(
                                     dcc.Dropdown(
                                         id="professional-role-input",
+                                        value=user.professional_role,
                                         options=[
                                             {"label": sector, "value": sector} for sector in
                                             ["Data Scientist", "Researcher", "Other"]
@@ -72,6 +76,7 @@ layout = dbc.Container(
                                         ],
                                         placeholder="Select your industry sector",
                                         style=custom_style["input-field"],
+                                        value=user.industry_sector,
                                     ),
                                     style=custom_style["input-wrapper"]
                                 ),
@@ -90,6 +95,79 @@ layout = dbc.Container(
                                         ],
                                         placeholder="Select your expertise level",
                                         style=custom_style["input-field"],
+                                        value=user.expertise_level,
+                                    ),
+                                    style=custom_style["input-wrapper"]
+                                ),
+                            ], className="mb-3"),
+                            
+                            dbc.Row([
+                                html.Div([
+                                    dbc.Label(
+                                        "Level of Technical in Data Science and Machine Learning", className="font-weight-bold"),
+                                    html.Span(
+                                        html.I(className="fas fa-question-circle"),
+                                        id="technical-tooltip-snapshot",
+                                        style={
+                                            "fontSize": "20px",
+                                            "color": "#aaa",
+                                            "cursor": "pointer",
+                                            "margin-left": "5px",
+                                            "alignSelf": "center"
+                                        }
+                                    )], className="survey-tooltip"),
+                                    dbc.Tooltip(
+                                    "How would you rate your expertise in data science and machine learning?",
+                                    target="technical-tooltip-snapshot",
+                                    placement="right"
+                                ),
+                                html.Div(
+                                    dcc.Dropdown(
+                                        id="technical-level-dropdown",
+                                        options=[
+                                            {"label": level, "value": level} for level in
+                                            ["Novice", "Beginner",
+                                                "Intermediate", "Advanced", "Expert"]
+                                        ],
+                                        placeholder="Select your expertise level",
+                                        style=custom_style["input-field"],
+                                        value=user.technical_level,
+                                    ),
+                                    style=custom_style["input-wrapper"]
+                                ),
+                            ], className="mb-3"),
+                            
+                            dbc.Row([
+                                html.Div([
+                                    dbc.Label(
+                                        "Level of Awareness of Biases in Datasets and AI Models", className="font-weight-bold"),
+                                    html.Span(
+                                        html.I(className="fas fa-question-circle"),
+                                        id="bias-tooltip-snapshot",
+                                        style={
+                                            "fontSize": "20px",
+                                            "color": "#aaa",
+                                            "cursor": "pointer",
+                                            "margin-left": "5px",
+                                            "alignSelf": "center"
+                                        }
+                                    )], className="survey-tooltip"),
+                                    dbc.Tooltip(
+                                    "How would you rate your awareness of biases in datasets and AI models?",
+                                    target="bias-tooltip-snapshot",
+                                    placement="right"
+                                ),
+                                html.Div(
+                                    dcc.Dropdown(
+                                        id="bias-awareness-dropdown",
+                                        options=[
+                                            {"label": level, "value": level} for level in
+                                            ["Very Low", "Low",
+                                                "Moderate", "High", "Very High"]
+                                        ],
+                                        placeholder="Select your awareness level",
+                                        style=custom_style["input-field"],
+                                        value=user.bias_awareness,
                                     ),
                                     style=custom_style["input-wrapper"]
                                 ),
@@ -108,6 +186,7 @@ layout = dbc.Container(
                                         ],
                                         inline=True,
                                         style=custom_style["input-field"],
+                                        value=user.areas_of_interest or [],
                                     ),
                                     style=custom_style["input-wrapper"]
                                 ),
@@ -149,10 +228,12 @@ layout = dbc.Container(
     State("professional-role-input", "value"),
     State("industry-sector-dropdown", "value"),
     State("expertise-level-dropdown", "value"),
+    State("technical-level-dropdown", "value"),
+    State("bias-awareness-dropdown", "value"),
     State("areas-of-interest-checklist", "value"),
     prevent_initial_call=True
 )
-def update_survey_info(submit_clicks, skip_clicks, user_name, professional_role, industry_sector, expertise_level, areas_of_interest):
+def update_survey_info(submit_clicks, skip_clicks, user_name, professional_role, industry_sector, expertise_level, technical_level, bias_awareness, areas_of_interest):
     ctx = callback_context
     if not ctx.triggered:
         raise PreventUpdate
@@ -160,7 +241,7 @@ def update_survey_info(submit_clicks, skip_clicks, user_name, professional_role,
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
     if button_id == "submit-button":
-        if not all([professional_role, industry_sector, expertise_level, areas_of_interest]):
+        if not all([professional_role, industry_sector, expertise_level, areas_of_interest, technical_level, bias_awareness]):
             return dash.no_update, "Please fill in all."
 
         try:
@@ -172,7 +253,11 @@ def update_survey_info(submit_clicks, skip_clicks, user_name, professional_role,
             user.professional_role = professional_role
             user.industry_sector = industry_sector
             user.expertise_level = expertise_level
+            user.technical_level = technical_level
+            user.bias_awareness = bias_awareness
             user.areas_of_interest = areas_of_interest
+            user.persona_prompt = 'My professional role is {{professional_role}}. I am working in {{industry_sector}} industry. My level of expertise in data analysis is {{expertise_level}}'
+                
             db.session.commit()
             return '/home', 'Survey information updated!'
         except Exception as e:

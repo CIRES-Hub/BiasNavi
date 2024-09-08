@@ -19,6 +19,13 @@ class User(db.Model, UserMixin):
     professional_role = db.Column(db.String(100))
     industry_sector = db.Column(db.String(100))
     expertise_level = db.Column(db.String(100))
+    persona_prompt = db.Column(db.String(1000))
+    follow_up_questions_prompt_1 = db.Column(db.String(1000))
+    follow_up_questions_prompt_2 = db.Column(db.String(1000))
+    system_prompt = db.Column(db.String(1000))
+    prefix_prompt = db.Column(db.String(1000))
+    technical_level = db.Column(db.String(100))
+    bias_awareness = db.Column(db.String(100))
     areas_of_interest = db.Column(ARRAY(db.String(100)))
 
     def set_password(self, password):

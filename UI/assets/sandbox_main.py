@@ -18,7 +18,8 @@ if __name__ == '__main__':
         with open(f"_output_{user_id}.out", "w") as f:
             with redirect_stdout(f):
                 module = ast.Module(tree.body, type_ignores=[])
-                exec(ast.unparse(module), {}, {"df": df})  # type: ignore
+                exec(ast.unparse(module)) 
+        df.to_csv("df.csv", mode="w")
     except Exception as e:
         with open(f"_error_{user_id}.err", "w") as f:
             f.write("{}: {}".format(type(e).__name__, str(e)))

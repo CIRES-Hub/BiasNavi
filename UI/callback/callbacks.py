@@ -125,29 +125,69 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
     else:
         return rag_output
 
+@app.callback(
+    Output('update-prompt-button', 'disabled', allow_duplicate=True),
+    Input('update-prompt-button', 'n_clicks'),
+    [State('next-question-input-1', "value"),
+    State('next-question-input-2', "value"),
+    State('system-prompt-input', "value"),
+    State('persona-prompt-input', "value"),
+    State('prefix-prompt-input', "value")],
+    prevent_initial_call=True,
+)
+def update_prompt(update_prompt_click, new_next_question_1, new_next_question_2, new_system_prompt, new_persona_prompt, new_prefix_prompt):
+    try:
+            # Fetch
+            user = User.query.get(current_user.id)
+
+            # Update and commit
+            user.follow_up_questions_prompt_1 = new_next_question_1
+            user.follow_up_questions_prompt_2 = new_next_question_2
+            user.prefix_prompt = new_prefix_prompt
+            user.persona_prompt = new_persona_prompt
+            user.system_prompt = new_system_prompt
+            db.session.commit()
+    
+    except Exception as e:
+        db.session.rollback()
+        print("Error when update prompt", e)
+
+    if global_vars.df is not None and global_vars.file_name is not None:
+        global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name)
+        
+        if all([current_user.professional_role, current_user.industry_sector, current_user.expertise_level]):
+            
+            persona_query = current_user.persona_prompt.replace("{{professional_role}}", current_user.professional_role)
+            persona_query = current_user.persona_prompt.replace("{{industry_sector}}", current_user.industry_sector)
+            persona_query = current_user.persona_prompt.replace("{{expertise_level}}", current_user.expertise_level)
+            print(persona_query)
+            query_llm(persona_query)
+    return False     
 
 @app.callback(
-    [Output('table-overview', 'data', allow_duplicate=True, ),
+    [Output('table-overview', 'data', allow_duplicate=True),
      Output('table-overview', 'columns'),
      Output('column-names-dropdown', 'options'),
      Output('error-file-format', 'is_open'),
      Output('dataset-name', 'children'),
      Output('snapshot-table', 'data'),
-     Output('dataset-selection', 'options')],
+     Output('dataset-selection', 'options'), 
+     Output('console-area', 'children', allow_duplicate=True),
+     Output("commands-input", "disabled", allow_duplicate=True),
+     Output("run-commands", "disabled", allow_duplicate=True),],
     [Input('upload-data', 'contents'),
      Input('show-rows-button', 'n_clicks')],
     [State('upload-data', 'filename'),
      State('input-start-row', 'value'),
      State('input-end-row', 'value'),
-     State('snapshot-table', 'data')],
+     State('snapshot-table', 'data'),],
     prevent_initial_call=True,
 )
 def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, start_row, end_row, snapshot_data):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
-
     if triggered_id == 'upload-data':
         if not list_of_contents or not list_of_names:
-            return [], [], [], False, "", []
+            return [], [], [], False, "", [], dash.no_update, dash.no_update, dash.no_update 
 
         # Process the first file only
         contents = list_of_contents[0]
@@ -157,7 +197,7 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, "", [], []
+            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -169,12 +209,15 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
         #global_vars.df = DataWrangler.fill_missing_values(raw_data)
         global_vars.df = raw_data  #DataWrangler.fill_missing_values(raw_data)
         global_vars.agent = DatasetAgent(global_vars.df, file_name=filename)
-        if all([current_user.professional_role, current_user.industry_sector, current_user.expertise_level]):
-            query_llm('. \n '.join(
-                [f'my professional role is {current_user.professional_role}' if current_user.professional_role else '',
-                 f'I am working in {current_user.industry_sector} industry' if current_user.industry_sector else '',
-                 f'my level of expertise in data analysis is {current_user.expertise_level}' if current_user.expertise_level else ''
-                 ]))
+        if all([current_user.professional_role, current_user.industry_sector, current_user.expertise_level, current_user.technical_level, current_user.bias_awareness]):
+            
+            persona_query = current_user.persona_prompt.replace("{{professional_role}}", current_user.professional_role)
+            persona_query = current_user.persona_prompt.replace("{{industry_sectorn}}", current_user.industry_sector)
+            persona_query = current_user.persona_prompt.replace("{{expertise_level}}", current_user.expertise_level)
+            persona_query = current_user.persona_prompt.replace("{{technical_level}}", current_user.technical_level)
+            persona_query = current_user.persona_prompt.replace("{{bias_awareness}}", current_user.bias_awareness)
+            
+            query_llm(persona_query)
 
         return (
             global_vars.df.to_dict('records'),
@@ -183,12 +226,15 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
             False,
             f"Dataset: {filename} (maximum row number:{len(global_vars.df)})",
             [{'ver': '1', 'desc': 'Original', 'time': formatted_date_time}],
-            ['1']
+            ['1'],
+            "",
+            False,
+            False
         )
 
     elif triggered_id == 'show-rows-button':
         if global_vars.df is None:
-            return [], [], [], False, "", [], []
+            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
@@ -202,6 +248,9 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update
             )
 
         xdf = global_vars.df.iloc[start_row:end_row]
@@ -213,9 +262,12 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
             dash.no_update,
             dash.no_update,
             dash.no_update,
+            "",
+            False,
+            False
         )
 
-    return [], [], [], False, "", [], []
+    return [], [], [], False, "", [], [], "", dash.no_update, dash.no_update
 
 
 @app.callback(
@@ -373,8 +425,8 @@ def update_messages(n_clicks, n_submit, input_3, input_text, query_records, sugg
         for i in range(len(new_suggested_questions)):
             if new_suggested_questions[i]:
                 new_suggested_question = html.Div(dbc.CardBody([
-                    html.P("Suggested Next Question", style={'font-weight': 'bold', "margin-bottom": "0px"}),
-                    html.P(new_suggested_questions[i], style={"margin-bottom": "0px"})],
+                    html.P("Suggested Next Question", style={'fontWeight': 'bold', "marginBottom": "0px"}),
+                    html.P(new_suggested_questions[i], style={"marginBottom": "0px"})],
                     style={"padding": 0}), className="next-suggested-question",
                     id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)
                 suggested_questions.append(new_suggested_question)
@@ -534,14 +586,17 @@ def generate_bias_report(target, styles):
 @app.callback(
     [Output("console-area", "children"),
      Output("commands-input", "disabled", allow_duplicate=True),
-     Output("run-commands", "disabled", allow_duplicate=True)],
+     Output("run-commands", "disabled", allow_duplicate=True),
+     Output('table-overview', 'data', allow_duplicate=True),
+     Output('table-overview', 'columns', allow_duplicate=True),
+     Output('column-names-dropdown', 'options', allow_duplicate=True)],
     Input("run-commands", "n_clicks"),
     State("commands-input", "value"),
     prevent_initial_call=True
 )
 def execute_commands(n_click, commands):
     if global_vars.df is None and n_click > 0:
-        return ["Have you imported a dataset and entered a query?", False, False]
+        return ["Have you imported a dataset and entered a query?", False, False, dash.no_update, dash.no_update, dash.no_update]
     if n_click > 0 and commands is not None:
         try:
             print("Running sandbox...")
@@ -588,7 +643,17 @@ def execute_commands(n_click, commands):
             if os.path.isfile(user_error_file):
                 with open(user_error_file, "r") as f:
                     output.append(html.P(f.read(), style={"color": "red"}))
-            return [output, False, False]
+            
+            new_df = pd.read_csv(os.path.join(user_data_dir, "df.csv"))
+            global_vars.df = new_df
+            global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name)
+            
+            return [output, 
+                    False, 
+                    False,
+                    global_vars.df.to_dict('records'),
+                    [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
+                    [{'label': col, 'value': col} for col in global_vars.df.columns]]
 
         except Exception as e:
             if (isinstance(e, docker.errors.NotFound)):
@@ -612,11 +677,21 @@ def execute_commands(n_click, commands):
                     if os.path.isfile(user_error_file):
                         with open(user_error_file, "r") as f:
                             output.append(html.P(f.read(), style={"color": "red"}))
-                    return [output, False, False]
+                            
+                    new_df = pd.read_csv(os.path.join(user_data_dir, "df.csv"))
+                    global_vars.df = new_df
+                    global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name)
+            
+                    return [output, 
+                            False, 
+                            False, 
+                            global_vars.df.to_dict('records'),
+                            [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
+                            [{'label': col, 'value': col} for col in global_vars.df.columns]]
 
                 except Exception as e:
                     print("Create container failed: ", e)
-                    return ["Sandbox is not available", False, False]
+                    return ["Sandbox is not available", False, False, dash.no_update, dash.no_update, dash.no_update]
             elif (isinstance(e, docker.errors.APIError)):
                 if e.status_code is not None and e.status_code == 409:
                     user_container = client.containers.get(container_name)
@@ -632,13 +707,18 @@ def execute_commands(n_click, commands):
                     if os.path.isfile(user_error_file):
                         with open(user_error_file, "r") as f:
                             output.append(html.P(f.read(), style={"color": "red"}))
-                    return [output, False, False]
+                    return [output, 
+                            False, 
+                            False,
+                            global_vars.df.to_dict('records'),
+                            [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
+                            [{'label': col, 'value': col} for col in global_vars.df.columns]]
 
-                return [str(e), False, False]
+                return [str(e), False, False, dash.no_update, dash.no_update, dash.no_update]
             else:
                 print(type(e))
-                return [str(e), False, False]
-    return [dash.no_update, False, False]
+                return [str(e), False, False, dash.no_update, dash.no_update, dash.no_update]
+    return [dash.no_update, False, False, dash.no_update, dash.no_update, dash.no_update]
 
 
 @app.callback(

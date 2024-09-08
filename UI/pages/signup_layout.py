@@ -74,12 +74,37 @@ def handle_auth(signup_clicks, login_clicks, email, password):
         new_user.set_password(password)
         new_user.signup()
         user_id = str(new_user.id)
+        
+        try:
+            user = User.query.get(user_id)
+            
+            user.follow_up_questions_prompt_1 = "Generate the next question that the user might ask"
+            user.follow_up_questions_prompt_2 = "Generate the next question that the user might ask"
+            
+            user.system_prompt = ("You are an expert in dealing with bias in datasets for data science. \n"
+                    "Your expertise includes identifying, measuring, and mitigating biases in tabular datasets.\n"
+                    "You are well-versed in advanced statistical methods, machine learning techniques, and ethical considerations for fair AI.\n"
+                    "You can provide detailed explanations of bias detection methods, offer actionable recommendations for bias mitigation, and guide users through complex scenarios with step-by-step instructions.\n" 
+                    "Your goal is to ensure datasets are fair, transparent, and robust for accurate and equitable AI model/business development.")
+            
+            user.prefix_prompt = ("You have already been provided with a dataframe df, all queries should be about that df.\n"
+                "Do not create dataframe. Do not read dataframe from any other sources. Do not use pd.read_clipboard.\n"
+                "If your response includes code, it will be executed, so you should define the code clearly.\n"
+                "Code in response will be split by /\n so it should only include /\n at the end of each line.\n"
+                "Do not execute code with 'functions', only use 'python_repl_ast'.")
+                
+            db.session.commit()
+        except Exception as e:
+            print("Create user failed: ", e)
+            db.session.rollback()
+            
         try: 
+                
             client = docker.from_env()
             current_path = os.path.dirname(os.path.realpath(__file__))
             user_data_dir = os.path.dirname(current_path) + '/../tmp/' + user_id
             os.makedirs(user_data_dir, exist_ok=True)
-            shutil.copyfile(os.path.dirname(current_path) + '/assets/main.py', user_data_dir + '/main.py')
+            shutil.copyfile(os.path.dirname(current_path) + '/assets/sandbox_main.py', user_data_dir + '/main.py')
             client.containers.run('daisyy512/hello-docker', 
                                             name='biasnavi-' + user_id, 
                                             volumes=[user_data_dir + ':/home/sandbox/'+ user_id],
