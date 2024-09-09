@@ -24,3 +24,4 @@ app.clientside_callback(
     Output('output-placeholder', "data-dummy"),  # Dummy output, necessary but not used
     Input('menu-import-data', 'n_clicks')
 )
+

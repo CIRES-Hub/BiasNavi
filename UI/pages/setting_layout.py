@@ -23,84 +23,84 @@ def layout(subsection=None):
         dbc.Container(fluid=True, children=[
             # =======================================================
             # banner and menu bar layout
-            dbc.Row(justify="center", align="center", className="banner-row settings-banner", children=[
-                html.Div(children=[
-                    html.Img(src='../assets/logo.svg', className="logo"),
-                    html.P('BiasNavi', className="title"),
-                    dbc.Nav(
-                        className='navbar d-flex flex-wrap',
-                        children=[
-                            dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem(
-                                    "Import Dataset", id="menu-import-data")],
-                                label="Import",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
-                            ),
-                            dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("Export Chat History"), dbc.DropdownMenuItem(
-                                    "Export Dataset Analysis Report")],
-                                label="Export",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
-                            ),
-                            dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("Predefined Prompt 1"),
-                                 dbc.DropdownMenuItem("Predefined Prompt 2"),
-                                 dbc.DropdownMenuItem("Custom Prompt")],
-                                label="Prompts",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
-                            ),
-                            dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpt4omini"),
-                                 dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
-                                 dbc.DropdownMenuItem("GPT-4o", id="menu-model-gpt4o")],
-                                label="LLM Models",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
-                            ),
-                            dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("Hide ChatBox", id="menu-hide-chatbox"),
-                                 dbc.DropdownMenuItem(
-                                     "Hide Data View", id="menu-hide-dataview"),
-                                 dbc.DropdownMenuItem("Hide Right View", id="menu-hide-chartview")],
-                                label="View",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
-                            ),
-                            dbc.NavLink("Help", href="", className='nav-item'),
-                            dbc.DropdownMenu(
-                                [
-                                    dbc.DropdownMenuItem(
-                                        "About CIRES", href="https://cires.org.au/"),
-                                    dbc.DropdownMenuItem(
-                                        "Settings", id="setting-button", href="/settings/prompts", external_link=True),
-                                    dbc.DropdownMenuItem(
-                                        "Logout", id="logout-button", href="#")
-                                ],
-                                label="More",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
-                            )
-                        ],
-                    ),
-                ], className='banner'),
-            ]),
+            # dbc.Row(justify="center", align="center", className="banner-row settings-banner", children=[
+            #     html.Div(children=[
+            #         html.Img(src='../assets/logo.svg', className="logo"),
+            #         html.P('BiasNavi', className="title"),
+            #         dbc.Nav(
+            #             className='navbar d-flex flex-wrap',
+            #             children=[
+            #                 dbc.DropdownMenu(
+            #                     [dbc.DropdownMenuItem(
+            #                         "Import Dataset", id="menu-import-data")],
+            #                     label="Import",
+            #                     nav=True,
+            #                     toggleClassName="dropdown-toggle",
+            #                     className='menu-item'
+            #                 ),
+            #                 dbc.DropdownMenu(
+            #                     [dbc.DropdownMenuItem("Export Chat History"), dbc.DropdownMenuItem(
+            #                         "Export Dataset Analysis Report")],
+            #                     label="Export",
+            #                     nav=True,
+            #                     toggleClassName="dropdown-toggle",
+            #                     className='menu-item'
+            #                 ),
+            #                 dbc.DropdownMenu(
+            #                     [dbc.DropdownMenuItem("Predefined Prompt 1"),
+            #                      dbc.DropdownMenuItem("Predefined Prompt 2"),
+            #                      dbc.DropdownMenuItem("Custom Prompt")],
+            #                     label="Prompts",
+            #                     nav=True,
+            #                     toggleClassName="dropdown-toggle",
+            #                     className='menu-item'
+            #                 ),
+            #                 dbc.DropdownMenu(
+            #                     [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpt4omini"),
+            #                      dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
+            #                      dbc.DropdownMenuItem("GPT-4o", id="menu-model-gpt4o")],
+            #                     label="LLM Models",
+            #                     nav=True,
+            #                     toggleClassName="dropdown-toggle",
+            #                     className='menu-item'
+            #                 ),
+            #                 dbc.DropdownMenu(
+            #                     [dbc.DropdownMenuItem("Hide ChatBox", id="menu-hide-chatbox"),
+            #                      dbc.DropdownMenuItem(
+            #                          "Hide Data View", id="menu-hide-dataview"),
+            #                      dbc.DropdownMenuItem("Hide Right View", id="menu-hide-chartview")],
+            #                     label="View",
+            #                     nav=True,
+            #                     toggleClassName="dropdown-toggle",
+            #                     className='menu-item'
+            #                 ),
+            #                 dbc.NavLink("Help", href="", className='nav-item'),
+            #                 dbc.DropdownMenu(
+            #                     [
+            #                         dbc.DropdownMenuItem(
+            #                             "About CIRES", href="https://cires.org.au/"),
+            #                         dbc.DropdownMenuItem(
+            #                             "Settings", id="setting-button", href="/settings/prompts", external_link=True),
+            #                         dbc.DropdownMenuItem(
+            #                             "Logout", id="logout-button", href="#")
+            #                     ],
+            #                     label="More",
+            #                     nav=True,
+            #                     toggleClassName="dropdown-toggle",
+            #                     className='menu-item'
+            #                 )
+            #             ],
+            #         ),
+            #     ], className='banner'),
+            # ]),
 
             # =======================================================
             # content layout
             dbc.Row([
-                dbc.Col(width=2, id="left-column", children=[dbc.Nav([
-                    dbc.NavLink([html.I(className="bi bi-house-door"), "Home"], href="/home", active="exact", className="settings-sidebar", external_link=True),
-                    dbc.NavLink([html.I(className="bi bi-terminal"), "Prompts"], href="/settings/prompts", active="exact", class_name="settings-sidebar", external_link=True)
-                ], vertical=True, pills=True)]),
+                # dbc.Col(width=2, id="left-column", children=[dbc.Nav([
+                #     dbc.NavLink([html.I(className="bi bi-house-door"), "Home"], href="/home", active="exact", className="settings-sidebar"),
+                #     dbc.NavLink([html.I(className="bi bi-terminal"), "Prompts"], href="/settings/prompts", active="exact", class_name="settings-sidebar", external_link=True)
+                # ], vertical=True, pills=True)]),
 
                 # =======================================================
                 # main content
@@ -116,11 +116,11 @@ def layout(subsection=None):
 def display_main_content(pathname):
     print(pathname)
     if (pathname == "/settings/prompts"):
-        return [dbc.Card(children=[html.H4("Generate follow-up questions 1"), dcc.Textarea(rows=3, id="next-question-input-1", className="mb-4 prompt-input p-2", value=current_user.follow_up_questions_prompt_1), 
-                                    html.H4("Generate follow-up questions 2"), dcc.Textarea(rows=3, id="next-question-input-2", className="mb-4 prompt-input p-2", value=current_user.follow_up_questions_prompt_2), 
-                                    html.H4("Model's ability prompt"), dcc.Textarea(rows=3, id="system-prompt-input", className="mb-4 prompt-input p-2", value=current_user.system_prompt),
-                                    html.H4("Handle dataframe prompt"), dcc.Textarea(rows=3, id="prefix-prompt-input", className="mb-4 prompt-input p-2", value=current_user.prefix_prompt), 
-                                    html.Div([html.H4("Handle persona prompt"), html.Span(
+        return [dbc.Card(children=[ html.H4("Prompt for Eliciting Model's ability"),
+                                    dcc.Textarea(rows=7, id="system-prompt-input", className="mb-4 prompt-input p-2", value=current_user.system_prompt),
+                                    html.H4("Prompt for Handling Dataset"),
+                                    dcc.Textarea(rows=7, id="prefix-prompt-input", className="mb-4 prompt-input p-2", value=current_user.prefix_prompt),
+                                    html.Div([html.H4("Prompt for Enhancing Personalization"), html.Span(
                                         html.I(className="fas fa-question-circle"),
                                         id="tooltip-snapshot",
                                         style={
@@ -130,11 +130,20 @@ def display_main_content(pathname):
                                             "margin-left": "5px",
                                             "alignSelf": "center"
                                         }
-                                    )], style={"display": "flex", "justifyContent": "space-between"}), 
-                                    dcc.Textarea(rows=3, id="persona-prompt-input", className="mb-4 prompt-input p-2", value=current_user.persona_prompt),
-                                    dcc.Loading(id="update-prompt-loading", children=html.Div(children=[dbc.Button("Reset Default", id="reset-prompt-button", className="prompt-button", n_clicks=0), dbc.Button("Save", id="update-prompt-button", className="prompt-button", n_clicks=0)], className="save-button")),
+                                    )], style={"display": "flex", "justifyContent": "space-between"}),
+                                    dcc.Textarea(rows=8, id="persona-prompt-input", className="mb-4 prompt-input p-2",
+                                                 value=current_user.persona_prompt),
+                                    html.H4("Prompt for Generating Follow-up Questions 1"),
+                                    dcc.Textarea(rows=2, id="next-question-input-1", className="mb-4 prompt-input p-2",
+                                                 value=current_user.follow_up_questions_prompt_1),
+                                    html.H4("Prompt for Generating Follow-up Questions 2"),
+                                    dcc.Textarea(rows=2, id="next-question-input-2", className="mb-4 prompt-input p-2",
+                                                 value=current_user.follow_up_questions_prompt_2),
+                                    dcc.Loading(id="update-prompt-loading", children=html.Div(children=[dbc.Button("Reset Default", id="reset-prompt-button", className="prompt-button", n_clicks=0),
+                                                                                                        dbc.Button("Save", id="update-prompt-button", className="prompt-button", n_clicks=0),
+                                                                                                        ], className="save-button")),
                                     dbc.Tooltip(
-                                    "{{}} is pattern, do not change",
+                                    "{{}} matches the field of the user information",
                                     target="tooltip-snapshot",
                                     )],
                                     className="prompt-card p-4")]
@@ -151,6 +160,8 @@ def display_main_content(pathname):
 )
 def toggle_disable(n_clicks):
     return [True]
+
+
 
 @callback(
     Output('next-question-input-1', "value"),

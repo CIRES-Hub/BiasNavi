@@ -205,7 +205,7 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
         global_vars.dialog.append("=" * 100 + '\n')
         curtime = datetime.datetime.now()
         formatted_date_time = curtime.strftime("%Y-%m-%d %H:%M:%S")
-        global_vars.data_snapshots.append(raw_data)
+        global_vars.data_snapshots = [raw_data]
         #global_vars.df = DataWrangler.fill_missing_values(raw_data)
         global_vars.df = raw_data  #DataWrangler.fill_missing_values(raw_data)
         global_vars.agent = DatasetAgent(global_vars.df, file_name=filename)
@@ -337,6 +337,7 @@ def restore_data_snapshot(n_clicks, selected_rows):
     if n_clicks > 0 and selected_rows:
         row_id = selected_rows[0]
         chosen_snapshot = global_vars.data_snapshots[row_id]
+        global_vars.df = chosen_snapshot
         return [{"name": i, "id": i, 'deletable': True, 'renamable': True} for i in
                 chosen_snapshot.columns], chosen_snapshot.to_dict('records')
     return dash.no_update, dash.no_update
@@ -793,12 +794,12 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
     data = global_vars.data_snapshots[int(df_id) - 1]
     if label in sens_attr:
         return html.P('The label cannot be in the sensitive attributes!', style={"color": "red"}), [], [],
-    if data[label].dtype in ['float64', 'float32'] and task == 'classification':
+    if data[label].dtype in ['float64', 'float32'] and task == 'Classification':
         return html.P('The target attribute is continuous (float) but the task is set to classification. '
-                      'Consider binning the target or setting the task to regression.'), [], [], []
+                      'Consider binning the target or setting the task to regression.',style={"color": "red"}), [], [], []
     if data[label].dtype == 'object' or data[label].dtype.name == 'bool' or data[label].dtype.name == 'category':
-        if task == 'regression':
-            return html.P('The target attribute is categorical and cannot be used for regression task.'), [], []
+        if task == 'Regression':
+            return html.P('The target attribute is categorical and cannot be used for regression task.',style={"color": "red"}), [], [], []
     de = DatasetEval(data,label,ratio=0.2,task_type=task,sensitive_attribute=sens_attr,model_type=model)
     res, scores = de.train_and_test()
     tables = []
@@ -808,7 +809,7 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
             columns=[
                 {
                     'name': col, 'id': col, 'type': 'numeric',
-                    'format': Format(precision=4, scheme=Scheme.fixed)
+                    'format': Format(precision=0, scheme=Scheme.fixed) if frame[col].dtype in ['int64','O'] else Format(precision=4, scheme=Scheme.fixed)
                 }
                 for col in frame.columns
             ],
@@ -837,28 +838,51 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
                 },
             ]
         ))
-    tooltip = html.Div([
-                html.Div([
-                    html.H5("Results", style={'paddingLeft': 0}),
-                    html.Span(
-                        html.I(className="fas fa-question-circle"),
-                        id="tooltip-eval",
-                        style={
-                            "fontSize": "20px",
-                            "color": "#aaa",
-                            "cursor": "pointer",
-                            "margin-left": "5px",
-                            "alignSelf": "center"
-                        }
-                    )
-                ], style={"display": "flex", "alignItems": "center","justifyContent": "space-between","width": "100%"}),
-                dbc.Tooltip(
-                    "The figures in the table represent the predicted probability that the subgroup is classified "
-                    "into the corresponding category. The disparity score is calculated as the difference between "
-                    "the maximum and minimum values in each column. A larger score indicates a higher degree of potential bias.",
-                    target="tooltip-eval",
-                ),
-            ])
-
+    if task == 'Classification':
+        tooltip = html.Div([
+                    html.Div([
+                        html.H5("Results", style={'paddingLeft': 0}),
+                        html.Span(
+                            html.I(className="fas fa-question-circle"),
+                            id="tooltip-eval",
+                            style={
+                                "fontSize": "20px",
+                                "color": "#aaa",
+                                "cursor": "pointer",
+                                "margin-left": "5px",
+                                "alignSelf": "center"
+                            }
+                        )
+                    ], style={"display": "flex", "alignItems": "center","justifyContent": "space-between","width": "100%"}),
+                    dbc.Tooltip(
+                        "The figures in the table represent the average predicted probability that the subgroup is classified "
+                        "into the corresponding category. The disparity score is calculated as the difference between "
+                        "the maximum and minimum values in each column. A larger score indicates a higher degree of potential bias.",
+                        target="tooltip-eval",
+                    ),
+                ])
+    else:
+        tooltip = html.Div([
+            html.Div([
+                html.H5("Results", style={'paddingLeft': 0}),
+                html.Span(
+                    html.I(className="fas fa-question-circle"),
+                    id="tooltip-eval",
+                    style={
+                        "fontSize": "20px",
+                        "color": "#aaa",
+                        "cursor": "pointer",
+                        "margin-left": "5px",
+                        "alignSelf": "center"
+                    }
+                )
+            ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between", "width": "100%"}),
+            dbc.Tooltip(
+                "The figures in the table represent the predicted mean absolute error for each subgroup in the regression task. "
+                "The disparity score is calculated as the difference between "
+                "the maximum and minimum values in the column. A larger score indicates a higher degree of potential bias.",
+                target="tooltip-eval",
+            ),
+        ])
     return [], [html.Hr(), tooltip, res], tables
 

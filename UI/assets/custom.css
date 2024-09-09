@@ -281,6 +281,10 @@
     color:coral;
 }
 
+.nav-item:focus{
+    color:white;
+}
+
 .dropdown-toggle{
     color: white;
 }

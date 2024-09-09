@@ -5,7 +5,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import accuracy_score, mean_squared_error
+from sklearn.metrics import accuracy_score, mean_squared_error, mean_absolute_error
 from sklearn.svm import SVC, SVR
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -136,7 +136,7 @@ class DatasetEval:
 
             # If a sensitive attribute is defined, calculate disparity
             if self.sensitive_attribute:
-                disparity_df = self.calculate_disparity(y_pred)
+                disparity_df = self.calculate_disparity_for_classification(y_pred)
                 print("\nDisparity Results:")
                 for tab in disparity_df:
                     print(tab)
@@ -147,12 +147,56 @@ class DatasetEval:
         else:
             # For regression
             y_pred = self.pipline.predict(self.X_test)
-            mse = mean_squared_error(self.y_test, y_pred)
-            print(f"Model Mean Squared Error: {mse:.4f}")
-            return mse
+            mse = mean_absolute_error(self.y_test, y_pred)
+            mse = f"Model Mean absolute Error: {mse:.4f}"
+            print(mse)
 
-    def calculate_disparity(self, y_pred):
-        """Calculate disparity (fairness) for multi-class classification results."""
+            # If a sensitive attribute is defined, calculate MSE disparity
+            if self.sensitive_attribute:
+                disparity_df = self.calculate_disparity_for_regression(y_pred)
+                print("\nMSE Disparity Results:")
+                for tab in disparity_df:
+                    print(tab)
+                return mse, disparity_df
+            else:
+                return mse, []
+
+    def calculate_disparity_for_regression(self, y_pred):
+        """Calculate disparity (fairness) for regression results using MSE disparity."""
+
+        # Add the actual and predicted values to the test set
+        result_df = self.X_test.copy()
+        result_df['true'] = self.y_test
+        result_df['pred'] = y_pred
+
+        data_frames = []
+
+        for sensi_attr in self.sensitive_attribute:
+            disparity_scores = ['Disparity Score']
+            group_counts = ['Group Count (for Test)']
+
+            # Calculate MSE for each sensitive group
+            mae_per_group = result_df.groupby(sensi_attr).apply(
+                lambda group: mean_absolute_error(group['true'], group['pred']))
+            mae_per_group = mae_per_group.rename('MSE')
+            count_per_group = result_df.groupby(sensi_attr).size()
+            # Calculate disparity score (max - min MSE across groups)
+            max_mse = mae_per_group.max()
+            min_mse = mae_per_group.min()
+            disparity_score = max_mse - min_mse
+            disparity_scores.append(disparity_score)
+
+            # Append the results to the final DataFrame
+            frame = mae_per_group.reset_index()
+            frame['Group Count (for Test)'] = [int(val) for val in count_per_group.values]
+            disparity_row = pd.Series(disparity_scores + [None], index=frame.columns)
+            frame.loc[len(frame)] = disparity_row
+            data_frames.append(frame)
+
+        return data_frames
+
+    def calculate_disparity_for_classification(self, y_pred):
+        """Calculate disparity (fairness) for multi-class classification results with group count."""
 
         # Add the predicted class to the test set
         result_df = self.X_test.copy()
@@ -161,29 +205,43 @@ class DatasetEval:
         # Get unique classes from the predicted labels
         unique_classes = result_df['predicted_class'].unique()
 
-        # Calculate the rate of predictions for each class within each group
-        parity_results = []
+        disparity_results = []
         data_frames = []
+
         for sensi_attr in self.sensitive_attribute:
             disparity_scores = ['Disparity Score']
+            group_counts = ['Group Count (for Test)']
+
             for cls in unique_classes:
                 # Calculate the prediction rate for each group
                 cls_df = result_df[result_df['predicted_class'] == cls]
-                parity_df = cls_df.groupby(sensi_attr).size() / result_df.groupby(
-                    sensi_attr).size()
+                parity_df = cls_df.groupby(sensi_attr).size() / result_df.groupby(sensi_attr).size()
                 parity_df = parity_df.rename(f'{cls}')
-                parity_results.append(parity_df)
+                disparity_results.append(parity_df)
 
                 # Calculate disparity score (max - min prediction rate) for each class
                 max_rate = parity_df.max()
                 min_rate = parity_df.min()
                 disparity_score = max_rate - min_rate
                 disparity_scores.append(disparity_score)
-            frame = pd.concat(parity_results, axis=1).reset_index()
-            disparity_row = pd.Series(disparity_scores, index=frame.columns)
+
+            # Get the count of samples in each group
+            count_per_group = result_df.groupby(sensi_attr).size()
+
+            # Create final DataFrame for this sensitive attribute
+            frame = pd.concat(disparity_results, axis=1).reset_index()
+
+            # Add the group count to the DataFrame
+            frame['Group Count (for Test)'] = [int(val) for val in count_per_group.values]
+
+            # Add disparity score as a new row at the end
+            disparity_row = pd.Series(disparity_scores + [None], index=frame.columns)
             frame.loc[len(frame)] = disparity_row
+
+            # Append the frame to the results
             data_frames.append(frame)
-            parity_results = []
+            disparity_results = []  # Reset for the next sensitive attribute
+
         return data_frames
 
     # def analyze_bias(self):

@@ -81,12 +81,12 @@ def layout():
                                 className='menu-item'
                             ),
                             dbc.NavLink("Help", href="", className='nav-item'),
+                            dbc.NavLink("Settings", id="setting-button", href="/settings/prompts", external_link=True,
+                                        target="_blank", className='nav-item'),
                             dbc.DropdownMenu(
                                 [
                                     dbc.DropdownMenuItem(
                                         "About CIRES", href="https://cires.org.au/"),
-                                    dbc.DropdownMenuItem(
-                                        "Settings", id="setting-button", href="/settings/prompts", external_link=True),
                                     dbc.DropdownMenuItem(
                                         "Logout", id="logout-button", href="#")
                                 ],
