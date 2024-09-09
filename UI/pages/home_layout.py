@@ -86,6 +86,8 @@ def layout():
                                     dbc.DropdownMenuItem(
                                         "About CIRES", href="https://cires.org.au/"),
                                     dbc.DropdownMenuItem(
+                                        "Settings", id="setting-button", href="/settings/prompts", external_link=True),
+                                    dbc.DropdownMenuItem(
                                         "Logout", id="logout-button", href="#")
                                 ],
                                 label="More",
@@ -684,12 +686,31 @@ def update_user_profile(trigger, edit_success):
                                 user.expertise_level or 'Not provided')
                         ], className="mb-2"),
                         html.Li([
+                            html.B("Technical Expertise: "),
+                            html.Span(
+                                user.technical_level or 'Not provided')
+                        ], className="mb-2"),
+                        html.Li([
+                            html.B("Bias Awareness: "),
+                            html.Span(
+                                user.bias_awareness or 'Not provided')
+                        ], className="mb-2"),
+                        html.Li([
                             html.B("Interests: "),
                             html.Span(', '.join(user.areas_of_interest)
                                       if user.areas_of_interest else 'None provided')
                         ]),
-                    ], className="px-0", style={"margin-bottom": "0"})
-                ], style={"padding-bottom": "0", }),
+                    ], className="px-0", style={"marginBottom": "0"}),
+                    html.Div(
+                        dbc.Button(
+                                ["Edit User's Information"],
+                                id="profile-edit-info-button",
+                                size="sm",
+                                className="profile-edit-info-button",
+                                href="/survey"
+                            ), style={"width": "100%", "display": "flex", "justifyContent": "center"}
+                    )
+                ], style={"paddingBottom": "0", }),
                 id="profile-collapse",
                 is_open=False,
             ),

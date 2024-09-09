@@ -21,10 +21,6 @@ from langchain.pydantic_v1 import BaseModel, Field
 from langchain.output_parsers import PydanticOutputParser
 from flask_login import current_user
 
-class NextQuestionFormat(BaseModel):
-    response: str = Field(description="Answer to the user's query")
-    suggestion1: str = Field(description="Generate the next question that the user might ask")
-    suggestion2: str = Field(description="Generate the next question that the user might ask")
 
 class ConversationFormat(str, Enum):
     FULL_JSON = 'Full JSON'
@@ -42,6 +38,12 @@ class LLMModel(str, Enum):
     GPT4 = 'gpt4'
     GPT4omini = 'gpt4omini'
 
+def pass_argument_next_questions_class(question1, question2): 
+    class NextQuestionFormat(BaseModel):
+        response: str = Field(description="Answer to the user's query")
+        suggestion1: str = Field(description=question1)
+        suggestion2: str = Field(description=question2)
+    return NextQuestionFormat
 
 class DatasetAgent:
 
@@ -61,8 +63,7 @@ class DatasetAgent:
         self.elem_queue = []
         self.execution_error: list[Exception] = []
         self.list_commands: list[str] = []
-        
-        self.parser = PydanticOutputParser(pydantic_object=NextQuestionFormat)
+        self.parser = PydanticOutputParser(pydantic_object=pass_argument_next_questions_class(current_user.follow_up_questions_prompt_1, current_user.follow_up_questions_prompt_2))
         prompt = PromptTemplate(
             template="Answer the user's query: {input}"
             "{format_instructions}",
@@ -75,12 +76,7 @@ class DatasetAgent:
             [
                 (
                     "system",
-                    "You are an expert in dealing with bias in datasets for data science. "
-                    "Your expertise includes identifying, measuring, and mitigating biases in tabular datasets. "
-                    "You are well-versed in advanced statistical methods, machine learning techniques, and ethical considerations for fair AI. "
-                    "You can provide detailed explanations of bias detection methods, offer actionable recommendations for bias mitigation, "
-                    "and guide users through complex scenarios with step-by-step instructions. "
-                    "Your goal is to ensure datasets are fair, transparent, and robust for accurate and equitable AI model/business development."
+                    current_user.system_prompt
                 ),
                 MessagesPlaceholder(variable_name="chat_history"),
                 user_prompt
@@ -96,11 +92,7 @@ class DatasetAgent:
             agent_type=AgentType.OPENAI_FUNCTIONS,
             agent_executor_kwargs={"handle_parsing_errors": True},
             list_commands=self.list_commands,
-            prefix="You have already been provided with a dataframe df, all queries should be about that df. \
-                Do not create dataframe. Do not read dataframe from any other sources. Do not use pd.read_clipboard. \
-                If your response includes code, it will be executed, so you should define the code clearly. \
-                Code in response will be split by \n so it should only include \n at the end of each line. \
-                Do not execute code with 'functions', only use 'python_repl_ast'."
+            prefix=current_user.prefix_prompt
         )
 
         self.chain = self.prompt | self.agent
