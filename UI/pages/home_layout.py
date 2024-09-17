@@ -161,7 +161,7 @@ def layout():
                                 type="default",  # Choose from "graph", "cube", "circle", "dot", or "default"
                             ),
                             dbc.Toast(
-                                "Have you imported a dataset and entered a query?",
+                                "Forget to import a dataset or enter a query?",
                                 id="error-query",
                                 header="Reminder",
                                 is_open=False,

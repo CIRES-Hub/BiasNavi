@@ -58,7 +58,8 @@ def load_user(user_id):
 
 
 app = dash.Dash(__name__, external_stylesheets=[
-                dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"], server=server, use_pages=True,
+    dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP,
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"], server=server, use_pages=True,
                 url_base_pathname='/', suppress_callback_exceptions=True)
 
 # Add this layout
