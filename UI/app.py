@@ -1,6 +1,5 @@
 import dash
 import dash_bootstrap_components as dbc
-import configparser
 import sys
 import os
 from flask import Flask, redirect
@@ -8,32 +7,35 @@ from db_models.users import db, User
 from flask_login import LoginManager, current_user
 from dash import Input, Output, dcc, html
 from uuid import UUID
+import yaml
 
 
-def read_configs(file_path='config.ini'):
-    # Create a ConfigParser object
-    config = configparser.ConfigParser()
-    # Read the config.ini file
-    config.read(file_path)
-    # Access the api_key from the 'settings' section
-    error_msg = """Please configure your openai api_key or database url in the file config.ini before running the program.
+def read_configs(file_path='config.yaml'):
+    # Load the YAML file
+    error_msg = """Please configure your openai api_key or database url in the file config.yaml before running the program.
 
-        The config.ini under the root directory of this project should have the following format:
+        The config.yaml under the root directory of this project should have the following format:
 
-        [settings]
-        api_key = your_openai_api_key
-        database_url = your_postgres_db_url_here
+        settings:
+          api_key: your_openai_api_key
+          database_url: your_postgres_db_url_here
 
         """
     try:
+        with open(file_path, 'r') as file:
+            config = yaml.safe_load(file)
+
+        # Access the api_key and database_url from the 'settings' section
         api_key = config['settings']['api_key']
         database_url = config['settings']['database_url']
-    except KeyError:
+    except (KeyError, FileNotFoundError, yaml.YAMLError):
         print(error_msg)
         sys.exit(1)
+
     if api_key.strip() == '' or database_url.strip() == '':
         print(error_msg)
         sys.exit(1)
+
     return api_key, database_url
 
 

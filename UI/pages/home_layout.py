@@ -1,7 +1,5 @@
-from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 import dash_editor_components.PythonEditor
-import docker.errors
 from db_models.conversation import Conversation
 from db_models.users import User
 from dash import dcc, html, dash_table, callback, Input, Output, State, MATCH, ALL
@@ -10,13 +8,9 @@ import dash
 from flask_login import logout_user, current_user
 from dash.exceptions import PreventUpdate
 import dash_editor_components
-import time
-import datetime
-
 from agent import ConversationFormat
 
 dash.register_page(__name__, path='/home/', title='Home')
-import docker
 
 
 def layout():

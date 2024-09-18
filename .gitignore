@@ -1,5 +1,5 @@
 .idea/
-config.ini
+config.yaml
 **/__pycache__/
 data/
 pgadmin/

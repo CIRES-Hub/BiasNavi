@@ -17,7 +17,7 @@ BiasNavi aims to manage the bias in datasets. It complies with the following pip
 ```bash
 make setup
 ```
-2. Config your API key and database URL in the file named `config.sample.ini` under the root directory of the project and rename it to `config.ini`
+2. Config your API key and database URL in the file named `config.sample.yaml` under the root directory of the project and rename it to `config.yaml`
 3. Start the program.
 ```bash
 make run
