@@ -16,6 +16,7 @@ import io
 import base64
 import dash_bootstrap_components as dbc
 import matplotlib
+import re
 matplotlib.use('Agg')
 
 
@@ -96,10 +97,12 @@ class CustomizedPythonAstREPLTool(PythonAstREPLTool):
                     else:
                         return processed_item
             except Exception as eval_exception:
-                self.execution_error.append(eval_exception)
+                if not re.search("\w\s*=", module_end_str):
+                    self.execution_error.append(eval_exception)
                 with redirect_stdout(io_buffer):
                     exec(module_end_str, self.globals, self.locals)
                 return io_buffer.getvalue()
         except Exception as e:
-            self.execution_error.append(e)
+            if not re.search("\w\s*=", module_end_str):
+                self.execution_error.append(eval_exception)
             return "{}: {}".format(type(e).__name__, str(e))

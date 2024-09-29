@@ -127,7 +127,7 @@ def display_main_content(pathname):
                                             "fontSize": "20px",
                                             "color": "#aaa",
                                             "cursor": "pointer",
-                                            "margin-left": "5px",
+                                            "marginLeft": "5px",
                                             "alignSelf": "center"
                                         }
                                     )], style={"display": "flex", "justifyContent": "space-between"}),
@@ -185,6 +185,6 @@ def reset_default_prompts(n_clicks):
         ("You have already been provided with a dataframe df, all queries should be about that df.\n"
                 "Do not create dataframe. Do not read dataframe from any other sources. Do not use pd.read_clipboard.\n"
                 "If your response includes code, it will be executed, so you should define the code clearly.\n"
-                "Code in response will be split by /\n so it should only include /\n at the end of each line.\n"
+                "Code in response will be split by \\n so it should only include \\n at the end of each line.\n"
                 "Do not execute code with 'functions', only use 'python_repl_ast'.")
     ]

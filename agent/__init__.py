@@ -9,7 +9,7 @@ import os
 import time
 from enum import Enum
 import json
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate, HumanMessagePromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables import ConfigurableField
 from langchain_experimental.tools.python.tool import PythonAstREPLTool
@@ -64,22 +64,26 @@ class DatasetAgent:
         self.execution_error: list[Exception] = []
         self.list_commands: list[str] = []
         self.parser = PydanticOutputParser(pydantic_object=pass_argument_next_questions_class(current_user.follow_up_questions_prompt_1, current_user.follow_up_questions_prompt_2))
-        prompt = PromptTemplate(
-            template="Answer the user's query: {input}"
-            "{format_instructions}",
+        user_prompt = PromptTemplate(
+            template="Answer the user's query: {input}",
             input_variables=["input"],
-            partial_variables={"format_instructions": self.parser.get_format_instructions()}
         )
-        user_prompt = HumanMessagePromptTemplate(prompt=prompt)
+        user_message_prompt = HumanMessagePromptTemplate(prompt=user_prompt)
+        
+        system_prompt = PromptTemplate(
+            template="""
+            {format_instructions},
+            {custom_system_prompt}
+            """,
+            partial_variables={"format_instructions": self.parser.get_format_instructions(), "custom_system_prompt": current_user.system_prompt}
+        )
+        system_message_prompt = SystemMessagePromptTemplate(prompt=system_prompt)
         
         self.prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    "system",
-                    current_user.system_prompt
-                ),
+                system_message_prompt,
                 MessagesPlaceholder(variable_name="chat_history"),
-                user_prompt
+                user_message_prompt
             ]
         )
 

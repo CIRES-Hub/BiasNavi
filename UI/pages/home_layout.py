@@ -368,7 +368,7 @@ def layout():
                                             "fontSize": "20px",
                                             "color": "#aaa",
                                             "cursor": "pointer",
-                                            "margin-left": "5px",
+                                            "marginLeft": "5px",
                                             "alignSelf": "center"
                                         }
                                     )
@@ -491,7 +491,7 @@ def layout():
                                         "fontSize": "20px",
                                         "color": "#aaa",
                                         "cursor": "pointer",
-                                        "margin-left": "5px",
+                                        "marginLeft": "5px",
                                         "alignSelf": "center"
                                     }
                                 )

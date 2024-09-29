@@ -81,6 +81,12 @@
     padding: 10px;
 }
 
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .center-align-div{
     display: flex;
     justify-content: center;
