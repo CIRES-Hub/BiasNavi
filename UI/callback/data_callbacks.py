@@ -309,7 +309,7 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
             data=frame.to_dict('records'),
             style_cell={'textAlign': 'center',
                         'fontFamily': 'Arial'},
-            style_header={'backgroundColor': 'darkslateblue',
+            style_header={'backgroundColor': '#614385',
                           'color': 'white',
                           'fontWeight': 'bold'
                           },

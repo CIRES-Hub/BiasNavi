@@ -12,7 +12,6 @@ from dash import dcc, html
 from UI.functions import *
 import dash_bootstrap_components as dbc
 from flask_login import current_user
-
 from UI.functions import query_llm
 
 

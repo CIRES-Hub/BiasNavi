@@ -27,6 +27,7 @@ def layout():
     return dbc.Container(
     fluid=True,
     className="body vh-100 d-flex align-items-center justify-content-center bg-light",
+    style={"background": "linear-gradient(to right, #67b26f, #4ca2cd)"},
     children=[
         dbc.Row(
             dbc.Col(

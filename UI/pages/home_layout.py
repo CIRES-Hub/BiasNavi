@@ -46,15 +46,15 @@ def layout():
                                 toggleClassName="dropdown-toggle",
                                 className='menu-item'
                             ),
-                            dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("Predefined Prompt 1"),
-                                 dbc.DropdownMenuItem("Predefined Prompt 2"),
-                                 dbc.DropdownMenuItem("Custom Prompt")],
-                                label="Prompts",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
-                            ),
+                            # dbc.DropdownMenu(
+                            #     [dbc.DropdownMenuItem("Predefined Prompt 1"),
+                            #      dbc.DropdownMenuItem("Predefined Prompt 2"),
+                            #      dbc.DropdownMenuItem("Custom Prompt")],
+                            #     label="Prompts",
+                            #     nav=True,
+                            #     toggleClassName="dropdown-toggle",
+                            #     className='menu-item'
+                            # ),
                             dbc.DropdownMenu(
                                 [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpt4omini"),
                                  dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
@@ -75,7 +75,7 @@ def layout():
                                 className='menu-item'
                             ),
                             dbc.NavLink("Help", href="", className='nav-item'),
-                            dbc.NavLink("Settings", id="setting-button", href="/settings/prompts", external_link=True,
+                            dbc.NavLink("Prompts", id="setting-button", href="/settings/prompts", external_link=True,
                                         target="_blank", className='nav-item'),
                             dbc.DropdownMenu(
                                 [
@@ -135,7 +135,7 @@ def layout():
                                     v.value for v in ConversationFormat],
                                              value=ConversationFormat.SIMPLIFIED_JSON.value),
                                 html.Button(
-                                    "Export", id="download-button", className="download-button"),
+                                    "Export", id="download-button", className="primary-button"),
                                 dcc.Download(id="export")
                             ], className="query-header"),
                             dbc.Toast(
@@ -167,24 +167,24 @@ def layout():
                             html.Div(id='next-suggested-questions'),
 
                             # Message input row
-                            dcc.Input(id='query-input', type='text', className='query-input',
-                                      placeholder='Type a query...'),
-
                             html.Div([
+                                dcc.Input(id='query-input', type='text', className='query-input',
+                                          placeholder='Type your message here'),
+                                html.Button(html.Span(className="fas fa-paper-plane"), id='send-button',
+                                            title="Send your message.", n_clicks=0,
+                                            className='send-button'),
 
-                                html.Button('Send', id='send-button',
-                                            n_clicks=0, className='primary-button'),
                                 dcc.Upload(id="upload-rag",
-                                           children=html.Button(
-                                               'RAG', id='RAG-button', n_clicks=0, className='secondary-button'),
-                                           multiple=True), html.Div(id='rag-output'),
-                                daq.ToggleSwitch(
-                                    id='rag-switch',
-                                    style={'marginLeft': '10px'},
-                                    value=False,
-                                ),
-                                html.Div(id='rag-switch-output',
-                                         style={'marginLeft': '10px'}),
+                                           children=html.Button(html.Span(className="fas fa-file"), id='RAG-button',
+                                                                title="Upload your document for RAG.", n_clicks=0,
+                                                                className='send-button'),
+                                           multiple=True),
+
+                                html.Div(id='rag-output'),
+
+                                daq.ToggleSwitch(id='rag-switch', value=False),
+
+                                html.Div(id='rag-switch-output'),
                             ], className="center-align-div"),
                         ], className='query')
                     ], className='card'),
@@ -236,11 +236,11 @@ def layout():
                             dcc.Input(id='input-end-row', type='number', placeholder='End row',
                                       style={'margin': '10px', 'width': '10%'}),
                             html.Button('Show Rows', id='show-rows-button',
-                                        className='load-button', style={'margin': '10px'}),
+                                        className='primary-button', style={'margin': '10px'}),
                             html.Button('Save Snapshot', id='open-modal-button',
                                         n_clicks=0, className='primary-button'),
                             html.Button('Download Data', id='download-data-button',
-                                        n_clicks=0, className='secondary-button', style={'marginLeft': '10px'}),
+                                        n_clicks=0, className='primary-button', style={'marginLeft': '10px'}),
                             dcc.Download(id='download-data-csv'),
                             dbc.Modal(
                                 [
@@ -267,7 +267,7 @@ def layout():
                                 dash_table.DataTable(id='table-overview', page_size=20, page_action='native',
                                                      editable=True, row_deletable=True, column_selectable='single',
                                                      style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
-                                                     style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
+                                                     style_header={'backgroundColor': '#614385', 'color': 'white',
                                                                    'fontWeight': 'bold'
                                                                    },
                                                      style_table={'overflowX': 'auto'},
@@ -314,7 +314,7 @@ def layout():
                                                                  sort_action='native',
                                                                  style_cell={'textAlign': 'center',
                                                                              'fontFamiliy': 'Arial'},
-                                                                 style_header={'backgroundColor': 'darkslateblue',
+                                                                 style_header={'backgroundColor': '#614385',
                                                                                'color': 'white',
                                                                                'fontWeight': 'bold'
                                                                                }, style_table={'overflowX': 'auto'},
@@ -390,7 +390,7 @@ def layout():
                                         {"name": "Timestamp", "id": "time"}
                                     ],
                                     style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
-                                    style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
+                                    style_header={'backgroundColor': '#614385', 'color': 'white',
                                                   'fontWeight': 'bold'
                                                   }, style_table={'overflowX': 'auto'},
                                     style_data_conditional=[
@@ -407,7 +407,7 @@ def layout():
                                 html.Div([html.Button('Restore', id='restore-snapshot-button',
                                                       n_clicks=0, className='primary-button'),
                                           html.Button('Delete', id='delete-snapshot-button',
-                                                      n_clicks=0, className='delete-button'),
+                                                      n_clicks=0, className='primary-button'),
                                           ], className='right-align-div'),
                             ], id='snapshot-area')
                         ], className='llm-chart', style={'overflowX': 'auto'})

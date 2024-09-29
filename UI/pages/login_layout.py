@@ -16,10 +16,23 @@ layout = dbc.Container(fluid=True, children=[
             dbc.Card(
                 dbc.CardBody([
                     html.H4("Login", className="card-title mb-4 text-center"),
-                    dbc.Input(id="email-input", placeholder="Email",
+                    dbc.Input(id="email-input", placeholder="Username / Email",
                               type="text", className="mb-2"),
                     dbc.Input(id="password-input", placeholder="Password",
                               type="password", className="mb-3"),
+                    html.Div(
+                        dcc.RadioItems(
+                            id='user-mode',
+                            options=[
+                                {'label': ' Chat Mode', 'value': 'Chat Mode'},
+                                {'label': ' Full Mode', 'value': 'Full Mode'}
+                            ],
+                            value='Chat Mode',  # Set default value
+                            inline=True,  # Horizontal layout
+                            labelStyle={'marginRight': '20px','marginBottom': '20px'}  # Add space between radio buttons
+                        ),
+                        style={'text-align': 'center'}
+                    ),
                     dbc.Row([
                         dbc.Col(
                             dbc.Button(
@@ -35,11 +48,11 @@ layout = dbc.Container(fluid=True, children=[
                     html.Div(id="auth-result", className="mt-3", style={'color': 'red'}),
                     dcc.Location(id='url', refresh=True)
                 ]),
-                style={"width": "400px"}
+                style={"width": "450px"}
             )
         ])
     )
-], className="body vh-100 d-flex align-items-center justify-content-center")
+], className="body vh-100 d-flex align-items-center justify-content-center", style={"background": "linear-gradient(to right, #7474bf, #348ac7)"})
 
 
 @callback(
@@ -49,9 +62,10 @@ layout = dbc.Container(fluid=True, children=[
     Input("signup-button", "n_clicks"),
     State("email-input", "value"),
     State("password-input", "value"),
+    Input('user-mode', 'value'),
     prevent_initial_call=True
 )
-def handle_auth(login_clicks, signup_clicks, email, password):
+def handle_auth(login_clicks, signup_clicks, email, password, mode):
     ctx = callback_context
     if not ctx.triggered:
         raise PreventUpdate
@@ -65,7 +79,10 @@ def handle_auth(login_clicks, signup_clicks, email, password):
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
             login_user(user, remember=True)
-            return '/home', "Login successful!"
+            if mode == 'Chat Mode':
+                return '/chat', "Login successful!"
+            else:
+                return '/home', "Login successful!"
         else:
             return dash.no_update, "Invalid username or password."
     elif button_id == "signup-button":

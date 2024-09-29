@@ -60,7 +60,7 @@ class CustomizedPythonAstREPLTool(PythonAstREPLTool):
         self.elem_queue.append(dash_table.DataTable(page_size=25, page_action='native',
                                                     style_cell={
                                                         'textAlign': 'center', 'fontFamiliy': 'Arial'},
-                                                    style_header={'backgroundColor': 'darkslateblue', 'color': 'white',
+                                                    style_header={'backgroundColor': '#614385', 'color': 'white',
                                                                   'fontWeight': 'bold'
                                                                   }, style_table={'overflowX': 'auto'}, data=processed_item.to_dict('records')))
 

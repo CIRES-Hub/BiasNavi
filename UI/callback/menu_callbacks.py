@@ -2,20 +2,7 @@ import time
 import dash
 from UI.app import app
 from dash.dependencies import Input, Output, State
-import plotly.express as px
-import base64
-from agent import ConversationFormat, DatasetAgent
-import datetime
-from dash import callback_context, MATCH
-import io
-from RAG import RAG
-from dash import dcc, html, dash_table
-import pandas as pd
-from UI.variable import global_vars
-from flask_login import current_user
 from UI.functions import *
-from utils.data_wrangler import DataWrangler
-
 
 @app.callback(
     [Output('left-column', 'style'),

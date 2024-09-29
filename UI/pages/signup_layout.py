@@ -12,16 +12,6 @@ import shutil
 
 dash.register_page(__name__, path='/signup/', title='Signup')
 
-custom_style = {
-    "input-wrapper": {
-        "width": "100%",
-        "padding": "0 10px",
-    },
-    "input-field": {
-        "width": "100%",
-    }
-}
-
 layout = dbc.Container(fluid=True, children=[
     dbc.Row(
         dbc.Col([
@@ -33,11 +23,11 @@ layout = dbc.Container(fluid=True, children=[
                                     className="font-weight-bold"),
                         html.Div(
                             dbc.Input(
-                                id="email-input", placeholder="Enter your email", 
+                                id="email-input", placeholder="Enter your email",
                                 style=custom_style["input-field"]), style=custom_style["input-wrapper"]
                         ),
                     ], className="mb-3"),
-                    
+
                     dbc.Row([
                         dbc.Label("Password",
                                     className="font-weight-bold"),
@@ -47,7 +37,7 @@ layout = dbc.Container(fluid=True, children=[
                                 style=custom_style["input-field"]), style=custom_style["input-wrapper"]
                         ),
                     ], className="mb-3"),
-                    
+
                     dbc.Row([
                         dbc.Label("Confirm Password",
                                     className="font-weight-bold"),
@@ -57,13 +47,13 @@ layout = dbc.Container(fluid=True, children=[
                                 style=custom_style["input-field"]), style=custom_style["input-wrapper"]
                         ),
                     ], className="mb-3"),
-                    
+
                     dbc.Row([
                         dbc.Label("Username",
                                     className="font-weight-bold"),
                         html.Div(
                             dbc.Input(
-                                id="signup-username-input", placeholder="Enter your username", 
+                                id="signup-username-input", placeholder="Enter your username",
                                 style=custom_style["input-field"]), style=custom_style["input-wrapper"]
                         ),
                     ], className="mb-3"),
@@ -119,7 +109,7 @@ layout = dbc.Container(fluid=True, children=[
                             style=custom_style["input-wrapper"]
                         ),
                     ], className="mb-3"),
-                    
+
                     dbc.Row([
                         html.Div([
                             dbc.Label(
@@ -154,7 +144,7 @@ layout = dbc.Container(fluid=True, children=[
                             style=custom_style["input-wrapper"]
                         ),
                     ], className="mb-3"),
-                    
+
                     dbc.Row([
                         html.Div([
                             dbc.Label(
@@ -210,19 +200,19 @@ layout = dbc.Container(fluid=True, children=[
                     dbc.Row([
                         dbc.Col(
                             dbc.Button(
-                                "Cancel", id="cancel-button", color="secondary", n_clicks=0, class_name="w-100"),
+                                "Log in", id="login-button", color="secondary", n_clicks=0, class_name="w-100"),
                             width=6, className="ms-auto"
                         ),
                         dbc.Col(
-                            dbc.Button("Sign Up", id="submit-signup-button",
+                            dbc.Button("Sign Up", id="signup-button",
                                        color="primary", n_clicks=0, class_name="w-100"),
                             width=6
                         )
                     ], className="d-flex justify-content-between"),
-                    html.Div(id="auth-signup-result", className="mt-3", style={'color': 'red'}),
+                    html.Div(id="auth-result", className="mt-3"),
                     dcc.Location(id='url', refresh=True)
                 ]),
-                style={"width": "400px"}
+                style={"width": "450px"}
             )
         ], className="flex-center", style={"padding": "50px 0"})
     , style={'height': '100%', 'width': '100%'})
@@ -246,18 +236,17 @@ layout = dbc.Container(fluid=True, children=[
     State("areas-of-interest-checklist", "value"),
     prevent_initial_call=True
 )
-def handle_auth(signup_clicks, login_clicks, email, password, confirm_password, user_name, professional_role, industry_sector, expertise_level, technical_level, bias_awareness, areas_of_interest):
+def handle_auth(signup_clicks, login_clicks, email, password):
     ctx = callback_context
     if not ctx.triggered:
         raise PreventUpdate
 
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-    if button_id == "submit-signup-button":
-        if  not all([email, password, user_name, professional_role, industry_sector, expertise_level, areas_of_interest, technical_level, bias_awareness]):
+    if button_id == "signup-button":
+        if not email or not password:
             return dash.no_update, "Please fill in all fields."
-        if password != confirm_password:
-            return dash.no_update, "The password confirmation does not match."
+
         # Check if user already exists
         user = User.query.filter((User.email == email)).first()
         if user:
@@ -284,7 +273,7 @@ def handle_auth(signup_clicks, login_clicks, email, password, confirm_password, 
             user.prefix_prompt = ("You have already been provided with a dataframe df, all queries should be about that df.\n"
                 "Do not create dataframe. Do not read dataframe from any other sources. Do not use pd.read_clipboard.\n"
                 "If your response includes code, it will be executed, so you should define the code clearly.\n"
-                "Code in response will be split by \\n so it should only include \\n at the end of each line.\n"
+                "Code in response will be split by /\n so it should only include /\n at the end of each line.\n"
                 "Do not execute code with 'functions', only use 'python_repl_ast'.")
                 
             user.username = user_name
@@ -295,7 +284,7 @@ def handle_auth(signup_clicks, login_clicks, email, password, confirm_password, 
             user.bias_awareness = bias_awareness
             user.areas_of_interest = areas_of_interest
             user.persona_prompt = 'My professional role is {{professional_role}}. I am working in {{industry_sector}} industry. My level of expertise in data analysis is {{expertise_level}}'
-            
+
             db.session.commit()
         except Exception as e:
             print("Create user failed: ", e)
