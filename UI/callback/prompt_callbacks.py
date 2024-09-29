@@ -39,11 +39,11 @@ def update_prompt(update_prompt_click, new_next_question_1, new_next_question_2,
 
     if global_vars.df is not None and global_vars.file_name is not None:
         global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name)
-
         if all([current_user.professional_role, current_user.industry_sector, current_user.expertise_level]):
             persona_query = current_user.persona_prompt.replace("{{professional_role}}", current_user.professional_role)
-            persona_query = current_user.persona_prompt.replace("{{industry_sector}}", current_user.industry_sector)
-            persona_query = current_user.persona_prompt.replace("{{expertise_level}}", current_user.expertise_level)
-            print(persona_query)
+            persona_query = persona_query.replace("{{industry_sector}}", current_user.industry_sector)
+            persona_query = persona_query.replace("{{expertise_level}}", current_user.expertise_level)
+            persona_query = persona_query.replace("{{technical_level}}", current_user.technical_level)
+            persona_query = persona_query.replace("{{bias_awareness}}", current_user.bias_awareness)
             query_llm(persona_query, current_user.id)
     return False

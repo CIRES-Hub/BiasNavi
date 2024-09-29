@@ -32,7 +32,7 @@ layout = dbc.Container(fluid=True, children=[
                             width=6, className="ms-auto"
                         )
                     ], className="d-flex justify-content-between"),
-                    html.Div(id="auth-result", className="mt-3"),
+                    html.Div(id="auth-result", className="mt-3", style={'color': 'red'}),
                     dcc.Location(id='url', refresh=True)
                 ]),
                 style={"width": "400px"}
