@@ -13,10 +13,14 @@ dash.register_page(__name__, path='/', title='Login')
 layout = dbc.Container(fluid=True, children=[
     dbc.Row(
         dbc.Col([
+            html.H1("BiasNavi", id="fade-div", className='fade-in', style={'display': 'block',
+                    'color': 'white', "fontSize": "3vw", "marginBottom": "-5px",}),
+            html.H5("Navigate you through bias in your data with AI", id="fade-div", className='fade-in',
+                    style={'display': 'block', 'color': 'orange', "fontSize": "0.85vw", "marginBottom": "30px",}),
             dbc.Card(
                 dbc.CardBody([
                     html.H4("Login", className="card-title mb-4 text-center"),
-                    dbc.Input(id="email-input", placeholder="Username / Email",
+                    dbc.Input(id="email-input", placeholder="Email",
                               type="text", className="mb-2"),
                     dbc.Input(id="password-input", placeholder="Password",
                               type="password", className="mb-3"),
@@ -48,11 +52,12 @@ layout = dbc.Container(fluid=True, children=[
                     html.Div(id="auth-result", className="mt-3", style={'color': 'red'}),
                     dcc.Location(id='url', refresh=True)
                 ]),
-                style={"width": "450px"}
+                style={"width": "450px"},
+                className="fade-in"
             )
         ])
     )
-], className="body vh-100 d-flex align-items-center justify-content-center", style={"background": "linear-gradient(to right, #7474bf, #348ac7)"})
+], className="body vh-100 d-flex align-items-center justify-content-center fade-in", style={"background": "linear-gradient(to right, #7474bf, #348ac7)"})
 
 
 @callback(

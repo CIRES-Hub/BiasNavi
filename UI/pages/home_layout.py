@@ -20,10 +20,71 @@ def layout():
                          refresh=True, pathname="/login"),
         ])
     return html.Div([
+        # Home Layout
         dbc.Container(fluid=True, children=[
+            # For user wizard
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle(id="wizard-title")),
+                    dbc.ModalBody(id="wizard-body",style={"fontSize": "0.7vw"}),
+                    dbc.ModalFooter(
+                        dbc.Button("Next", id="next-step", className="ms-auto", n_clicks=0)
+                    ),
+                ],
+                id="wizard-modal",
+                is_open=False,
+                backdrop=False,  # Allow interaction with the underlying page
+                style={"position": "absolute", "z-index": "1050", "color": "#614385"},  # Float above other elements
+            ),
+            dcc.Store(id="base-styles", data={}),
+            html.Div(id="overlay",
+                     style={"position": "fixed", "top": "0", "left": "0", "width": "100%", "height": "100%",
+                            "backgroundColor": "rgba(0, 0, 0, 0.7)", "z-index": "100", "display": "none"}),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle("Upload a CSV Dataset",style={"color" : "#614385"})),
+                    dbc.ModalBody(
+                        html.Div(
+                            dcc.Upload(
+                                id='upload-data-modal',
+                                children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
+                                style={
+                                    'width': '100%',
+                                    'height': '120px',  # Adjusted height
+                                    'lineHeight': '120px',  # Aligns the text vertically in the center
+                                    'borderWidth': '1px',
+                                    'borderStyle': 'dashed',
+                                    'borderRadius': '5px',
+                                    'textAlign': 'center',
+                                    'margin': '10px',
+                                    'backgroundColor': '#f5f5f5',  # Set background color
+                                    'display': 'flex',
+                                    'justifyContent': 'center',
+                                    'alignItems': 'center',
+                                },
+                                multiple=True
+                            ),
+                            style={
+                                'display': 'flex',
+                                'justifyContent': 'center',
+                                'alignItems': 'center'
+                            }
+                        )
+                    ),
+                    dbc.ModalFooter(
+                        dbc.Button("Close", id="close-modal", className="ml-auto")
+                    ),
+                ],
+                id="upload-modal",
+                is_open=True,
+                centered=True,  # This ensures the modal is centered
+                style={
+                    "boxShadow": "0 2px 4px 0 rgba(0, 0, 0, 0.2);"
+                }
+            ),
             # =======================================================
             # banner and menu bar layout
-            dbc.Row(justify="center", align="center", className="banner-row", children=[
+            dbc.Row(justify="center", align="center", children=[
                 html.Div(children=[
                     html.Img(src='../assets/logo.svg', className="logo"),
                     html.P('BiasNavi', className="title"),
@@ -36,7 +97,9 @@ def layout():
                                 label="Import",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
-                                className='menu-item'
+                                className='menu-item',
+                                id="menu-dataset",
+
                             ),
                             dbc.DropdownMenu(
                                 [dbc.DropdownMenuItem("Export Chat History"), dbc.DropdownMenuItem(
@@ -74,8 +137,15 @@ def layout():
                                 toggleClassName="dropdown-toggle",
                                 className='menu-item'
                             ),
-                            dbc.NavLink("Help", href="", className='nav-item'),
-                            dbc.NavLink("Prompts", id="setting-button", href="/settings/prompts", external_link=True,
+                            dbc.DropdownMenu(
+                                [dbc.DropdownMenuItem("Wizard", id="menu-help-wizard"),
+                                 dbc.DropdownMenuItem("Tutorial", id="menu-help-tutorial"),],
+                                label="Help",
+                                nav=True,
+                                toggleClassName="dropdown-toggle",
+                                className='menu-item'
+                            ),
+                            dbc.NavLink("Prompts", id="menu-prompt", href="/settings/prompts", external_link=True,
                                         target="_blank", className='nav-item'),
                             dbc.DropdownMenu(
                                 [
@@ -123,12 +193,11 @@ def layout():
                     # User Profile Area
                     html.Div(id="user-profile-area", className="profile-area"),
                     dcc.Store(id="username-edit-success", data=False),
-                    dbc.Card(children=[
+                    dbc.Card(id="chat-box", children=[
                         html.Div([
                             # Chat display area
                             html.Div([
-                                html.H4("Chat with BiasNavi",
-                                        className="secondary-title")
+                                html.H4("Chat with BiasNavi", className="secondary-title")
                             ], className="query-header"),
                             html.Div([
                                 dcc.Dropdown(id='export-format-dropdown', options=[
@@ -138,15 +207,6 @@ def layout():
                                     "Export", id="download-button", className="primary-button"),
                                 dcc.Download(id="export")
                             ], className="query-header"),
-                            dbc.Toast(
-                                "Have you imported a dataset and entered a query?",
-                                id="error-export",
-                                header="Reminder",
-                                is_open=False,
-                                dismissable=True,
-                                icon="danger",
-                                duration=4000,
-                            ),
                             dcc.Loading(
                                 id="loading-1",
                                 children=[
@@ -156,7 +216,7 @@ def layout():
                             ),
                             dbc.Toast(
                                 "Forget to import a dataset or enter a query?",
-                                id="error-query",
+                                id="error-toast",
                                 header="Reminder",
                                 is_open=False,
                                 dismissable=True,
@@ -215,8 +275,7 @@ def layout():
                         ], className='query'),
                     ], className='card'),
                     dbc.Card([
-                        html.H4("Chat History",
-                                className="secondary-title"),
+                        html.H4("Chat History", className="secondary-title"),
 
                         dbc.CardBody([
                             html.Div(id="chat-history-content")
@@ -228,9 +287,9 @@ def layout():
                 # =======================================================
                 # data views
                 dbc.Col(width=6, id="middle-column", children=[
-                    dbc.Card(body=True, className='card', children=[
+                    dbc.Card(body=True, id='data-view', className='card', children=[
                         dcc.Loading(id="table-loading", children=[html.Div([
-                            html.H4(id="dataset-name"),
+                            html.H5(id="dataset-name", className="dataset-name"),
                             dcc.Input(id='input-start-row', type='number', placeholder='Start row',
                                       style={'margin': '10px', 'width': '10%'}),
                             dcc.Input(id='input-end-row', type='number', placeholder='End row',
@@ -292,11 +351,11 @@ def layout():
                         html.Div(id='datatable-interactivity-container')
                     ]),
 
-                    dbc.Card(body=True, className="card", children=[
+                    dbc.Card(body=True, id="report-view", className="card", children=[
                         dcc.Loading(id="report-loading", children=[
                             html.Div([
                                 html.H2("Bias Report",
-                                        style={'color': 'darkred', 'marginBottom': '20px', 'textAlign': 'center'}),
+                                        style={'color': '#614385', 'marginBottom': '20px', 'textAlign': 'center'}),
                                 html.Div(children=[
                                     html.P(" Choose a column as the target attribute to generate bias report."),
                                     dcc.Dropdown(id='column-names-dropdown'),
@@ -356,11 +415,11 @@ def layout():
 
                 dbc.Col(width=3, id="right-column", children=[
 
-                    dbc.Card(children=[
+                    dbc.Card(id = "snapshot-view", children=[
                         html.Div([
                             html.Div([
                                 html.Div([
-                                    html.H4("Dataset Snapshots", style={'paddingLeft': 0}),
+                                    html.H4("Dataset Snapshots", style={'paddingLeft': 0}, className="secondary-title"),
                                     html.Span(
                                         html.I(className="fas fa-question-circle"),
                                         id="tooltip-snapshot",
@@ -413,7 +472,7 @@ def layout():
                         ], className='llm-chart', style={'overflowX': 'auto'})
                     ], className='card'),
 
-                    dbc.Card(children=[
+                    dbc.Card(id="evaluation-view", children=[
                         html.Div([
                             html.Div([
                                 html.H4("Dataset Evaluation", className="secondary-title")
@@ -480,10 +539,10 @@ def layout():
                         ], className='llm-chart', style={'overflowX': 'auto'})
                     ], className='card'),
 
-                    dbc.Card(children=[
+                    dbc.Card(id="code-view", children=[
                         html.Div([
                             html.Div([
-                                html.H4("Python Sandbox", style={'paddingLeft': 0}),
+                                html.H4("Python Sandbox", style={'paddingLeft': 0}, className="secondary-title"),
                                 html.Span(
                                     html.I(className="fas fa-question-circle"),
                                     id="tooltip-code",
@@ -507,15 +566,18 @@ def layout():
                                  className='commands_editor'),
                         html.Div([dbc.Button("Run", id="run-commands", n_clicks=0, className='primary-button')],
                                  className='right-align-div'),
+                        html.Div([
+                            html.H4("Console", className="secondary-title")
+                        ], className="query-header"),
                         dcc.Loading(
                             id="loading-1",
-                            children=[html.P(id='console-area', className='query-area console-area')],
+                            children=[html.P(id='console-area', className='commands_result')],
                             type="default",
                         ),
                     ], style={'padding': '15px'})
                 ]),
             ])
-        ], className="body")
+        ], className="body fade-in")
     ])
 
 
@@ -733,4 +795,6 @@ def toggle_collapse(n, is_open):
 def toggle_disable(n_clicks):
     return True, True
 
+
+# Callback for managing wizard steps
 

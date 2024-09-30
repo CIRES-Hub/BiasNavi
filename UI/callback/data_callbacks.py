@@ -3,7 +3,7 @@ from UI.app import app
 from dash.dependencies import Input, Output, State
 import plotly.express as px
 import base64
-from agent import  DatasetAgent
+from agent import DatasetAgent
 import datetime
 from dash import callback_context
 import io
@@ -27,30 +27,42 @@ from UI.functions import query_llm
      Output('dataset-selection', 'options'),
      Output('console-area', 'children', allow_duplicate=True),
      Output("commands-input", "disabled", allow_duplicate=True),
-     Output("run-commands", "disabled", allow_duplicate=True), ],
+     Output("run-commands", "disabled", allow_duplicate=True),
+     Output("upload-modal", "is_open"),],
     [Input('upload-data', 'contents'),
+     Input('upload-data-modal', 'contents'),
      Input('show-rows-button', 'n_clicks')],
     [State('upload-data', 'filename'),
+    State('upload-data-modal', 'filename'),
      State('input-start-row', 'value'),
      State('input-end-row', 'value'),
-     State('snapshot-table', 'data'), ],
+     State('snapshot-table', 'data'),
+     ],
     prevent_initial_call=True,
 )
-def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, start_row, end_row, snapshot_data):
+def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_clicks, list_of_names, list_of_names_modal, start_row, end_row, snapshot_data):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
-    if triggered_id == 'upload-data':
-        if not list_of_contents or not list_of_names:
-            return [], [], [], False, "", [], dash.no_update, dash.no_update, dash.no_update
+    if triggered_id == 'upload-data' or triggered_id == 'upload-data-modal':
+        if triggered_id == 'upload-data':
+            if not list_of_contents or not list_of_names:
+                return [], [], [], False, "", [], dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
             # Process the first file only
-        contents = list_of_contents[0]
-        filename = list_of_names[0]
+            contents = list_of_contents[0]
+            filename = list_of_names[0]
+        elif triggered_id == 'upload-data-modal':
+            if not list_of_contents_modal or not list_of_names_modal:
+                return [], [], [], False, "", [], dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+            # Process the first file only
+            contents = list_of_contents_modal[0]
+            filename = list_of_names_modal[0]
 
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update
+            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -82,7 +94,8 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
             ['1'],
             "",
             False,
-            False
+            False,
+            False,
         )
 
     elif triggered_id == 'show-rows-button':
@@ -103,6 +116,7 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
+                dash.no_update,
                 dash.no_update
             )
 
@@ -117,10 +131,11 @@ def import_data_and_update_table(list_of_contents, n_clicks, list_of_names, star
             dash.no_update,
             "",
             False,
+            False,
             False
         )
 
-    return [], [], [], False, "", [], [], "", dash.no_update, dash.no_update
+    return [], [], [], False, "", [], [], "", dash.no_update, dash.no_update, dash.no_update
 
 
 @app.callback(

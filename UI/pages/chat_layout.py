@@ -6,9 +6,6 @@ from dash import dcc, html, dash_table, callback, Input, Output, State, MATCH, A
 import dash_daq as daq
 import dash
 from flask_login import logout_user, current_user
-from dash.exceptions import PreventUpdate
-import dash_editor_components
-from agent import ConversationFormat
 
 dash.register_page(__name__, path='/chat/', title='Chat')
 
@@ -19,155 +16,95 @@ def layout():
             dcc.Location(id="redirect-to-login",
                          refresh=True, pathname="/login"),
         ])
+
     return html.Div([
-        dbc.Container(fluid=True, children=[
-            dbc.Row(justify="center", align="center", className="banner-row", children=[
-                html.Div(children=[
-                    html.Img(src='../assets/logo.svg', className="logo"),
-                    html.P('BiasNavi', className="title"),
-                    dbc.Nav(
-                        className='navbar d-flex flex-wrap',
-                        children=[
-                            dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem(
-                                    "Import Dataset", id="menu-import-data")],
-                                label="Import",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
-                            ),
-                            dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("Export Chat History"), dbc.DropdownMenuItem(
-                                    "Export Dataset Analysis Report")],
-                                label="Export",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
-                            ),
-                            # dbc.DropdownMenu(
-                            #     [dbc.DropdownMenuItem("Predefined Prompt 1"),
-                            #      dbc.DropdownMenuItem("Predefined Prompt 2"),
-                            #      dbc.DropdownMenuItem("Custom Prompt")],
-                            #     label="Prompts",
-                            #     nav=True,
-                            #     toggleClassName="dropdown-toggle",
-                            #     className='menu-item'
-                            # ),
-                            dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpt4omini"),
-                                 dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
-                                 dbc.DropdownMenuItem("GPT-4o", id="menu-model-gpt4o")],
-                                label="LLM Models",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
-                            ),
-                            dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("Hide ChatBox", id="menu-hide-chatbox"),
-                                 dbc.DropdownMenuItem(
-                                     "Hide Data View", id="menu-hide-dataview"),
-                                 dbc.DropdownMenuItem("Hide Right View", id="menu-hide-chartview")],
-                                label="View",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
-                            ),
-                            dbc.NavLink("Help", href="", className='nav-item'),
-                            dbc.NavLink("Prompts", id="setting-button", href="/settings/prompts", external_link=True,
-                                        target="_blank", className='nav-item'),
-                            dbc.DropdownMenu(
-                                [
-                                    dbc.DropdownMenuItem(
-                                        "About CIRES", href="https://cires.org.au/"),
-                                    dbc.DropdownMenuItem(
-                                        "Logout", id="logout-button", href="#")
-                                ],
-                                label="More",
-                                nav=True,
-                                toggleClassName="dropdown-toggle",
-                                className='menu-item'
+        dbc.Container(fluid=True, style={
+            "display": "flex",
+            "justifyContent": "center",  # Horizontally center
+            "alignItems": "center",      # Vertically center
+            "height": "100vh",           # 100% of the viewport height
+            "width": "100vw",            # 100% of the viewport width
+            "background": "linear-gradient(to right, #614385, #516395)"  # Example background
+        }, children=[
+            dcc.Location(id='url', refresh=True),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle("Upload a CSV Dataset", style={"color": "#614385"})),
+                    dbc.ModalBody(
+                        dcc.Loading(
+                            html.Div(
+                                dcc.Upload(
+                                    id='upload-data-modal-chat',
+                                    children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
+                                    style={
+                                        'width': '100%',
+                                        'height': '120px',  # Adjusted height
+                                        'lineHeight': '120px',  # Aligns the text vertically in the center
+                                        'borderWidth': '1px',
+                                        'borderStyle': 'dashed',
+                                        'borderRadius': '5px',
+                                        'textAlign': 'center',
+                                        'margin': '10px',
+                                        'backgroundColor': '#f5f5f5',  # Set background color
+                                        'display': 'flex',
+                                        'justifyContent': 'center',
+                                        'alignItems': 'center',
+                                    },
+                                    multiple=True
+                                ),
+                                style={
+                                    'display': 'flex',
+                                    'justifyContent': 'center',
+                                    'alignItems': 'center'
+                                }
                             )
-                        ],
+                        ),
                     ),
-                    dcc.Location(id='url', refresh=True)
-                ], className='banner'),
-            ]),
-            dbc.Col(width=4, id = "middle-column", children=[
-                dbc.Card(children=[
-                    html.Div(id="output-placeholder"),
-                    dbc.Toast(
-                        "Only the csv file is supported currently",
-                        id="error-file-format",
-                        header="Reminder",
-                        is_open=False,
-                        dismissable=True,
-                        icon="danger",
-                        duration=4000,
+                    dbc.ModalFooter(
+                        dbc.Button("Close", id="close-modal", className="ml-auto")
                     ),
-                    dcc.Upload(
-                        id='upload-data',
-                        children=html.Div([
-                            'Drag and drop your data file here or ',
-                            html.A(html.B('Browse files'))
-                        ]),
-                        style={"display": "none"},
-                        className='upload',
-                        multiple=True
-                    )], className='card', style={"display": "none"}),
-                # User Profile Area
-                html.Div(id="user-profile-area", className="profile-area"),
-                dcc.Store(id="username-edit-success", data=False),
+                ],
+                id="upload-modal-chat",
+                is_open=True,
+                centered=True,  # This ensures the modal is centered
+                style={
+                    "boxShadow": "0 2px 4px 0 rgba(0, 0, 0, 0.2);"
+                }
+            ),
+
+            dbc.Col(width=4, children=[
+                # Chat Box Card
                 dbc.Card(children=[
                     html.Div([
                         # Chat display area
                         html.Div([
                             html.H4("Chat with BiasNavi",
-                                    className="secondary-title")
-                        ], className="query-header"),
-                        html.Div([
-                            dcc.Dropdown(id='export-format-dropdown', options=[
-                                v.value for v in ConversationFormat],
-                                         value=ConversationFormat.SIMPLIFIED_JSON.value),
-                            html.Button(
-                                "Export", id="download-button", className="primary-button"),
-                            dcc.Download(id="export")
-                        ], className="query-header"),
-                        dbc.Toast(
-                            "Have you imported a dataset and entered a query?",
-                            id="error-export",
-                            header="Reminder",
-                            is_open=False,
-                            dismissable=True,
-                            icon="danger",
-                            duration=4000,
-                        ),
+                                    className="secondary-title"),
+                            dbc.Button("Log out", id="logout-button-chat", className="primary-button", style={"backgroundColor":"lightgrey"},n_clicks=0)
+                        ], className="query-header",style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                                          "width": "100%"}),
+
                         dcc.Loading(
                             id="loading-1",
                             children=[
-                                html.Div(id='query-area', className='query-area')],
-                            # dcc.Textarea(id='query-area', className='query-area', readOnly=True)],
+                                html.Div(id='query-area-chat', className='query-area')],
                             type="default",  # Choose from "graph", "cube", "circle", "dot", or "default"
                         ),
                         dbc.Toast(
                             "Forget to import a dataset or enter a query?",
-                            id="error-query",
+                            id="error-toast-chat",
                             header="Reminder",
                             is_open=False,
                             dismissable=True,
                             icon="danger",
                             duration=4000,
                         ),
-                        # generated follow-up questions
-                        html.Div(id='next-suggested-questions'),
-
+                        html.Div(id='next-suggested-questions-chat'),
                         # Message input row
-
-
-
                         html.Div([
-                            dcc.Input(id='query-input', type='text', className='query-input',
+                            dcc.Input(id='query-input-chat', type='text', className='query-input',
                                       placeholder='Type your message here'),
-                            html.Button(html.Span(className="fas fa-paper-plane"), id='send-button', title="Send your message.", n_clicks=0,
+                            html.Button(html.Span(className="fas fa-paper-plane"), id='send-button-chat', title="Send your message.", n_clicks=0,
                                         className='send-button'),
 
                             dcc.Upload(id="upload-rag", children=html.Button(html.Span(className="fas fa-file"), id='RAG-button', title="Upload your document for RAG.", n_clicks=0,
@@ -176,26 +113,24 @@ def layout():
 
                             html.Div(id='rag-output'),
 
-                            daq.ToggleSwitch(id='rag-switch', value=False),
+                            daq.ToggleSwitch(id='rag-switch', value=False, style={"display": "none"}),
 
                             html.Div(id='rag-switch-output'),
                         ], className="center-align-div"),
 
                     ], className='query')
                 ], className='card'),
-
+                # Charts Card
                 dbc.Card(children=[
                     html.Div([
-                        # Chat display area
+                        # Chart display area
                         html.Div([
                             html.H4("Charts", className="secondary-title")
                         ], className="query-header"),
-                        html.Div([], id='llm-media-area')
+                        html.Div([], id='llm-media-area-chat')
                     ], className='llm-chart', style={'overflowX': 'auto'})
-                ], className='card'),
-
-                # RAG card
-                dbc.Card(id="rag-card", style={'display': 'block'}, children=[
+                ], className='card', style={"display": "none"}),
+                dbc.Card(id="rag-card", style={'display': 'none'}, children=[
                     html.Div([
                         # RAG display area
                         html.H4("RAG Documents", className="secondary-title"),
@@ -209,15 +144,7 @@ def layout():
 
                     ], className='query'),
                 ], className='card'),
-                dbc.Card([
-                    html.H4("Chat History",
-                            className="secondary-title"),
-
-                    dbc.CardBody([
-                        html.Div(id="chat-history-content")
-                    ])
-                ], className="mt-3"),
-                dcc.Store(id='chat-update-trigger', data=0)
             ])
         ])
     ])
+

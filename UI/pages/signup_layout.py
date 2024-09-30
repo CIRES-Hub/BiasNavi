@@ -7,10 +7,20 @@ from db_models.users import User
 from db_models.databases import db
 from flask_login import login_user
 import docker
-import os 
-import shutil 
+import os
+import shutil
 
 dash.register_page(__name__, path='/signup/', title='Signup')
+
+custom_style = {
+    "input-wrapper": {
+        "width": "100%",
+        "padding": "0 10px",
+    },
+    "input-field": {
+        "width": "100%",
+    }
+}
 
 layout = dbc.Container(fluid=True, children=[
     dbc.Row(
@@ -20,7 +30,7 @@ layout = dbc.Container(fluid=True, children=[
                     html.H4("Sign Up", className="card-title mb-4 text-center"),
                     dbc.Row([
                         dbc.Label("Email",
-                                    className="font-weight-bold"),
+                                  className="font-weight-bold"),
                         html.Div(
                             dbc.Input(
                                 id="email-input", placeholder="Enter your email",
@@ -30,7 +40,7 @@ layout = dbc.Container(fluid=True, children=[
 
                     dbc.Row([
                         dbc.Label("Password",
-                                    className="font-weight-bold"),
+                                  className="font-weight-bold"),
                         html.Div(
                             dbc.Input(
                                 id="password-input", placeholder="Enter your password", type="password",
@@ -40,7 +50,7 @@ layout = dbc.Container(fluid=True, children=[
 
                     dbc.Row([
                         dbc.Label("Confirm Password",
-                                    className="font-weight-bold"),
+                                  className="font-weight-bold"),
                         html.Div(
                             dbc.Input(
                                 id="confirm-password-input", placeholder="Enter your password", type="password",
@@ -50,7 +60,7 @@ layout = dbc.Container(fluid=True, children=[
 
                     dbc.Row([
                         dbc.Label("Username",
-                                    className="font-weight-bold"),
+                                  className="font-weight-bold"),
                         html.Div(
                             dbc.Input(
                                 id="signup-username-input", placeholder="Enter your username",
@@ -59,7 +69,7 @@ layout = dbc.Container(fluid=True, children=[
                     ], className="mb-3"),
                     dbc.Row([
                         dbc.Label("Professional Role",
-                                    className="font-weight-bold"),
+                                  className="font-weight-bold"),
                         html.Div(
                             dcc.Dropdown(
                                 id="professional-role-input",
@@ -76,14 +86,14 @@ layout = dbc.Container(fluid=True, children=[
 
                     dbc.Row([
                         dbc.Label("Industry Sector",
-                                    className="font-weight-bold"),
+                                  className="font-weight-bold"),
                         html.Div(
                             dcc.Dropdown(
                                 id="industry-sector-dropdown",
                                 options=[
                                     {"label": sector, "value": sector} for sector in
                                     ["Technology", "Healthcare", "Finance",
-                                        "Education", "Media", "Other"]
+                                     "Education", "Media", "Other"]
                                 ],
                                 placeholder="Select your industry sector",
                                 style=custom_style["input-field"],
@@ -101,7 +111,7 @@ layout = dbc.Container(fluid=True, children=[
                                 options=[
                                     {"label": level, "value": level} for level in
                                     ["Beginner", "Intermediate",
-                                        "Advanced", "Expert"]
+                                     "Advanced", "Expert"]
                                 ],
                                 placeholder="Select your expertise level",
                                 style=custom_style["input-field"],
@@ -113,7 +123,8 @@ layout = dbc.Container(fluid=True, children=[
                     dbc.Row([
                         html.Div([
                             dbc.Label(
-                                "Level of Technical in Data Science and Machine Learning", className="font-weight-bold"),
+                                "Level of Technical in Data Science and Machine Learning",
+                                className="font-weight-bold"),
                             html.Span(
                                 html.I(className="fas fa-question-circle"),
                                 id="technical-tooltip-snapshot",
@@ -125,7 +136,7 @@ layout = dbc.Container(fluid=True, children=[
                                     "alignSelf": "center"
                                 }
                             )], className="survey-tooltip"),
-                            dbc.Tooltip(
+                        dbc.Tooltip(
                             "How would you rate your expertise in data science and machine learning?",
                             target="technical-tooltip-snapshot",
                             placement="right"
@@ -136,7 +147,7 @@ layout = dbc.Container(fluid=True, children=[
                                 options=[
                                     {"label": level, "value": level} for level in
                                     ["Novice", "Beginner",
-                                        "Intermediate", "Advanced", "Expert"]
+                                     "Intermediate", "Advanced", "Expert"]
                                 ],
                                 placeholder="Select your expertise level",
                                 style=custom_style["input-field"],
@@ -160,7 +171,7 @@ layout = dbc.Container(fluid=True, children=[
                                     "alignSelf": "center"
                                 }
                             )], className="survey-tooltip"),
-                            dbc.Tooltip(
+                        dbc.Tooltip(
                             "How would you rate your awareness of biases in datasets and AI models?",
                             target="bias-tooltip-snapshot",
                             placement="right"
@@ -171,7 +182,7 @@ layout = dbc.Container(fluid=True, children=[
                                 options=[
                                     {"label": level, "value": level} for level in
                                     ["Very Low", "Low",
-                                        "Moderate", "High", "Very High"]
+                                     "Moderate", "High", "Very High"]
                                 ],
                                 placeholder="Select your awareness level",
                                 style=custom_style["input-field"],
@@ -181,42 +192,42 @@ layout = dbc.Container(fluid=True, children=[
                     ], className="mb-3"),
 
                     dbc.Row([
-                                dbc.Label("Primary Areas of Interest",
-                                          className="font-weight-bold"),
-                                html.Div(
-                                    dbc.Checklist(
-                                        id="areas-of-interest-checklist",
-                                        options=[
-                                            {"label": area, "value": area} for area in
-                                            ["Bias Detection", "Data Visualization",
-                                                "Statistical Analysis", "Machine Learning", "Other"]
-                                        ],
-                                        inline=True,
-                                        style=custom_style["input-field"],
-                                    ),
-                                    style=custom_style["input-wrapper"]
-                                ),
-                            ], className="mb-4"),
+                        dbc.Label("Primary Areas of Interest",
+                                  className="font-weight-bold"),
+                        html.Div(
+                            dbc.Checklist(
+                                id="areas-of-interest-checklist",
+                                options=[
+                                    {"label": area, "value": area} for area in
+                                    ["Bias Detection", "Data Visualization",
+                                     "Statistical Analysis", "Machine Learning", "Other"]
+                                ],
+                                inline=True,
+                                style=custom_style["input-field"],
+                            ),
+                            style=custom_style["input-wrapper"]
+                        ),
+                    ], className="mb-4"),
                     dbc.Row([
                         dbc.Col(
                             dbc.Button(
-                                "Log in", id="login-button", color="secondary", n_clicks=0, class_name="w-100"),
+                                "Cancel", id="cancel-button", color="secondary", n_clicks=0, class_name="w-100"),
                             width=6, className="ms-auto"
                         ),
                         dbc.Col(
-                            dbc.Button("Sign Up", id="signup-button",
+                            dbc.Button("Sign Up", id="submit-signup-button",
                                        color="primary", n_clicks=0, class_name="w-100"),
                             width=6
                         )
                     ], className="d-flex justify-content-between"),
-                    html.Div(id="auth-result", className="mt-3"),
+                    html.Div(id="auth-signup-result", className="mt-3", style={'color': 'red'}),
                     dcc.Location(id='url', refresh=True)
                 ]),
-                style={"width": "450px"}
+                style={"width": "400px"}
             )
         ], className="flex-center", style={"padding": "50px 0"})
-    , style={'height': '100%', 'width': '100%'})
-], className="body vh-100 d-flex align-items-center justify-content-center", style={'overflowY': 'auto'})
+        , style={'height': '100%', 'width': '100%'})
+], className="body vh-100 d-flex align-items-center justify-content-center fade-in", style={'overflowY': 'auto', "background": "linear-gradient(to right, #67b26f, #4ca2cd)"})
 
 
 @callback(
@@ -236,17 +247,20 @@ layout = dbc.Container(fluid=True, children=[
     State("areas-of-interest-checklist", "value"),
     prevent_initial_call=True
 )
-def handle_auth(signup_clicks, login_clicks, email, password):
+def handle_auth(signup_clicks, login_clicks, email, password, confirm_password, user_name, professional_role,
+                industry_sector, expertise_level, technical_level, bias_awareness, areas_of_interest):
     ctx = callback_context
     if not ctx.triggered:
         raise PreventUpdate
 
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-    if button_id == "signup-button":
-        if not email or not password:
+    if button_id == "submit-signup-button":
+        if not all([email, password, user_name, professional_role, industry_sector, expertise_level, areas_of_interest,
+                    technical_level, bias_awareness]):
             return dash.no_update, "Please fill in all fields."
-
+        if password != confirm_password:
+            return dash.no_update, "The password confirmation does not match."
         # Check if user already exists
         user = User.query.filter((User.email == email)).first()
         if user:
@@ -257,25 +271,26 @@ def handle_auth(signup_clicks, login_clicks, email, password):
         new_user.set_password(password)
         new_user.signup()
         user_id = str(new_user.id)
-        
+
         try:
             user = User.query.get(user_id)
-            
+
             user.follow_up_questions_prompt_1 = "Generate the next question that the user might ask"
             user.follow_up_questions_prompt_2 = "Generate the next question that the user might ask"
-            
+
             user.system_prompt = ("You are an expert in dealing with bias in datasets for data science. \n"
-                    "Your expertise includes identifying, measuring, and mitigating biases in tabular datasets.\n"
-                    "You are well-versed in advanced statistical methods, machine learning techniques, and ethical considerations for fair AI.\n"
-                    "You can provide detailed explanations of bias detection methods, offer actionable recommendations for bias mitigation, and guide users through complex scenarios with step-by-step instructions.\n" 
-                    "Your goal is to ensure datasets are fair, transparent, and robust for accurate and equitable AI model/business development.")
-            
-            user.prefix_prompt = ("You have already been provided with a dataframe df, all queries should be about that df.\n"
+                                  "Your expertise includes identifying, measuring, and mitigating biases in tabular datasets.\n"
+                                  "You are well-versed in advanced statistical methods, machine learning techniques, and ethical considerations for fair AI.\n"
+                                  "You can provide detailed explanations of bias detection methods, offer actionable recommendations for bias mitigation, and guide users through complex scenarios with step-by-step instructions.\n"
+                                  "Your goal is to ensure datasets are fair, transparent, and robust for accurate and equitable AI model/business development.")
+
+            user.prefix_prompt = (
+                "You have already been provided with a dataframe df, all queries should be about that df.\n"
                 "Do not create dataframe. Do not read dataframe from any other sources. Do not use pd.read_clipboard.\n"
                 "If your response includes code, it will be executed, so you should define the code clearly.\n"
-                "Code in response will be split by /\n so it should only include /\n at the end of each line.\n"
+                "Code in response will be split by \\n so it should only include \\n at the end of each line.\n"
                 "Do not execute code with 'functions', only use 'python_repl_ast'.")
-                
+
             user.username = user_name
             user.professional_role = professional_role
             user.industry_sector = industry_sector
@@ -289,19 +304,19 @@ def handle_auth(signup_clicks, login_clicks, email, password):
         except Exception as e:
             print("Create user failed: ", e)
             db.session.rollback()
-            
-        try: 
-                
+
+        try:
+
             client = docker.from_env()
             current_path = os.path.dirname(os.path.realpath(__file__))
             user_data_dir = os.path.dirname(current_path) + '/../tmp/' + user_id
             os.makedirs(user_data_dir, exist_ok=True)
             shutil.copyfile(os.path.dirname(current_path) + '/assets/sandbox_main.py', user_data_dir + '/main.py')
-            client.containers.run('daisyy512/hello-docker', 
-                                            name='biasnavi-' + user_id, 
-                                            volumes=[user_data_dir + ':/home/sandbox/'+ user_id],
-                                            detach=True,
-                                            tty=True)
+            client.containers.run('daisyy512/hello-docker',
+                                  name='biasnavi-' + user_id,
+                                  volumes=[user_data_dir + ':/home/sandbox/' + user_id],
+                                  detach=True,
+                                  tty=True)
             print("Create container successfully")
         except Exception as e:
             print("Create container failed: ", e)
