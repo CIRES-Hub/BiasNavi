@@ -72,6 +72,7 @@ class CustomizedPythonAstREPLTool(PythonAstREPLTool):
         try:
             if self.sanitize_input:
                 query = sanitize_input(query)
+            module_end_str=""
             tree = ast.parse(query)
             module = ast.Module(tree.body[:-1], type_ignores=[])
             exec(ast.unparse(module), self.globals, self.locals)  # type: ignore
@@ -102,7 +103,7 @@ class CustomizedPythonAstREPLTool(PythonAstREPLTool):
                 with redirect_stdout(io_buffer):
                     exec(module_end_str, self.globals, self.locals)
                 return io_buffer.getvalue()
-        except Exception as e:
+        except Exception as eval_exception:
             if not re.search("\w\s*=", module_end_str):
                 self.execution_error.append(eval_exception)
-            return "{}: {}".format(type(e).__name__, str(e))
+            return "{}: {}".format(type(eval_exception).__name__, str(eval_exception))
