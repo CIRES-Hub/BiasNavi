@@ -52,7 +52,7 @@ def execute_commands(n_click, commands):
             with open(os.path.join(user_data_dir, 'sandbox_commands.py'), "w") as f:
                 f.write(commands)
 
-            global_vars.df.to_csv(os.path.join(user_data_dir, "df.csv"))
+            global_vars.df.to_csv(os.path.join(user_data_dir, "df.csv"), index=False)
             if os.path.exists(user_output_file):
                 os.remove(user_output_file)
             if os.path.exists(user_error_file):
