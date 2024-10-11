@@ -7,9 +7,9 @@ from db_models.users import User
 from db_models.databases import db
 from flask_login import login_user
 import docker
-import os
-import shutil
-
+import os 
+import shutil 
+from utils.constant import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, DEFAULT_PERSONA_PROMPT
 dash.register_page(__name__, path='/signup/', title='Signup')
 
 custom_style = {
@@ -30,46 +30,46 @@ layout = dbc.Container(fluid=True, children=[
                     html.H4("Sign Up", className="card-title mb-4 text-center"),
                     dbc.Row([
                         dbc.Label("Email",
-                                  className="font-weight-bold"),
+                                    className="font-weight-bold"),
                         html.Div(
                             dbc.Input(
-                                id="email-input", placeholder="Enter your email",
+                                id="email-input", placeholder="Enter your email", 
                                 style=custom_style["input-field"]), style=custom_style["input-wrapper"]
                         ),
                     ], className="mb-3"),
-
+                    
                     dbc.Row([
                         dbc.Label("Password",
-                                  className="font-weight-bold"),
+                                    className="font-weight-bold"),
                         html.Div(
                             dbc.Input(
                                 id="password-input", placeholder="Enter your password", type="password",
                                 style=custom_style["input-field"]), style=custom_style["input-wrapper"]
                         ),
                     ], className="mb-3"),
-
+                    
                     dbc.Row([
                         dbc.Label("Confirm Password",
-                                  className="font-weight-bold"),
+                                    className="font-weight-bold"),
                         html.Div(
                             dbc.Input(
                                 id="confirm-password-input", placeholder="Enter your password", type="password",
                                 style=custom_style["input-field"]), style=custom_style["input-wrapper"]
                         ),
                     ], className="mb-3"),
-
+                    
                     dbc.Row([
                         dbc.Label("Username",
-                                  className="font-weight-bold"),
+                                    className="font-weight-bold"),
                         html.Div(
                             dbc.Input(
-                                id="signup-username-input", placeholder="Enter your username",
+                                id="signup-username-input", placeholder="Enter your username", 
                                 style=custom_style["input-field"]), style=custom_style["input-wrapper"]
                         ),
                     ], className="mb-3"),
                     dbc.Row([
                         dbc.Label("Professional Role",
-                                  className="font-weight-bold"),
+                                    className="font-weight-bold"),
                         html.Div(
                             dcc.Dropdown(
                                 id="professional-role-input",
@@ -86,14 +86,14 @@ layout = dbc.Container(fluid=True, children=[
 
                     dbc.Row([
                         dbc.Label("Industry Sector",
-                                  className="font-weight-bold"),
+                                    className="font-weight-bold"),
                         html.Div(
                             dcc.Dropdown(
                                 id="industry-sector-dropdown",
                                 options=[
                                     {"label": sector, "value": sector} for sector in
                                     ["Technology", "Healthcare", "Finance",
-                                     "Education", "Media", "Other"]
+                                        "Education", "Media", "Other"]
                                 ],
                                 placeholder="Select your industry sector",
                                 style=custom_style["input-field"],
@@ -111,7 +111,7 @@ layout = dbc.Container(fluid=True, children=[
                                 options=[
                                     {"label": level, "value": level} for level in
                                     ["Beginner", "Intermediate",
-                                     "Advanced", "Expert"]
+                                        "Advanced", "Expert"]
                                 ],
                                 placeholder="Select your expertise level",
                                 style=custom_style["input-field"],
@@ -136,7 +136,7 @@ layout = dbc.Container(fluid=True, children=[
                                     "alignSelf": "center"
                                 }
                             )], className="survey-tooltip"),
-                        dbc.Tooltip(
+                            dbc.Tooltip(
                             "How would you rate your expertise in data science and machine learning?",
                             target="technical-tooltip-snapshot",
                             placement="right"
@@ -147,7 +147,7 @@ layout = dbc.Container(fluid=True, children=[
                                 options=[
                                     {"label": level, "value": level} for level in
                                     ["Novice", "Beginner",
-                                     "Intermediate", "Advanced", "Expert"]
+                                        "Intermediate", "Advanced", "Expert"]
                                 ],
                                 placeholder="Select your expertise level",
                                 style=custom_style["input-field"],
@@ -155,7 +155,7 @@ layout = dbc.Container(fluid=True, children=[
                             style=custom_style["input-wrapper"]
                         ),
                     ], className="mb-3"),
-
+                    
                     dbc.Row([
                         html.Div([
                             dbc.Label(
@@ -171,7 +171,7 @@ layout = dbc.Container(fluid=True, children=[
                                     "alignSelf": "center"
                                 }
                             )], className="survey-tooltip"),
-                        dbc.Tooltip(
+                            dbc.Tooltip(
                             "How would you rate your awareness of biases in datasets and AI models?",
                             target="bias-tooltip-snapshot",
                             placement="right"
@@ -182,7 +182,7 @@ layout = dbc.Container(fluid=True, children=[
                                 options=[
                                     {"label": level, "value": level} for level in
                                     ["Very Low", "Low",
-                                     "Moderate", "High", "Very High"]
+                                        "Moderate", "High", "Very High"]
                                 ],
                                 placeholder="Select your awareness level",
                                 style=custom_style["input-field"],
@@ -192,22 +192,22 @@ layout = dbc.Container(fluid=True, children=[
                     ], className="mb-3"),
 
                     dbc.Row([
-                        dbc.Label("Primary Areas of Interest",
-                                  className="font-weight-bold"),
-                        html.Div(
-                            dbc.Checklist(
-                                id="areas-of-interest-checklist",
-                                options=[
-                                    {"label": area, "value": area} for area in
-                                    ["Bias Detection", "Data Visualization",
-                                     "Statistical Analysis", "Machine Learning", "Other"]
-                                ],
-                                inline=True,
-                                style=custom_style["input-field"],
-                            ),
-                            style=custom_style["input-wrapper"]
-                        ),
-                    ], className="mb-4"),
+                                dbc.Label("Primary Areas of Interest",
+                                          className="font-weight-bold"),
+                                html.Div(
+                                    dbc.Checklist(
+                                        id="areas-of-interest-checklist",
+                                        options=[
+                                            {"label": area, "value": area} for area in
+                                            ["Bias Detection", "Data Visualization",
+                                                "Statistical Analysis", "Machine Learning", "Other"]
+                                        ],
+                                        inline=True,
+                                        style=custom_style["input-field"],
+                                    ),
+                                    style=custom_style["input-wrapper"]
+                                ),
+                            ], className="mb-4"),
                     dbc.Row([
                         dbc.Col(
                             dbc.Button(
@@ -256,8 +256,7 @@ def handle_auth(signup_clicks, login_clicks, email, password, confirm_password, 
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
     if button_id == "submit-signup-button":
-        if not all([email, password, user_name, professional_role, industry_sector, expertise_level, areas_of_interest,
-                    technical_level, bias_awareness]):
+        if  not all([email, password, user_name, professional_role, industry_sector, expertise_level, areas_of_interest, technical_level, bias_awareness]):
             return dash.no_update, "Please fill in all fields."
         if password != confirm_password:
             return dash.no_update, "The password confirmation does not match."
@@ -274,23 +273,14 @@ def handle_auth(signup_clicks, login_clicks, email, password, confirm_password, 
 
         try:
             user = User.query.get(user_id)
-
-            user.follow_up_questions_prompt_1 = "Generate the next question that the user might ask"
-            user.follow_up_questions_prompt_2 = "Generate the next question that the user might ask"
-
-            user.system_prompt = ("You are an expert in dealing with bias in datasets for data science. \n"
-                                  "Your expertise includes identifying, measuring, and mitigating biases in tabular datasets.\n"
-                                  "You are well-versed in advanced statistical methods, machine learning techniques, and ethical considerations for fair AI.\n"
-                                  "You can provide detailed explanations of bias detection methods, offer actionable recommendations for bias mitigation, and guide users through complex scenarios with step-by-step instructions.\n"
-                                  "Your goal is to ensure datasets are fair, transparent, and robust for accurate and equitable AI model/business development.")
-
-            user.prefix_prompt = (
-                "You have already been provided with a dataframe df, all queries should be about that df.\n"
-                "Do not create dataframe. Do not read dataframe from any other sources. Do not use pd.read_clipboard.\n"
-                "If your response includes code, it will be executed, so you should define the code clearly.\n"
-                "Code in response will be split by \\n so it should only include \\n at the end of each line.\n"
-                "Do not execute code with 'functions', only use 'python_repl_ast'.")
-
+            
+            user.follow_up_questions_prompt_1 = DEFAULT_NEXT_QUESTION_PROMPT
+            user.follow_up_questions_prompt_2 = DEFAULT_NEXT_QUESTION_PROMPT
+            
+            user.system_prompt = DEFAULT_SYSTEM_PROMPT
+            
+            user.prefix_prompt = DEFAULT_PREFIX_PROMPT
+                
             user.username = user_name
             user.professional_role = professional_role
             user.industry_sector = industry_sector
@@ -298,8 +288,8 @@ def handle_auth(signup_clicks, login_clicks, email, password, confirm_password, 
             user.technical_level = technical_level
             user.bias_awareness = bias_awareness
             user.areas_of_interest = areas_of_interest
-            user.persona_prompt = 'My professional role is {{professional_role}}. I am working in {{industry_sector}} industry. My level of expertise in data analysis is {{expertise_level}}'
-
+            user.persona_prompt = DEFAULT_PERSONA_PROMPT
+            
             db.session.commit()
         except Exception as e:
             print("Create user failed: ", e)

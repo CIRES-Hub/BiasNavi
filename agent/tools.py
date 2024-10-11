@@ -70,6 +70,8 @@ class CustomizedPythonAstREPLTool(PythonAstREPLTool):
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         try:
+            self.execution_error.clear()
+            
             if self.sanitize_input:
                 query = sanitize_input(query)
             module_end_str=""

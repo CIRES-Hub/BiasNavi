@@ -20,7 +20,8 @@ import re
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain.output_parsers import PydanticOutputParser
 from flask_login import current_user
-
+from db_models.conversation import db, Conversation
+from flask_login import current_user
 
 class ConversationFormat(str, Enum):
     FULL_JSON = 'Full JSON'
@@ -47,7 +48,7 @@ def pass_argument_next_questions_class(question1, question2):
 
 class DatasetAgent:
 
-    def __init__(self, df, llm=None, file_name=None, user_id=None):
+    def __init__(self, df, conversation_session=None, llm=None, file_name=None, user_id=None):
         self.user_id = user_id
         if llm is None:
             llm = ChatOpenAI(temperature=0.5, model="gpt-4o-mini").configurable_alternatives(
@@ -59,7 +60,7 @@ class DatasetAgent:
             )
         self.llm = llm
         self.model_name = llm.model_name
-        self.session_id = round(time.time() * 1000)
+        self.session_id = conversation_session
         self.elem_queue = []
         self.execution_error: list[Exception] = []
         self.list_commands: list[str] = []
@@ -110,7 +111,8 @@ class DatasetAgent:
         self.file_name = file_name
 
         self.agent_with_trimmed_history = (
-            RunnablePassthrough.assign(messages_trimmed=self.trim_messages)
+            RunnablePassthrough.assign()
+            # RunnablePassthrough.assign(messages_trimmed=self.trim_messages)
             | self.agent_with_chat_history
         )
 
@@ -143,10 +145,14 @@ class DatasetAgent:
         
         # Parse response 
         suggestions = []
-        suggestions.append(self.parser.parse(result).suggestion1)
-        suggestions.append(self.parser.parse(result).suggestion2)
-        result = self.parser.parse(result).response
-        
+                
+        try:
+            parsed_result = self.parser.parse(result)
+            suggestions.append(parsed_result.suggestion1)
+            suggestions.append(parsed_result.suggestion2)
+            result = parsed_result.response
+        except Exception as e:
+            self.execution_error.append(e)
          # Improve table removal logic
         table_pattern = r'(?s)\|.*?\|\n\|[-:]+\|\n(.*?)\n\n'
         result = re.sub(table_pattern, '', result)

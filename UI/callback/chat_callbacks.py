@@ -17,7 +17,7 @@ from UI.functions import query_llm
 
 @app.callback(
     [Output("query-area", "children"),
-     Output("error-toast", "is_open"),
+     Output("error-query", "is_open"),
      Output('llm-media-area', 'children'),
      Output("chat-update-trigger", "data"),
      Output("next-suggested-questions", "children"),
