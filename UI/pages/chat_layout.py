@@ -80,7 +80,7 @@ def layout():
                         html.Div([
                             html.H4("Chat with BiasNavi",
                                     className="secondary-title"),
-                            dbc.Button("Log out", id="logout-button-chat", className="primary-button", style={"backgroundColor":"lightgrey"},n_clicks=0)
+                            dbc.Button("Log out", id="logout-button-chat", className="primary-button", style={"backgroundColor":"darkred"},n_clicks=0)
                         ], className="query-header",style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
                                           "width": "100%"}),
 

@@ -9,6 +9,7 @@ from werkzeug.security import generate_password_hash
 from db_models.users import User
 from db_models.databases import db
 from flask_login import current_user
+from utils.constant import DEFAULT_PERSONA_PROMPT
 
 dash.register_page(__name__, path='/survey/', title='Survey')
 
@@ -257,7 +258,12 @@ def update_survey_info(submit_clicks, skip_clicks, user_name, professional_role,
             user.technical_level = technical_level
             user.bias_awareness = bias_awareness
             user.areas_of_interest = areas_of_interest
-            user.persona_prompt = 'My professional role is {{professional_role}}. I am working in {{industry_sector}} industry. My level of expertise in data analysis is {{expertise_level}}'
+            user.persona_prompt = DEFAULT_PERSONA_PROMPT.format(professional_role=user.professional_role,
+                                      industry_sector=user.industry_sector,
+                                      expertise_level=user.expertise_level,
+                                      technical_level=user.technical_level,
+                                      bias_level=user.bias_awareness
+                                      ),
                 
             db.session.commit()
             return '/home', 'Survey information updated!'

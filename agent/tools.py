@@ -1,6 +1,6 @@
 import ast
 from contextlib import redirect_stdout
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from io import StringIO
 from typing import Optional, Type
 from langchain_experimental.tools.python.tool import PythonAstREPLTool, sanitize_input
@@ -20,7 +20,10 @@ import re
 matplotlib.use('Agg')
 
 
-class CustomizedPythonAstREPLTool(PythonAstREPLTool):
+class RunPythonCode(PythonAstREPLTool):
+    name: str = "Run_python_code"
+    description: str = "A Python shell. Invoked when the user ask the language model to generate a table or chart"
+    #response_format: str = "content_and_artifact"
 
     elem_queue: list = Field(default_factory=list)
     execution_error: list[Exception] = []
@@ -70,6 +73,8 @@ class CustomizedPythonAstREPLTool(PythonAstREPLTool):
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         try:
+            self.execution_error.clear()
+
             if self.sanitize_input:
                 query = sanitize_input(query)
             module_end_str=""
@@ -90,9 +95,9 @@ class CustomizedPythonAstREPLTool(PythonAstREPLTool):
                     elif ((isinstance(processed_item, ModuleType) and processed_item.__name__ == 'matplotlib.pyplot')
                             or isinstance(processed_item, Figure)):
                         self.add_figure(processed_item)
-                    else:
-                        raise NotImplementedError(
-                            "The LLM returned an unsupported media type.")
+                    # else:
+                    #     raise NotImplementedError(
+                    #         "The LLM returned an unsupported media type.")
                     if processed_item is None:
                         return io_buffer.getvalue()
                     else:

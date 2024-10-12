@@ -2,13 +2,15 @@ import dash_bootstrap_components as dbc
 import dash_editor_components.PythonEditor
 from db_models.conversation import Conversation
 from db_models.users import User
-from dash import dcc, html, dash_table, callback, Input, Output, State, MATCH, ALL
+from dash import dcc, html, dash_table, callback, Input, Output, State, MATCH, ALL, callback_context
 import dash_daq as daq
 import dash
 from flask_login import logout_user, current_user
 from dash.exceptions import PreventUpdate
 import dash_editor_components
 from agent import ConversationFormat
+from utils.constant import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, DEFAULT_PERSONA_PROMPT
+
 
 dash.register_page(__name__, path='/home/', title='Home')
 
@@ -17,7 +19,7 @@ def layout():
     if not current_user.is_authenticated:
         return html.Div([
             dcc.Location(id="redirect-to-login",
-                         refresh=True, pathname="/login"),
+                         refresh=False, pathname="/"),
         ])
     return html.Div([
         # Home Layout
@@ -44,32 +46,34 @@ def layout():
                 [
                     dbc.ModalHeader(dbc.ModalTitle("Upload a CSV Dataset",style={"color" : "#614385"})),
                     dbc.ModalBody(
-                        html.Div(
-                            dcc.Upload(
-                                id='upload-data-modal',
-                                children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
+                        dcc.Loading(
+                            html.Div(
+                                dcc.Upload(
+                                    id='upload-data-modal',
+                                    children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
+                                    style={
+                                        'width': '100%',
+                                        'height': '120px',  # Adjusted height
+                                        'lineHeight': '120px',  # Aligns the text vertically in the center
+                                        'borderWidth': '1px',
+                                        'borderStyle': 'dashed',
+                                        'borderRadius': '5px',
+                                        'textAlign': 'center',
+                                        'margin': '10px',
+                                        'backgroundColor': '#f5f5f5',  # Set background color
+                                        'display': 'flex',
+                                        'justifyContent': 'center',
+                                        'alignItems': 'center',
+                                    },
+                                    multiple=True
+                                ),
                                 style={
-                                    'width': '100%',
-                                    'height': '120px',  # Adjusted height
-                                    'lineHeight': '120px',  # Aligns the text vertically in the center
-                                    'borderWidth': '1px',
-                                    'borderStyle': 'dashed',
-                                    'borderRadius': '5px',
-                                    'textAlign': 'center',
-                                    'margin': '10px',
-                                    'backgroundColor': '#f5f5f5',  # Set background color
                                     'display': 'flex',
                                     'justifyContent': 'center',
-                                    'alignItems': 'center',
-                                },
-                                multiple=True
-                            ),
-                            style={
-                                'display': 'flex',
-                                'justifyContent': 'center',
-                                'alignItems': 'center'
-                            }
-                        )
+                                    'alignItems': 'center'
+                                }
+                            )
+                        ),
                     ),
                     dbc.ModalFooter(
                         dbc.Button("Close", id="close-modal", className="ml-auto")
@@ -121,7 +125,7 @@ def layout():
                             dbc.DropdownMenu(
                                 [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpt4omini"),
                                  dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
-                                 dbc.DropdownMenuItem("GPT-4o", id="menu-model-gpt4o")],
+                                 dbc.DropdownMenuItem("GPT-4o  ✔", id="menu-model-gpt4o")],
                                 label="LLM Models",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
@@ -143,10 +147,11 @@ def layout():
                                 label="Help",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
-                                className='menu-item'
+                                className='menu-item',
+                                id="help-button"
                             ),
-                            dbc.NavLink("Prompts", id="menu-prompt", href="/settings/prompts", external_link=True,
-                                        target="_blank", className='nav-item'),
+                            dbc.NavLink("Prompts", id="menu-prompt", className='nav-item'),
+
                             dbc.DropdownMenu(
                                 [
                                     dbc.DropdownMenuItem(
@@ -161,9 +166,50 @@ def layout():
                             )
                         ],
                     ),
-                    dcc.Location(id='url', refresh=True)
+                    #dcc.Location(id='url', refresh=False)
                 ], className='banner'),
             ]),
+
+            dbc.Card(id="setting-container",
+                     children=[
+                               html.H4("Prompt for Eliciting Model's ability"),
+                               dcc.Textarea(rows=7, id="system-prompt-input", className="mb-4 prompt-input p-2",
+                                            value=current_user.system_prompt),
+                               html.H4("Prompt for Handling Dataset"),
+                               dcc.Textarea(rows=7, id="prefix-prompt-input", className="mb-4 prompt-input p-2",
+                                            value=current_user.prefix_prompt),
+                               html.Div([html.H4("Prompt for Enhancing Personalization"), html.Span(
+                                   html.I(className="fas fa-question-circle"),
+                                   id="tooltip-snapshot",
+                                   style={
+                                       "fontSize": "20px",
+                                       "color": "#aaa",
+                                       "cursor": "pointer",
+                                       "marginLeft": "5px",
+                                       "alignSelf": "center"
+                                   }
+                               )], style={"display": "flex", "justifyContent": "space-between"}),
+                               dcc.Textarea(rows=8, id="persona-prompt-input", className="mb-4 prompt-input p-2",
+                                            value=current_user.persona_prompt),
+                               html.H4("Prompt for Generating Follow-up Questions"),
+                               dcc.Textarea(rows=2, id="next-question-input-1", className="mb-4 prompt-input p-2",
+                                            value=current_user.follow_up_questions_prompt_1),
+                               # html.H4("Prompt for Generating Follow-up Questions 2"),
+                               # dcc.Textarea(rows=2, id="next-question-input-2", className="mb-4 prompt-input p-2",
+                               #              value=current_user.follow_up_questions_prompt_2),
+                               dcc.Loading(id="update-prompt-loading", children=html.Div(children=[
+                                   dbc.Button("Reset Default", id="reset-prompt-button", className="prompt-button",
+                                              n_clicks=0),
+                                   dbc.Button("Save", id="update-prompt-button", className="prompt-button", n_clicks=0),
+                                   dbc.Button("Home", id="return-home-button", className="prompt-button", n_clicks=0),
+                                   ], className="save-button"),
+                               ),
+
+                               dbc.Tooltip(
+                                   "{{}} matches the field of the user information",
+                                   target="tooltip-snapshot",
+                               )],
+                     className="prompt-card p-4", style={"display": "none"}),
 
             # =======================================================
             # chatbox layout
@@ -576,21 +622,42 @@ def layout():
                         ),
                     ], style={'padding': '15px'})
                 ]),
-            ])
+            ], id="home-container")
         ], className="body fade-in")
     ])
 
 
 @callback(
     Output('url', 'pathname', allow_duplicate=True),
-    [Input('logout-button', 'n_clicks')],
+    Input('logout-button', 'n_clicks'),
+    Input('help-button', 'n_clicks'),
+    Input('menu-prompt', 'n_clicks'),
     prevent_initial_call=True
 )
-def logout_and_redirect(n_clicks):
-    if n_clicks:
-        logout_user()
-        return "/"
-    raise PreventUpdate
+def logout_and_redirect(logout_clicks, help_clicks, setting_clicks):
+    ctx = callback_context
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    if (logout_clicks is not None and logout_clicks > 0) or (help_clicks is not None and help_clicks > 0) or (setting_clicks is not None and setting_clicks > 0):
+        if button_id == "logout-button":
+            logout_user()
+            return "/#"
+        if button_id == "help-button":
+            return "/helps/"
+        if button_id == "menu-prompt":
+            return "/settings/prompts"
+
+@callback(
+    Output("setting-container", "style"),
+    Output("home-container", "style"),
+    Input("url", "pathname")
+)
+def show_page_content(pathname):
+    if (pathname == "/home"):
+        return {'display': 'none'}, {'display': 'flex'}
+
+    if (pathname == "/settings/prompts"):
+        return {'display': 'block'}, {'display': 'none'}
+    return dash.no_update, dash.no_update
 
 
 # ================================================================
@@ -796,5 +863,19 @@ def toggle_disable(n_clicks):
     return True, True
 
 
-# Callback for managing wizard steps
+@callback(
+    Output('next-question-input-1', "value"),
+    Output('system-prompt-input', "value"),
+    Output('persona-prompt-input', "value"),
+    Output('prefix-prompt-input', "value"),
+    Input("reset-prompt-button", "n_clicks"),
+    prevent_initial_call=True
+)
+def reset_default_prompts(n_clicks):
+    return [
+        DEFAULT_NEXT_QUESTION_PROMPT,
+        DEFAULT_SYSTEM_PROMPT,
+        DEFAULT_PERSONA_PROMPT,
+        DEFAULT_PREFIX_PROMPT
+    ]
 

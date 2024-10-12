@@ -5,3 +5,4 @@ data/
 pgadmin/
 venv
 tmp/
+.venv/

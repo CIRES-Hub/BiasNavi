@@ -76,13 +76,13 @@ def change_llm_model(n_clicks_gpt3dot5, n_clicks_gpt4, n_clicks_gpt4o):
     clicked_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
     if clicked_id == 'menu-model-gpt4omini':
-        global_vars.agent.set_llm_model('gpt4omini')
+        global_vars.agent.set_llm_model('gpt-4o-mini')
         return "GPT-4o-mini ✔", "GPT-4", "GPT-4o"
     elif clicked_id == 'menu-model-gpt4':
-        global_vars.agent.set_llm_model('gpt4')
+        global_vars.agent.set_llm_model('gpt-4-turbo')
         return "GPT-4o-mini", "GPT-4 ✔", "GPT-4o"
     elif clicked_id == 'menu-model-gpt4o':
-        global_vars.agent.set_llm_model('gpt4o')
+        global_vars.agent.set_llm_model('gpt-4o-2024-08-06')
         return "GPT-4o-mini", "GPT-4", "GPT-4o ✔"
 
     raise dash.exceptions.PreventUpdate

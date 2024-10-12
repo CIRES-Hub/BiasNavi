@@ -11,6 +11,7 @@ from UI.callback.user_callbacks import *
 from UI.callback.report_callbacks import *
 from UI.callback.wizard_callbacks import *
 from UI.callback.chat_mode_callbacks import *
+from UI.callback.prompt_callbacks import *
 
 if __name__ == '__main__':
     # Init tables

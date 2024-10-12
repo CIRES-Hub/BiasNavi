@@ -25,7 +25,7 @@ from langchain_core.utils.interactive_env import is_interactive_env
 
 from langchain_experimental.agents.agent_toolkits.pandas.base import _get_prompt, _get_functions_prompt
 
-from agent.tools import CustomizedPythonAstREPLTool
+from agent.tools import RunPythonCode
 
 def create_pandas_dataframe_agent(
     llm: LanguageModelLike,
@@ -39,8 +39,8 @@ def create_pandas_dataframe_agent(
     input_variables: Optional[List[str]] = None,
     verbose: bool = False,
     return_intermediate_steps: bool = False,
-    max_iterations: Optional[int] = 15,
-    max_execution_time: Optional[float] = None,
+    max_iterations: Optional[int] = 500,
+    max_execution_time: Optional[float] = 20,
     early_stopping_method: str = "force",
     agent_executor_kwargs: Optional[Dict[str, Any]] = None,
     include_df_in_prompt: Optional[bool] = True,
@@ -138,7 +138,7 @@ def create_pandas_dataframe_agent(
             df_locals[f"df{i + 1}"] = dataframe
     else:
         df_locals["df"] = df
-    tools = [CustomizedPythonAstREPLTool(elem_queue, execution_error, list_commands, locals=df_locals)] + list(extra_tools)
+    tools = [RunPythonCode(elem_queue, execution_error, list_commands, locals=df_locals)] + list(extra_tools)
 
     if agent_type == AgentType.ZERO_SHOT_REACT_DESCRIPTION:
         if include_df_in_prompt is not None and suffix is not None:

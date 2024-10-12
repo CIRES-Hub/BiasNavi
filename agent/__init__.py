@@ -4,23 +4,20 @@ from langchain.agents.agent_types import AgentType
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.messages.base import messages_to_dict
-import pandas as pd
 import os
-import time
 from enum import Enum
 import json
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables import ConfigurableField
-from langchain_experimental.tools.python.tool import PythonAstREPLTool
 from agent.utils import create_pandas_dataframe_agent
-from db_models.conversation import Conversation
 from db_models.system_log import SystemLogMessage, AssistantLogMessage
 import re
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain.output_parsers import PydanticOutputParser
+from db_models.conversation import db, Conversation
 from flask_login import current_user
-
+from agent.parser import ResponseFormat
 
 class ConversationFormat(str, Enum):
     FULL_JSON = 'Full JSON'
@@ -33,50 +30,55 @@ class PersistenceType(str, Enum):
     FILE = 'File'
 
 
-class LLMModel(str, Enum):
-    GPT4o = 'gpt4o'
-    GPT4 = 'gpt4'
-    GPT4omini = 'gpt4omini'
 
-def pass_argument_next_questions_class(question1, question2): 
-    class NextQuestionFormat(BaseModel):
-        response: str = Field(description="Answer to the user's query")
-        suggestion1: str = Field(description=question1)
-        suggestion2: str = Field(description=question2)
-    return NextQuestionFormat
+# def pass_argument_next_questions_class(question1, question2):
+#     class NextQuestionFormat(BaseModel):
+#         response: str = Field(description="Answer to the user's query")
+#         suggestion1: str = Field(description=question1)
+#         suggestion2: str = Field(description=question2)
+#     return NextQuestionFormat
 
 class DatasetAgent:
 
-    def __init__(self, df, llm=None, file_name=None, user_id=None):
+    def __init__(self, df, conversation_session=None, llm=None, file_name=None, user_id=None):
         self.user_id = user_id
         if llm is None:
-            llm = ChatOpenAI(temperature=0.5, model="gpt-4o-mini").configurable_alternatives(
+            llm = ChatOpenAI(temperature=0.7, model="gpt-4o-2024-08-06").configurable_alternatives(
                 ConfigurableField(id="llm"),
-                default_key="gpt-4o-mini",
+                default_key="gpt4o",
                 gpt4omini=ChatOpenAI(model="gpt-4o-mini"),
                 gpt4=ChatOpenAI(model="gpt-4-turbo"),
-                gpt4o=ChatOpenAI(model="gpt-4o"),
             )
         self.llm = llm
         self.model_name = llm.model_name
-        self.session_id = round(time.time() * 1000)
+        self.session_id = conversation_session
         self.elem_queue = []
         self.execution_error: list[Exception] = []
         self.list_commands: list[str] = []
-        self.parser = PydanticOutputParser(pydantic_object=pass_argument_next_questions_class(current_user.follow_up_questions_prompt_1, current_user.follow_up_questions_prompt_2))
+        self.parser = PydanticOutputParser(pydantic_object=ResponseFormat)
+
         user_prompt = PromptTemplate(
-            template="Answer the user's query: {input}",
+            template="Please answer the my question: {input} with a response tailored to my {background}. Ensure that your explanation is informative while understandable for me. To make your answer clearer and instructive, you can include examples and step-by-step instructions appropriate for my background",
+            partial_variables={"background": current_user.persona_prompt},
             input_variables=["input"],
         )
         user_message_prompt = HumanMessagePromptTemplate(prompt=user_prompt)
-        
+
         system_prompt = PromptTemplate(
             template="""
-            {format_instructions},
-            {custom_system_prompt}
+            {format_instructions}
+            {question_prompt}
+            {custom_system_prompt}          
+            
             """,
-            partial_variables={"format_instructions": self.parser.get_format_instructions(), "custom_system_prompt": current_user.system_prompt}
+            partial_variables={"format_instructions": self.parser.get_format_instructions(), "question_prompt": current_user.follow_up_questions_prompt_1,"custom_system_prompt": current_user.system_prompt}
         )
+        # system_prompt = PromptTemplate(
+        #     template="""
+        #     {custom_system_prompt}
+        #     """,
+        #     partial_variables={"custom_system_prompt": current_user.system_prompt}
+        # )
         system_message_prompt = SystemMessagePromptTemplate(prompt=system_prompt)
         
         self.prompt = ChatPromptTemplate.from_messages(
@@ -128,24 +130,26 @@ class DatasetAgent:
         self.elem_queue.clear()
         self.execution_error.clear()
         self.list_commands.clear()
+        result = ''
+        if self.model_name == "gpt-4-turbo":
+            result = self.agent_with_trimmed_history.with_config(
+                configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text})
+        elif self.model_name == "gpt4o":
+            result = self.agent_with_trimmed_history.with_config(
+                configurable={"llm": "gpt-4o-2024-08-06", "session_id": self.session_id}).invoke({"input": text})
+        else:
+            result = self.agent_with_trimmed_history.with_config(
+                configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text})
 
-        result = self.agent_with_trimmed_history.with_config(
-            configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text})[
-            'output']
-        if self.model_name == LLMModel.GPT4o:
-            result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text})[
-                'output']
-        if self.model_name == LLMModel.GPT4omini:
-            result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text})[
-                'output']
-        
         # Parse response 
         suggestions = []
-        suggestions.append(self.parser.parse(result).suggestion1)
-        suggestions.append(self.parser.parse(result).suggestion2)
-        result = self.parser.parse(result).response
+        try:
+            result = self.parser.parse(result['output'])
+            suggestions.append(result.question1)
+            suggestions.append(result.question2)
+            result = result.answer
+        except Exception as e:
+            self.execution_error.append(e)
         
          # Improve table removal logic
         table_pattern = r'(?s)\|.*?\|\n\|[-:]+\|\n(.*?)\n\n'

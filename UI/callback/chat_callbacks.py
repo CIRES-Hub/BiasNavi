@@ -68,7 +68,7 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
                     id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)
                 suggested_questions.append(new_suggested_question)
 
-    response = 'Assistant: ' + output_text + '\n'
+    response = output_text + '\n'
     global_vars.dialog.append("\n" + response)
     # Simulate a response from the system
     new_response_message = dcc.Markdown(response, className="llm-msg")

@@ -9,6 +9,8 @@ from flask_login import login_user
 import docker
 import os
 import shutil
+from utils.constant import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
+    DEFAULT_PERSONA_PROMPT
 
 dash.register_page(__name__, path='/signup/', title='Signup')
 
@@ -227,7 +229,8 @@ layout = dbc.Container(fluid=True, children=[
             )
         ], className="flex-center", style={"padding": "50px 0"})
         , style={'height': '100%', 'width': '100%'})
-], className="body vh-100 d-flex align-items-center justify-content-center fade-in", style={'overflowY': 'auto', "background": "linear-gradient(to right, #67b26f, #4ca2cd)"})
+], className="body vh-100 d-flex align-items-center justify-content-center fade-in",
+                       style={'overflowY': 'auto', "background": "linear-gradient(to right, #67b26f, #4ca2cd)"})
 
 
 @callback(
@@ -275,21 +278,12 @@ def handle_auth(signup_clicks, login_clicks, email, password, confirm_password, 
         try:
             user = User.query.get(user_id)
 
-            user.follow_up_questions_prompt_1 = "Generate the next question that the user might ask"
-            user.follow_up_questions_prompt_2 = "Generate the next question that the user might ask"
+            user.follow_up_questions_prompt_1 = DEFAULT_NEXT_QUESTION_PROMPT
+            user.follow_up_questions_prompt_2 = DEFAULT_NEXT_QUESTION_PROMPT
 
-            user.system_prompt = ("You are an expert in dealing with bias in datasets for data science. \n"
-                                  "Your expertise includes identifying, measuring, and mitigating biases in tabular datasets.\n"
-                                  "You are well-versed in advanced statistical methods, machine learning techniques, and ethical considerations for fair AI.\n"
-                                  "You can provide detailed explanations of bias detection methods, offer actionable recommendations for bias mitigation, and guide users through complex scenarios with step-by-step instructions.\n"
-                                  "Your goal is to ensure datasets are fair, transparent, and robust for accurate and equitable AI model/business development.")
+            user.system_prompt = DEFAULT_SYSTEM_PROMPT
 
-            user.prefix_prompt = (
-                "You have already been provided with a dataframe df, all queries should be about that df.\n"
-                "Do not create dataframe. Do not read dataframe from any other sources. Do not use pd.read_clipboard.\n"
-                "If your response includes code, it will be executed, so you should define the code clearly.\n"
-                "Code in response will be split by \\n so it should only include \\n at the end of each line.\n"
-                "Do not execute code with 'functions', only use 'python_repl_ast'.")
+            user.prefix_prompt = DEFAULT_PREFIX_PROMPT
 
             user.username = user_name
             user.professional_role = professional_role
@@ -298,7 +292,12 @@ def handle_auth(signup_clicks, login_clicks, email, password, confirm_password, 
             user.technical_level = technical_level
             user.bias_awareness = bias_awareness
             user.areas_of_interest = areas_of_interest
-            user.persona_prompt = 'My professional role is {{professional_role}}. I am working in {{industry_sector}} industry. My level of expertise in data analysis is {{expertise_level}}'
+            user.persona_prompt = DEFAULT_PERSONA_PROMPT.format(professional_role=user.professional_role,
+                                      industry_sector=user.industry_sector,
+                                      expertise_level=user.expertise_level,
+                                      technical_level=user.technical_level,
+                                      bias_level=user.bias_awareness
+                                      ),
 
             db.session.commit()
         except Exception as e:

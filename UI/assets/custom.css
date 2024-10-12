@@ -104,6 +104,12 @@
     align-items: center;
 }
 
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .center-align-div{
     display: flex;
     align-items: center;
@@ -306,6 +312,7 @@
     background-color: transparent;
     color: white;
     margin-left: 30px;
+    cursor: pointer;
 }
 
 .nav-item:hover{
@@ -336,7 +343,7 @@
 .next-suggested-question {
     display: block;
     padding: 10px;
-    background: #f1e3ff;
+    background: #e5f6ff;
     box-shadow: none;
     border-radius: 20px;
     text-align: justify;
