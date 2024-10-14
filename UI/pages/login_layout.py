@@ -28,10 +28,10 @@ layout = dbc.Container(fluid=True, children=[
                         dcc.RadioItems(
                             id='user-mode',
                             options=[
+                                {'label': ' Full Mode', 'value': 'Full Mode'},
                                 {'label': ' Chat Mode', 'value': 'Chat Mode'},
-                                {'label': ' Full Mode', 'value': 'Full Mode'}
                             ],
-                            value='Chat Mode',  # Set default value
+                            value='Full Mode',  # Set default value
                             inline=True,  # Horizontal layout
                             labelStyle={'marginRight': '20px','marginBottom': '20px'}  # Add space between radio buttons
                         ),

@@ -3,7 +3,9 @@ from dash.dependencies import Input, Output, State
 from dash import dcc, html, dash_table
 from UI.variable import global_vars
 from UI.functions import *
-
+from dash import callback_context, MATCH, ALL, ctx
+import plotly.io as pio
+import base64
 
 @app.callback(
     Output('graphs-container', 'children'),
@@ -57,21 +59,30 @@ def generate_bias_report(target, styles):
     graphs = [html.Hr(),
               html.H3("Distributions", style={'textAlign': 'center'})]
     for i, fig in enumerate(figures):
-        # Create a plotly figure (example figure)
-        # fig = go.Figure(data=[go.Scatter(x=[1, 2, 3], y=[i + 1, i + 2, i + 3], mode='lines+markers')])
-        # fig.update_layout(title=f'Graph {i + 1}')
-
         # Create a dcc.Graph component with the figure
-        graph = dcc.Graph(id=f'graph-{i}', figure=fig)
+        graphs.append(dcc.Graph(id={"type": "report-graph", "index": str(i)}, figure=fig))
+        graphs.append(dcc.Loading(
+            html.Div([], id={"type": "report-graph-explanation", "index": str(i)}, style={"display":"none"})))
+        graphs.append(html.Button('Explain', id={"type": "report-graph-button", "index": str(i)}, n_clicks=0, className='primary-button'))
 
-        # Append the graph to the list of graphs
-        graphs.append(graph)
-    graphs += [
-        html.Div(html.Button('Explain Charts', id='explain_graph_button', n_clicks=0, className='primary-button'),
-                 className='right-align-div'), ]
     warning_msg = ""
     if warning:
         warning_msg = html.P([
             f"Warning: The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 100 unique values cannot be visualized due to heavy computation load."],
             style={'color': 'red'})
     return graphs, warning_msg, bias_stats.to_dict('records'), bias_report_content, styles
+
+
+@app.callback(
+    Output({'type': 'report-graph-explanation', 'index': MATCH}, 'children'),
+    Output({'type': 'report-graph-explanation', 'index': MATCH}, 'style'),
+    Input({'type': 'report-graph-button', 'index': MATCH}, 'n_clicks'),
+    State({'type': 'report-graph', 'index': MATCH}, 'figure'),
+    prevent_initial_call=True
+)
+def show_figure_modal(n_clicks, fig):
+    if n_clicks and n_clicks > 0 and fig is not None:
+        img_bytes = pio.to_image(fig, format='png')
+        encoded_img = base64.b64encode(img_bytes).decode('utf-8')
+        explanation = global_vars.agent.describe_image('Describe this subgroup distribution chart.', f"data:image/png;base64,{encoded_img}")
+        return dcc.Markdown(explanation.content,className="chart-explanation"), {"display": "block"}

@@ -201,6 +201,6 @@ def show_figure_modal(n_clicks, id):
 )
 def show_figure_modal(n_clicks, content):
     if n_clicks and n_clicks > 0 and content is not None:
-        explanation = global_vars.agent.describe_image(content)
+        explanation = global_vars.agent.describe_image('', content)
         return dcc.Markdown(explanation.content,className="chart-explanation"), {"display": "block"}
 

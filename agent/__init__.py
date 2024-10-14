@@ -81,6 +81,10 @@ class DatasetAgent:
                     "user",
                     [
                         {
+                            "type": "text",
+                            "text": "{text}",
+                        },
+                        {
                             "type": "image_url",
                             "image_url": "{encoded_image_url}",
                         },
@@ -169,11 +173,11 @@ class DatasetAgent:
             self.history.add_message(message)
         return True
 
-    def describe_image(self, image_data):
+    def describe_image(self, query,image_data):
         # image_url = "./UI/assets/cat.jpg"
         # image_data = local_image_to_data_url(image_url)
         result = self.multimodal_chain_with_history.with_config(
-                configurable={"session_id": self.session_id}).invoke({"encoded_image_url": image_data})
+                configurable={"session_id": self.session_id}).invoke({"text":query, "encoded_image_url": image_data})
         return result
 
     def run(self, text):

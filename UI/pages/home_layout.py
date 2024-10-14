@@ -398,7 +398,6 @@ def layout():
                     ]),
 
                     dbc.Card(body=True, id="report-view", className="card", children=[
-                        dcc.Loading(id="report-loading", children=[
                             html.Div([
                                 html.H2("Bias Report",
                                         style={'color': '#614385', 'marginBottom': '20px', 'textAlign': 'center'}),
@@ -439,12 +438,6 @@ def layout():
                                 ])
 
                             ])
-                        ],
-                                    overlay_style={
-                                        "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
-                                    custom_spinner=html.H2(
-                                        ["Generating report...", dbc.Spinner(color="primary")]),
-                                    ),
                     ]),
                     # dbc.Card(body=True, children=[
                     #     # dcc.Tabs(id='tabs-figures', value='single', children=[

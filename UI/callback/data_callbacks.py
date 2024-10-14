@@ -25,10 +25,11 @@ from UI.functions import query_llm
      Output('dataset-name', 'children'),
      Output('snapshot-table', 'data'),
      Output('dataset-selection', 'options'),
-     Output('console-area', 'children', allow_duplicate=True),
-     Output("commands-input", "disabled", allow_duplicate=True),
-     Output("run-commands", "disabled", allow_duplicate=True),
-     Output("upload-modal", "is_open"),],
+     # Output('console-area', 'children', allow_duplicate=True),
+     # Output("commands-input", "disabled", allow_duplicate=True),
+     # Output("run-commands", "disabled", allow_duplicate=True),
+     Output("upload-modal", "is_open"),
+     Output("upload-data-modal", "style")],
     [Input('upload-data', 'contents'),
      Input('upload-data-modal', 'contents'),
      Input('show-rows-button', 'n_clicks')],
@@ -45,14 +46,14 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
     if triggered_id == 'upload-data' or triggered_id == 'upload-data-modal':
         if triggered_id == 'upload-data':
             if not list_of_contents or not list_of_names:
-                return [], [], [], False, "", [], dash.no_update, dash.no_update, dash.no_update, dash.no_update
+                return [], [], [], False, "", [], [], dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents[0]
             filename = list_of_names[0]
         elif triggered_id == 'upload-data-modal':
             if not list_of_contents_modal or not list_of_names_modal:
-                return [], [], [], False, "", [], dash.no_update, dash.no_update, dash.no_update, dash.no_update
+                return [], [], [], False, "", [], [], dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents_modal[0]
@@ -62,7 +63,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            return [], [], [], False, "", [], [], [], dash.no_update, dash.no_update
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -82,15 +83,13 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             f"Dataset: {filename} (maximum row number:{len(global_vars.df)})",
             [{'ver': '1', 'desc': 'Original', 'time': formatted_date_time}],
             ['1'],
-            "",
             False,
-            False,
-            False,
+            dash.no_update
         )
 
     elif triggered_id == 'show-rows-button':
         if global_vars.df is None:
-            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update
+            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
@@ -101,8 +100,6 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
                 [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
                 [{'label': col, 'value': col} for col in global_vars.df.columns],
                 False,
-                dash.no_update,
-                dash.no_update,
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
@@ -119,13 +116,11 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             dash.no_update,
             dash.no_update,
             dash.no_update,
-            "",
             False,
-            False,
-            False
+            dash.no_update
         )
 
-    return [], [], [], False, "", [], [], "", dash.no_update, dash.no_update, dash.no_update
+    return [], [], [], False, "", [], [], dash.no_update, dash.no_update
 
 
 @app.callback(
