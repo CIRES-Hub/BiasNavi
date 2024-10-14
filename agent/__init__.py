@@ -18,6 +18,9 @@ from langchain.output_parsers import PydanticOutputParser
 from db_models.conversation import db, Conversation
 from flask_login import current_user
 from agent.parser import ResponseFormat
+import base64
+from mimetypes import guess_type
+
 
 class ConversationFormat(str, Enum):
     FULL_JSON = 'Full JSON'
@@ -30,6 +33,19 @@ class PersistenceType(str, Enum):
     FILE = 'File'
 
 
+# Function to encode a local image into data URL
+def local_image_to_data_url(image_path):
+    mime_type, _ = guess_type(image_path)
+    # Default to png
+    if mime_type is None:
+        mime_type = 'image/png'
+
+    # Read and encode the image file
+    with open(image_path, "rb") as image_file:
+        base64_encoded_data = base64.b64encode(image_file.read()).decode('utf-8')
+
+    # Construct the data URL
+    return f"data:{mime_type};base64,{base64_encoded_data}"
 
 # def pass_argument_next_questions_class(question1, question2):
 #     class NextQuestionFormat(BaseModel):
@@ -57,18 +73,36 @@ class DatasetAgent:
         self.list_commands: list[str] = []
         self.parser = PydanticOutputParser(pydantic_object=ResponseFormat)
 
+        multimodal_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "You are a data analyst. Describe the image provided in detail and find some insights about bias. If there are potential biases, tell the user the ways to mitigate these biases."),
+                MessagesPlaceholder(variable_name="chat_history"),
+                (
+                    "user",
+                    [
+                        {
+                            "type": "image_url",
+                            "image_url": "{encoded_image_url}",
+                        },
+                    ],
+                ),
+            ]
+        )
+
         user_prompt = PromptTemplate(
-            template="Please answer the my question: {input} with a response tailored to my {background}. Ensure that your explanation is informative while understandable for me. To make your answer clearer and instructive, you can include examples and step-by-step instructions appropriate for my background",
-            partial_variables={"background": current_user.persona_prompt},
+            template ="""
+            "Please answer the my question: {input}. The response should be tailored to my background: {background} Ensure that your explanation is informative while understandable for me. To make your answer clearer and instructive, you can include examples and step-by-step instructions appropriate for my background. When you are asked to explain images, explain it!"
+            """,
             input_variables=["input"],
+            partial_variables={"background": current_user.persona_prompt},
         )
         user_message_prompt = HumanMessagePromptTemplate(prompt=user_prompt)
-
         system_prompt = PromptTemplate(
-            template="""
+            template="""          
+            
+            {custom_system_prompt}
             {format_instructions}
-            {question_prompt}
-            {custom_system_prompt}          
+            {question_prompt}          
             
             """,
             partial_variables={"format_instructions": self.parser.get_format_instructions(), "question_prompt": current_user.follow_up_questions_prompt_1,"custom_system_prompt": current_user.system_prompt}
@@ -98,17 +132,26 @@ class DatasetAgent:
             agent_type=AgentType.OPENAI_FUNCTIONS,
             agent_executor_kwargs={"handle_parsing_errors": True},
             list_commands=self.list_commands,
-            prefix=current_user.prefix_prompt
+            prefix=current_user.prefix_prompt,
         )
 
         self.chain = self.prompt | self.agent
+        self.multimodal_chain = multimodal_prompt | self.llm
+
         self.history = ChatMessageHistory(session_id=self.session_id)
+
         self.agent_with_chat_history = RunnableWithMessageHistory(
             self.chain,
             lambda session_id: self.history,
-            input_messages_key="input",
             history_messages_key="chat_history",
         )
+
+        self.multimodal_chain_with_history = RunnableWithMessageHistory(
+            self.multimodal_chain,
+            lambda session_id: self.history,
+            history_messages_key="chat_history",
+        )
+
         self.file_name = file_name
 
         self.agent_with_trimmed_history = (
@@ -116,7 +159,7 @@ class DatasetAgent:
             | self.agent_with_chat_history
         )
 
-    def trim_messages(self, chain_input):
+    def trim_messages(self, trimmed_message):
         # store the most recent 20 messages
         stored_messages = self.history.messages
         if len(stored_messages) <= 20:
@@ -126,17 +169,25 @@ class DatasetAgent:
             self.history.add_message(message)
         return True
 
+    def describe_image(self, image_data):
+        # image_url = "./UI/assets/cat.jpg"
+        # image_data = local_image_to_data_url(image_url)
+        result = self.multimodal_chain_with_history.with_config(
+                configurable={"session_id": self.session_id}).invoke({"encoded_image_url": image_data})
+        return result
+
     def run(self, text):
         self.elem_queue.clear()
         self.execution_error.clear()
         self.list_commands.clear()
-        result = ''
+
+
         if self.model_name == "gpt-4-turbo":
             result = self.agent_with_trimmed_history.with_config(
                 configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text})
-        elif self.model_name == "gpt4o":
+        elif self.model_name == "gpt-4o-2024-08-06":
             result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpt-4o-2024-08-06", "session_id": self.session_id}).invoke({"input": text})
+                configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text})
         else:
             result = self.agent_with_trimmed_history.with_config(
                 configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text})
@@ -149,7 +200,10 @@ class DatasetAgent:
             suggestions.append(result.question2)
             result = result.answer
         except Exception as e:
+            # cannot be parsed in the above format, directly return the answer
             self.execution_error.append(e)
+            result = result['output']
+            return result, self.elem_queue, suggestions
         
          # Improve table removal logic
         table_pattern = r'(?s)\|.*?\|\n\|[-:]+\|\n(.*?)\n\n'
@@ -157,12 +211,12 @@ class DatasetAgent:
 
         # Remove any remaining table-like structures
         result = re.sub(r'(?m)^\s*\|.*\|$', '', result)
-        if (len(self.list_commands) > 0):
-            self.persist_commands(json.dumps({"query": self.list_commands[0]}))
-        if (len(self.execution_error) > 0):
+        # if len(self.list_commands) > 0:
+        #     self.persist_commands(json.dumps({"query": self.list_commands[0]}))
+        if len(self.execution_error) > 0:
             result = f"""There was an error processing your request. Please provide a clearer query and try again.
                     (Error message: {str(self.execution_error[0])})"""
-        if (len(self.elem_queue) > 0):
+        if len(self.elem_queue) > 0:
             return result, self.elem_queue, suggestions
         else:
             return result, None, suggestions
@@ -241,7 +295,7 @@ class DatasetAgent:
         if persistence_type == PersistenceType.FILE:
             with open(os.path.join(path, str(self.session_id) + extension), 'w') as f:
                 f.write(history)
-        elif (persistence_type == PersistenceType.DATABASE):
+        elif persistence_type == PersistenceType.DATABASE:
             Conversation.upsert(user_id, str(
                 self.session_id), self.file_name, self.model_name, json.loads(history)['messages'])
         else:
@@ -275,7 +329,7 @@ class DatasetAgent:
         if persistent_type == PersistenceType.FILE:
             with open(os.path.join(path, str(self.session_id) + extension), 'w') as f:
                 f.write(history)
-        elif (persistent_type == PersistenceType.DATABASE):
+        elif persistent_type == PersistenceType.DATABASE:
             Conversation.upsert(str(current_user.id), str(
                 self.session_id), self.file_name, self.model_name, json.loads(history)['messages'])
         else:

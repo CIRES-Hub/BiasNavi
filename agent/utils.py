@@ -14,7 +14,6 @@ from langchain.agents.agent import (
     RunnableAgent,
     RunnableMultiActionAgent,
 )
-from langchain.agents.mrkl.prompt import FORMAT_INSTRUCTIONS
 from langchain.agents.openai_functions_agent.base import (
     create_openai_functions_agent,
 )
@@ -167,7 +166,7 @@ def create_pandas_dataframe_agent(
         )
         if agent_type == AgentType.OPENAI_FUNCTIONS:
             runnable = create_openai_functions_agent(
-                cast(BaseLanguageModel, llm), tools, prompt
+                cast(BaseLanguageModel, llm), tools, prompt,
             )
             agent = RunnableAgent(
                 runnable=runnable,

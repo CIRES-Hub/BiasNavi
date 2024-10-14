@@ -108,15 +108,6 @@ def import_data_and_update_table(list_of_contents_modal, list_of_names_modal, st
         global_vars.agent = DatasetAgent(global_vars.df, file_name=filename)
         if not query_records:
             query_records = []
-        if all([current_user.professional_role, current_user.industry_sector, current_user.expertise_level,
-                current_user.technical_level, current_user.bias_awareness]):
-            persona_query = current_user.persona_prompt.replace("{{professional_role}}", current_user.professional_role)
-            persona_query = persona_query.replace("{{industry_sector}}", current_user.industry_sector)
-            persona_query = persona_query.replace("{{expertise_level}}", current_user.expertise_level)
-            persona_query = persona_query.replace("{{technical_level}}", current_user.technical_level)
-            persona_query = persona_query.replace("{{bias_awareness}}", current_user.bias_awareness)
-
-            query_llm(persona_query, current_user.id)
         query_records.append(
             dcc.Markdown("The dataset has been successfully uploaded! Let's start chatting!", className="llm-msg"))
         return style, query_records, False

@@ -38,7 +38,7 @@ class RunPythonCode(PythonAstREPLTool):
     def add_figure(self, processed_item: Figure):
 
         buf = io.BytesIO()
-        processed_item.subplots_adjust(bottom=0.4)
+        processed_item.subplots_adjust(bottom=0.2)
         processed_item.savefig(buf, format="png")
         processed_item.close()
         data = base64.b64encode(buf.getbuffer()).decode("utf8")
@@ -47,7 +47,7 @@ class RunPythonCode(PythonAstREPLTool):
         current_id = len(self.elem_queue)
         self.elem_queue.append(html.Div([
             html.Img(src=f"data:image/png;base64,{data}",
-                     style={'maxWidth': '100%', 'cursor': 'pointer'})
+                     style={'maxWidth': '100%', 'cursor': 'pointer'}, id={"type": "llm-generated-chart", "index": current_id})
         ], id={"type": "llm-media-figure", "index": current_id}, className="llm-media-figure"))
 
         self.elem_queue.append(dbc.Modal([
@@ -58,6 +58,13 @@ class RunPythonCode(PythonAstREPLTool):
             ], style={'display': 'flex', 'align-items': 'center', 'justify-content': 'center'})),
             dbc.ModalFooter()
         ], id={"type": "llm-media-modal", "index": current_id}, centered=True, className="figure-modal", size="lg"))
+        self.elem_queue.append(dcc.Loading(
+            html.Div([
+            ], id={"type": "llm-media-explanation", "index": current_id}, style={"display":"none"})))
+        self.elem_queue.append(
+            dbc.Button("Explain", id={"type": "llm-media-button", "index": current_id}, className="primary-button", n_clicks=0), )
+
+
 
     def add_table(self, processed_item: DataFrame):
         self.elem_queue.append(dash_table.DataTable(page_size=25, page_action='native',
@@ -74,6 +81,8 @@ class RunPythonCode(PythonAstREPLTool):
     ) -> str:
         try:
             self.execution_error.clear()
+            self.elem_queue.clear()
+            self.list_commands.clear()
 
             if self.sanitize_input:
                 query = sanitize_input(query)

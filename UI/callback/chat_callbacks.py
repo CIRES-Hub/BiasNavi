@@ -75,6 +75,9 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
     query_records.append(new_user_message)
     query_records.append(new_response_message)
     list_commands = global_vars.agent.list_commands
+    if not media:
+        return query_records, False, dash.no_update, time.time(), suggested_questions, ('\n').join(list_commands) if len(
+            list_commands) > 0 else "", ""
     return query_records, False, media, time.time(), suggested_questions, ('\n').join(list_commands) if len(
         list_commands) > 0 else "", ""
 
@@ -188,3 +191,16 @@ def show_figure_modal(n_clicks, id):
         return True
     else:
         return False
+
+@app.callback(
+    Output({'type': 'llm-media-explanation', 'index': MATCH}, 'children'),
+    Output({'type': 'llm-media-explanation', 'index': MATCH}, 'style'),
+    Input({'type': 'llm-media-button', 'index': MATCH}, 'n_clicks'),
+    State({'type': 'llm-generated-chart', 'index': MATCH}, 'src'),
+    prevent_initial_call=True
+)
+def show_figure_modal(n_clicks, content):
+    if n_clicks and n_clicks > 0 and content is not None:
+        explanation = global_vars.agent.describe_image(content)
+        return dcc.Markdown(explanation.content,className="chart-explanation"), {"display": "block"}
+

@@ -299,6 +299,19 @@
     display: inline-block
 }
 
+.chart-explanation{
+    text-align: left;
+    padding: 10px;
+    background-color: #f5f4ed;
+    color: black;
+    border-radius: 15px;
+    margin: 5px 5px 30px 5px;
+    width: fit-content;
+    max-width: 100%;
+    word-wrap: break-word;
+    display: inline-block
+}
+
 .logo{
     width: 80px;
 }
