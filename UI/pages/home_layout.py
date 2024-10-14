@@ -157,7 +157,7 @@ def layout():
                                     dbc.DropdownMenuItem(
                                         "About CIRES", href="https://cires.org.au/"),
                                     dbc.DropdownMenuItem(
-                                        "Logout", id="logout-button", href="")
+                                        "Logout", id="logout-button", href="/")
                                 ],
                                 label="More",
                                 nav=True,
@@ -166,7 +166,7 @@ def layout():
                             )
                         ],
                     ),
-                    #dcc.Location(id='url', refresh=False)
+                    dcc.Location(id='url', refresh=False)
                 ], className='banner'),
             ]),
 
@@ -640,7 +640,7 @@ def logout_and_redirect(logout_clicks, help_clicks, setting_clicks):
     if (logout_clicks is not None and logout_clicks > 0) or (help_clicks is not None and help_clicks > 0) or (setting_clicks is not None and setting_clicks > 0):
         if button_id == "logout-button":
             logout_user()
-            return ""
+            return "/"
         if button_id == "help-button":
             return "/helps/"
         if button_id == "menu-prompt":
