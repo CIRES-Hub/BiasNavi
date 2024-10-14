@@ -10,7 +10,7 @@ from dash.exceptions import PreventUpdate
 import dash_editor_components
 from agent import ConversationFormat
 from utils.constant import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, DEFAULT_PERSONA_PROMPT
-
+import ast
 
 dash.register_page(__name__, path='/home/', title='Home')
 
@@ -75,8 +75,15 @@ def layout():
                             )
                         ),
                     ),
-                    dbc.ModalFooter(
-                        dbc.Button("Close", id="close-modal", className="ml-auto")
+                    dbc.ModalFooter([
+                        html.Div(id="upload-data-error-msg",style={"color":"red"}),
+                        dbc.Button("Close", id="close-modal", className="ml-auto"),
+                        ],
+                        style={
+                            'display': 'flex',
+                            'justifyContent': 'end',
+                            'alignItems': 'center'
+                        }
                     ),
                 ],
                 id="upload-modal",
@@ -205,10 +212,11 @@ def layout():
                                    ], className="save-button"),
                                ),
 
-                               dbc.Tooltip(
-                                   "{{}} matches the field of the user information",
-                                   target="tooltip-snapshot",
-                               )],
+                               # dbc.Tooltip(
+                               #     "{{}} matches the field of the user information",
+                               #     target="tooltip-snapshot",
+                               # )
+                     ],
                      className="prompt-card p-4", style={"display": "none"}),
 
             # =======================================================
@@ -483,7 +491,7 @@ def layout():
                                     id="snapshot-table",
                                     row_selectable='single',
                                     columns=[
-                                        {"name": "Version", "id": "ver"},
+                                        {"name": "ID", "id": "ver"},
                                         {"name": "Description", "id": "desc"},
                                         {"name": "Timestamp", "id": "time"}
                                     ],
@@ -556,22 +564,24 @@ def layout():
                                         clearable=False
                                     ),
                                 ], className='left-align-div'),
-                                html.Div(id='eval-info'),
+
                             ], id='evaluation-options'),
                             dcc.Loading(id="table-loading", children=[
                                 html.Div(html.Button('Run', id='eval-button',
                                                      n_clicks=0, className='primary-button'),
                                          className='right-align-div'),
+                                html.Div(id='eval-info'),
                                 html.Div(
                                     children=[
                                         html.Div(id='eval-res', style={'marginBottom': '10px', 'marginTop': '10px'}),
-                                        html.Div(id='fairness-scores')
+                                        html.Div(id='fairness-scores'),
+                                        html.Div(id='eval-explanation')
 
                                     ]),
                             ], overlay_style={
                                 "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
                                         custom_spinner=html.H3(
-                                            ["Running...", dbc.Spinner(color="primary")]),
+                                            ["Running and Analyzing...", dbc.Spinner(color="primary")]),
                             ),
 
 
@@ -659,11 +669,19 @@ def show_page_content(pathname):
 
 def format_message(msg):
     role_class = "user-message" if msg['role'] == 'user' else "assistant-message"
+    content = msg.get("content")
+    try:
+        parsed_content = ast.literal_eval(content)
+        if isinstance(parsed_content, dict) and "answer" in parsed_content:
+            text = parsed_content["answer"]
+    except (ValueError, SyntaxError):
+        # If it isn't a dictionary-like string, return the string as is
+        text = content
     return html.Div([
         html.Div([
             html.Span(msg['role'].capitalize(), className="message-role"),
         ], className="message-header"),
-        dcc.Markdown(msg['content'], className="message-content")
+        dcc.Markdown(text, className="message-content")
     ], className=f"chat-message {role_class}")
 
 

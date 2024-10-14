@@ -84,7 +84,6 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
 
 @app.callback(
     Output("export", "data"),
-    Output("error-export", "is_open"),
     Input("download-button", "n_clicks"),
     Input("export-format-dropdown", "value"),
     prevent_initial_call=True,
@@ -94,13 +93,13 @@ def export_conversation(n_clicks, format):
     formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
     if (triggered_id != 'download-button'):
-        return None, False
+        return None
     # return dict(content="".join(global_vars.dialog), filename=f"query-history-{formatted_date_time}.txt")
     if (global_vars.agent is None):
-        return None, True
+        return None
     history, extension = global_vars.agent.get_history(
         c_format=ConversationFormat(format))
-    return dict(content=history, filename=f"query-history-{formatted_date_time}" + extension), False
+    return dict(content=history, filename=f"query-history-{formatted_date_time}" + extension)
 
 
 @app.callback(

@@ -17,6 +17,7 @@ from dash.dash_table.Format import Format, Scheme
 from UI.functions import query_llm
 
 
+
 @app.callback(
     [Output('table-overview', 'data', allow_duplicate=True),
      Output('table-overview', 'columns'),
@@ -29,7 +30,8 @@ from UI.functions import query_llm
      # Output("commands-input", "disabled", allow_duplicate=True),
      # Output("run-commands", "disabled", allow_duplicate=True),
      Output("upload-modal", "is_open"),
-     Output("upload-data-modal", "style")],
+     Output("upload-data-modal", "style"),
+     Output("upload-data-error-msg", "children")],
     [Input('upload-data', 'contents'),
      Input('upload-data-modal', 'contents'),
      Input('show-rows-button', 'n_clicks')],
@@ -46,14 +48,14 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
     if triggered_id == 'upload-data' or triggered_id == 'upload-data-modal':
         if triggered_id == 'upload-data':
             if not list_of_contents or not list_of_names:
-                return [], [], [], False, "", [], [], dash.no_update, dash.no_update
+                return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents[0]
             filename = list_of_names[0]
         elif triggered_id == 'upload-data-modal':
             if not list_of_contents_modal or not list_of_names_modal:
-                return [], [], [], False, "", [], [], dash.no_update, dash.no_update
+                return [], [], [], False, "", [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset."
 
             # Process the first file only
             contents = list_of_contents_modal[0]
@@ -63,7 +65,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, "", [], [], [], dash.no_update, dash.no_update
+            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, "Error: Not a CSV file."
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -84,12 +86,13 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             [{'ver': '1', 'desc': 'Original', 'time': formatted_date_time}],
             ['1'],
             False,
-            dash.no_update
+            dash.no_update,
+            ""
         )
 
     elif triggered_id == 'show-rows-button':
         if global_vars.df is None:
-            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update, "Error: Dataframe is empty."
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
@@ -104,7 +107,8 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
-                dash.no_update
+                dash.no_update,
+                ""
             )
 
         xdf = global_vars.df.iloc[start_row:end_row]
@@ -117,10 +121,11 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             dash.no_update,
             dash.no_update,
             False,
-            dash.no_update
+            dash.no_update,
+            ""
         )
 
-    return [], [], [], False, "", [], [], dash.no_update, dash.no_update
+    return [], [], [], False, "", [], [], dash.no_update, dash.no_update,""
 
 
 @app.callback(
@@ -275,6 +280,7 @@ def update_model_dropdown(selected_task):
     Output('eval-info', 'children'),
     Output('eval-res', 'children'),
     Output('fairness-scores', 'children'),
+    Output('eval-explanation', 'children'),
     Input('eval-button','n_clicks'),
     State('dataset-selection', 'value'),
     State('sensi-attr-selection', 'value'),
@@ -286,7 +292,7 @@ def update_model_dropdown(selected_task):
 def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
     data = global_vars.data_snapshots[int(df_id) - 1]
     if label in sens_attr:
-        return html.P('The label cannot be in the sensitive attributes!', style={"color": "red"}), [], [],
+        return html.P('The label cannot be in the sensitive attributes!', style={"color": "red"}), [], [], []
     if data[label].dtype in ['float64', 'float32'] and task == 'Classification':
         return html.P('The target attribute is continuous (float) but the task is set to classification. '
                       'Consider binning the target or setting the task to regression.',style={"color": "red"}), [], [], []
@@ -377,4 +383,27 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
                 target="tooltip-eval",
             ),
         ])
-    return [], [html.Hr(), tooltip, res], tables
+    res_explanation = [
+        html.Div(id="dataset_result_explanation", style={"marginTop":"20px"}),
+    ]
+    return [html.Hr(), tooltip,], res, tables, res_explanation
+
+
+@app.callback(
+    Output('dataset_result_explanation', 'children'),
+    Input('eval-button','n_clicks'),
+    Input('eval-res', 'children'),
+    Input('fairness-scores', 'children'),
+    State('sensi-attr-selection', 'value'),
+    State('label-selection', 'value'),
+    State('task-selection', 'value'),
+    State('model-selection', 'value'),
+    prevent_initial_call=True
+)
+def explain_dataset_result(n_clicks, acc, data, sens_attr, label, task, model):
+    data_string = "\n".join(
+        [f"Row {i + 1}: {row}" for i, row in enumerate(data)]
+    )
+    query = f"Assess the bias level in the dataset using the following results: {data_string}. The model accuracy is {acc}. These results were generated by executing the {task} task with the {model} model. The analysis centers on the sensitive attributes {sens_attr}, with {label} serving as the target attribute. The objective is to identify and minimize disparities among subgroups of the sensitive attributes without sacrificing accuracy."
+    answer, media, suggestions = query_llm(query, current_user.id)
+    return [html.H5("Analysis"),dcc.Markdown(answer,className="chart-explanation")]
