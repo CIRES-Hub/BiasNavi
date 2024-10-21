@@ -10,6 +10,8 @@ from flask_login import current_user
 import docker
 import os
 import shutil
+import time
+import random
 
 
 @app.callback(
@@ -75,7 +77,8 @@ def execute_commands(n_click, commands):
             
             new_df = pd.read_csv(os.path.join(user_data_dir, "df.csv"))
             global_vars.df = new_df
-            global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name)
+            global_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
+            global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name, conversation_session=global_vars.conversation_session)
             
             return [output, 
                     False, 
@@ -109,7 +112,8 @@ def execute_commands(n_click, commands):
                             
                     new_df = pd.read_csv(os.path.join(user_data_dir, "df.csv"))
                     global_vars.df = new_df
-                    global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name)
+                    global_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
+                    global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name, conversation_session=global_vars.conversation_session)
             
                     return [output, 
                             False, 

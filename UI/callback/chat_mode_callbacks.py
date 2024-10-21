@@ -17,6 +17,7 @@ import pandas as pd
 from agent import DatasetAgent
 from flask_login import logout_user, current_user
 from dash.exceptions import PreventUpdate
+import random
 
 @app.callback(
     [Output("query-area-chat", "children"),
@@ -105,7 +106,8 @@ def import_data_and_update_table(list_of_contents_modal, list_of_names_modal, st
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
         global_vars.df = raw_data  # DataWrangler.fill_missing_values(raw_data)
-        global_vars.agent = DatasetAgent(global_vars.df, file_name=filename)
+        global_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
+        global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name, conversation_session=global_vars.conversation_session)
         if not query_records:
             query_records = []
         query_records.append(
