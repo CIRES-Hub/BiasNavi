@@ -19,7 +19,7 @@ def layout():
     if not current_user.is_authenticated:
         return html.Div([
             dcc.Location(id="redirect-to-login",
-                         refresh=False, pathname="/"),
+                         refresh=True, pathname="/"),
         ])
     return html.Div([
         # Home Layout
@@ -270,7 +270,7 @@ def layout():
                             ),
                             dbc.Toast(
                                 "Forget to import a dataset or enter a query?",
-                                id="error-toast",
+                                id="error-export",
                                 header="Reminder",
                                 is_open=False,
                                 dismissable=True,
@@ -691,6 +691,8 @@ def format_message(msg):
     Input("chat-update-trigger", "data")
 )
 def update_chat_history(pathname, trigger):
+    if (pathname == '/'):
+        return dash.no_update
     user_id = str(current_user.id)
     conversations = Conversation.get_user_conversations(user_id)
 

@@ -12,6 +12,6 @@ class Variables(object):
         self.file_name = None
         self.suggested_questions = None
         self.data_snapshots = []
-        self.conversation_session = round(time.time() * 1000)
+        self.conversation_session = None
 
 global_vars = Variables()

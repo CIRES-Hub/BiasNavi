@@ -15,6 +15,8 @@ from flask_login import current_user
 from utils.dataset_eval import DatasetEval
 from dash.dash_table.Format import Format, Scheme
 from UI.functions import query_llm
+import time
+import random
 
 
 
@@ -76,7 +78,8 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         global_vars.data_snapshots = [raw_data]
         # global_vars.df = DataWrangler.fill_missing_values(raw_data)
         global_vars.df = raw_data  # DataWrangler.fill_missing_values(raw_data)
-        global_vars.agent = DatasetAgent(global_vars.df, file_name=filename)
+        global_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
+        global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name, conversation_session=global_vars.conversation_session)
         return (
             global_vars.df.to_dict('records'),
             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
