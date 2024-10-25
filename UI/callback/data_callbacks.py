@@ -403,7 +403,7 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
     State('model-selection', 'value'),
     prevent_initial_call=True
 )
-def explain_dataset_result(n_clicks, acc, data, sens_attr, label, task, model):
+def explain_dataset_evaluation(n_clicks, acc, data, sens_attr, label, task, model):
     data_string = "\n".join(
         [f"Row {i + 1}: {row}" for i, row in enumerate(data)]
     )

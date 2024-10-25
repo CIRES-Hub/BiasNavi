@@ -38,7 +38,7 @@ class RunPythonCode(PythonAstREPLTool):
     def add_figure(self, processed_item: Figure):
 
         buf = io.BytesIO()
-        processed_item.subplots_adjust(bottom=0.2)
+        processed_item.subplots_adjust(bottom=0.25)
         processed_item.savefig(buf, format="png")
         processed_item.close()
         data = base64.b64encode(buf.getbuffer()).decode("utf8")

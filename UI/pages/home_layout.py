@@ -670,6 +670,7 @@ def show_page_content(pathname):
 def format_message(msg):
     role_class = "user-message" if msg['role'] == 'user' else "assistant-message"
     content = msg.get("content")
+    text = ""
     try:
         parsed_content = ast.literal_eval(content)
         if isinstance(parsed_content, dict) and "answer" in parsed_content:

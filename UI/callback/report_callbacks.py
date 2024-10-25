@@ -6,6 +6,7 @@ from UI.functions import *
 from dash import callback_context, MATCH, ALL, ctx
 import plotly.io as pio
 import base64
+from flask_login import current_user
 
 @app.callback(
     Output('graphs-container', 'children'),
@@ -20,9 +21,19 @@ import base64
 def generate_bias_report(target, styles):
     if global_vars.df[target].unique().size > 100:
         return [], html.P([
-            "Warning: The selected target has more than 100 unique values, which cannot be plotted due to heavy computation load."],
-            style={'color': 'red'}), [], "", styles
+            "INFO: The selected target has more than 100 unique values, which cannot be plotted due to heavy computation load."],
+            style={'color': 'gray'}), [], "", styles
     sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
+    attr_text = ','.join(sensitive_attrs)
+    query = f"""
+            We have manually identified certain attributes in the dataset, such as {attr_text}, which may influence the fairness of the target attribute {target}. 
+            Based on the dataset and our prior discussions, could you confirm if these attributes are indeed sensitive? 
+            Additionally, feel free to reason whether other attributes could be included or if any of the identified sensitive attributes have been misclassified.            
+            Please format your output as follows: list the sensitive attributes separated by commas, followed by a period. 
+            Then, provide an explanation of why these attributes are considered sensitive.
+            """
+    answer, media, suggestions = query_llm(query, current_user.id)
+
     if not sensitive_attrs:
         return [], html.P(["No sensitive attributes are detected."]), [], [], styles
     column_style = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in
@@ -35,15 +46,12 @@ def generate_bias_report(target, styles):
     bias_report_content = html.Div([
         html.Br(),
         html.H3("Identified sensitive attributes", style={'textAlign': 'center'}),
-        html.P([
-            html.B(f"{bias_identification}. ", style={'color': 'tomato'}),
-            "When making decisions, it should be cautious to use these attributes."
-        ])
+        dcc.Markdown(answer)
     ])
 
     if target in sensitive_attrs:
-        return [], html.P(["Warning: The selected target attribute must not be in the sensitive attributes."],
-                          style={'color': 'red'}), [], bias_report_content, styles
+        return [], html.P(["INFO: The selected target attribute must not be in the sensitive attributes."],
+                          style={'color': 'gray'}), [], bias_report_content, styles
 
     refined_attrs = []
     warning = False
@@ -68,8 +76,8 @@ def generate_bias_report(target, styles):
     warning_msg = ""
     if warning:
         warning_msg = html.P([
-            f"Warning: The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 100 unique values cannot be visualized due to heavy computation load."],
-            style={'color': 'red'})
+            f"INFO: The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 100 unique values cannot be visualized due to heavy computation load."],
+            style={'color': 'gray'})
     return graphs, warning_msg, bias_stats.to_dict('records'), bias_report_content, styles
 
 
