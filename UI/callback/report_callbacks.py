@@ -8,10 +8,11 @@ import plotly.io as pio
 import base64
 from flask_login import current_user
 
+
 @app.callback(
     Output('graphs-container', 'children'),
     Output('plot-exception-msg', 'children'),
-    Output('bias-overview', 'data'),
+    Output('bias-stats', 'children'),
     Output('bias-report', 'children'),
     Output('table-overview', 'style_data_conditional'),
     Input('column-names-dropdown', 'value'),
@@ -26,7 +27,7 @@ def generate_bias_report(target, styles):
     sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
     attr_text = ','.join(sensitive_attrs)
     query = f"""
-            We have manually identified certain attributes in the dataset, such as {attr_text}, which may influence the fairness of the target attribute {target}. 
+            We have manually identified certain attributes in the dataset including {attr_text}, which may influence the fairness of the target attribute {target}. 
             Based on the dataset and our prior discussions, could you confirm if these attributes are indeed sensitive? 
             Additionally, feel free to reason whether other attributes could be included or if any of the identified sensitive attributes have been misclassified.            
             Please format your output as follows: list the sensitive attributes separated by commas, followed by a period. 
@@ -39,7 +40,6 @@ def generate_bias_report(target, styles):
     column_style = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in
                     sensitive_attrs]
     styles += column_style
-    bias_identification = " ".join(sensitive_attrs)
 
     # draw_multi_dist_plot(global_vars.df, "decile_score", sensitive_attrs)
 
@@ -62,7 +62,32 @@ def generate_bias_report(target, styles):
         else:
             warning = True
             filtered_attrs.append(attr)
-    bias_stats = calculate_demographic_report(global_vars.df, target, refined_attrs)
+
+    bias_stats = [calculate_demographic_report(global_vars.df, target, [refined_attr]) for refined_attr in
+                  refined_attrs]
+    tables = []
+    for table_id, stat in enumerate(bias_stats):
+        data_table = dash_table.DataTable(id=f'bias-table_{table_id}', page_size=25, page_action='native',
+                                          data=stat.to_dict('records'),
+                                          sort_action='native',
+                                          style_cell={'textAlign': 'center',
+                                                      'fontFamiliy': 'Arial'},
+                                          style_header={'backgroundColor': '#614385',
+                                                        'color': 'white',
+                                                        'fontWeight': 'bold'
+                                                        }, style_table={'overflowX': 'auto'},
+                                          style_data_conditional=[
+                                              {
+                                                  'if': {'row_index': 'odd'},
+                                                  'backgroundColor': '#f2f2f2'
+                                              },
+                                              {
+                                                  'if': {'row_index': 'even'},
+                                                  'backgroundColor': 'white'
+                                              },
+                                          ],
+                                        )
+        tables.append(data_table)
     figures = draw_multi_dist_plot(global_vars.df, target, refined_attrs)
     graphs = [html.Hr(),
               html.H3("Distributions", style={'textAlign': 'center'})]
@@ -70,15 +95,16 @@ def generate_bias_report(target, styles):
         # Create a dcc.Graph component with the figure
         graphs.append(dcc.Graph(id={"type": "report-graph", "index": str(i)}, figure=fig))
         graphs.append(dcc.Loading(
-            html.Div([], id={"type": "report-graph-explanation", "index": str(i)}, style={"display":"none"})))
-        graphs.append(html.Button('Explain', id={"type": "report-graph-button", "index": str(i)}, n_clicks=0, className='primary-button'))
+            html.Div([], id={"type": "report-graph-explanation", "index": str(i)}, style={"display": "none"})))
+        graphs.append(html.Button('Explain', id={"type": "report-graph-button", "index": str(i)}, n_clicks=0,
+                                  className='primary-button'))
 
     warning_msg = ""
     if warning:
         warning_msg = html.P([
             f"INFO: The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 100 unique values cannot be visualized due to heavy computation load."],
             style={'color': 'gray'})
-    return graphs, warning_msg, bias_stats.to_dict('records'), bias_report_content, styles
+    return graphs, warning_msg, tables, bias_report_content, styles
 
 
 @app.callback(
@@ -92,5 +118,6 @@ def show_figure_modal(n_clicks, fig):
     if n_clicks and n_clicks > 0 and fig is not None:
         img_bytes = pio.to_image(fig, format='png')
         encoded_img = base64.b64encode(img_bytes).decode('utf-8')
-        explanation = global_vars.agent.describe_image('Describe this subgroup distribution chart.', f"data:image/png;base64,{encoded_img}")
-        return dcc.Markdown(explanation.content,className="chart-explanation"), {"display": "block"}
+        explanation = global_vars.agent.describe_image('Describe this subgroup distribution chart.',
+                                                       f"data:image/png;base64,{encoded_img}")
+        return dcc.Markdown(explanation.content, className="chart-explanation"), {"display": "block"}

@@ -12,25 +12,22 @@ from .correlation import cramers_v, kruskal_wallis, pearson
 from .distance import BinomialDistance, DistanceMetric, EarthMoversDistance, KolmogorovSmirnovDistance
 
 
-def auto_distance(column: pd.Series) -> Type[DistanceMetric]:
+def auto_distance(column: pd.Series):
     """Return a suitable statistical distance metric based on the distribution of the data.
 
     Args:
         column (pd.Series):
             The input data in a pd.Series.
 
-    Returns:
-        Type[DistanceMetric]:
-            The class of the distance metric.
     """
 
     distr_type = utils.infer_distr_type(column)
     if distr_type.is_continuous():
-        return KolmogorovSmirnovDistance
+        return KolmogorovSmirnovDistance, "KolmogorovSmirnov Distance"
     elif distr_type.is_binary():
-        return BinomialDistance
+        return BinomialDistance, "Binomial Distance"
 
-    return EarthMoversDistance
+    return EarthMoversDistance, "EarthMovers Distance"
 
 
 def stat_distance(
@@ -41,7 +38,7 @@ def stat_distance(
     mode: str = "auto",
     p_value: bool = False,
     **kwargs,
-) -> Tuple[float, ...]:
+):
     """Computes the statistical distance between two probability distributions ie. group 1 and group 2, with respect
     to the target attribute. The distance metric can be chosen through the mode parameter. If mode is set to "auto",
     the most suitable metric depending on the target attributes' distribution is chosen.
@@ -72,9 +69,6 @@ def stat_distance(
         **kwargs:
             Keyword arguments for the distance metric. Passed to the __init__ function of distance metrics.
 
-    Returns:
-        Tuple[float, ...]:
-            The distance as a float, and the p-value if p_value is set to True and can be computed.
 
     Examples:
         >>> df = pd.read_csv("datasets/compas.csv")
@@ -93,8 +87,9 @@ def stat_distance(
     group2 = df[pred2][target_attr]
 
     # Choose the distance metric
+    distance_type = ""
     if mode == "auto":
-        dist_class = auto_distance(df[target_attr])
+        dist_class, dist_type = auto_distance(df[target_attr])
     elif mode in DistanceMetric._class_dict:
         dist_class = DistanceMetric._class_dict[mode]
     else:
@@ -108,9 +103,9 @@ def stat_distance(
 
     if p_value:
         p = metric.p_value(group1, group2)
-        return (d, p)
+        return (d, p), distance_type
 
-    return (d,)
+    return (d,), dist_type
 
 
 def correlation_matrix(

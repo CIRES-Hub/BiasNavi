@@ -130,7 +130,7 @@ def layout():
                             #     className='menu-item'
                             # ),
                             dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpt4omini"),
+                                [dbc.DropdownMenuItem("GPT-4o-mini", id="menu-model-gpt4omini"),
                                  dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
                                  dbc.DropdownMenuItem("GPT-4o  ✔", id="menu-model-gpt4o")],
                                 label="LLM Models",
@@ -422,25 +422,7 @@ def layout():
                                         html.Div(children=[
                                             html.Br(),
                                             html.H3("Statistics", style={'textAlign': 'center'}),
-                                            dash_table.DataTable(id='bias-overview', page_size=25, page_action='native',
-                                                                 sort_action='native',
-                                                                 style_cell={'textAlign': 'center',
-                                                                             'fontFamiliy': 'Arial'},
-                                                                 style_header={'backgroundColor': '#614385',
-                                                                               'color': 'white',
-                                                                               'fontWeight': 'bold'
-                                                                               }, style_table={'overflowX': 'auto'},
-                                                                 style_data_conditional=[
-                                                                     {
-                                                                         'if': {'row_index': 'odd'},
-                                                                         'backgroundColor': '#f2f2f2'
-                                                                     },
-                                                                     {
-                                                                         'if': {'row_index': 'even'},
-                                                                         'backgroundColor': 'white'
-                                                                     },
-                                                                 ]
-                                                                 )
+                                            html.Div(id='bias-stats', className="table-container"),
                                         ])
                                     ]),
                                 ])

@@ -267,12 +267,12 @@ def _calculate_distance(
     metric: str = "auto",
     method: str = "dist_to_all",
     p_value: bool = False,
-) -> pd.DataFrame:
+):
 
     unique = df[sensitive_attrs].drop_duplicates()
 
     dist = []
-
+    distance_type = []
     for _, row in unique.iterrows():
         sensitive_group = {attr: [value] for attr, value in row.to_dict().items()}
 
@@ -283,14 +283,14 @@ def _calculate_distance(
         else:
             pred_other = pd.Series([True] * len(df))
 
-        dist_res = stat_distance(df, target_attr, pred, pred_other, mode=metric, p_value=p_value)
+        dist_res, dist_type = stat_distance(df, target_attr, pred, pred_other, mode=metric, p_value=p_value)
         distance = dist_res[0]
         p = dist_res[1] if p_value else 0
 
         dist.append(
             {
                 "Group": ", ".join(map(str, row.to_dict().values())),
-                "Distance": distance,
+                f"{dist_type}": distance,
                 "Proportion": len(df[pred]) / len(df),
                 "Counts": len(df[pred]),
                 "P-Value": p,
