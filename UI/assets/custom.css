@@ -352,6 +352,10 @@
     color: white;
 }
 
+.bg-transparent {
+    background-color: transparent;
+}
+
 .figure-modal {
     width: 80vw !important; 
     max-width: none !important;
@@ -649,4 +653,14 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.backdrop-survey-modal {
+    background-image: linear-gradient(to right, #67b26f, #4ca2cd);
+    opacity: 0.9 !important;
+}
+
+.content-survey-modal {
+    background-color: transparent;
+    border: none;
 }

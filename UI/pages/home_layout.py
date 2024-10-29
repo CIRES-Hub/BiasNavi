@@ -9,8 +9,10 @@ from flask_login import logout_user, current_user
 from dash.exceptions import PreventUpdate
 import dash_editor_components
 from agent import ConversationFormat
-from utils.constant import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, DEFAULT_PERSONA_PROMPT
+from utils.constant import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
+    DEFAULT_PERSONA_PROMPT
 import ast
+from UI.pages.components.survey_modal import survey_modal
 
 dash.register_page(__name__, path='/home/', title='Home')
 
@@ -28,7 +30,7 @@ def layout():
             dbc.Modal(
                 [
                     dbc.ModalHeader(dbc.ModalTitle(id="wizard-title")),
-                    dbc.ModalBody(id="wizard-body",style={"fontSize": "0.7vw"}),
+                    dbc.ModalBody(id="wizard-body", style={"fontSize": "0.7vw"}),
                     dbc.ModalFooter(
                         dbc.Button("Next", id="next-step", className="ms-auto", n_clicks=0)
                     ),
@@ -44,7 +46,7 @@ def layout():
                             "backgroundColor": "rgba(0, 0, 0, 0.7)", "z-index": "100", "display": "none"}),
             dbc.Modal(
                 [
-                    dbc.ModalHeader(dbc.ModalTitle("Upload a CSV Dataset",style={"color" : "#614385"})),
+                    dbc.ModalHeader(dbc.ModalTitle("Upload a CSV Dataset", style={"color": "#614385"})),
                     dbc.ModalBody(
                         dcc.Loading(
                             html.Div(
@@ -76,9 +78,9 @@ def layout():
                         ),
                     ),
                     dbc.ModalFooter([
-                        html.Div(id="upload-data-error-msg",style={"color":"red"}),
+                        html.Div(id="upload-data-error-msg", style={"color": "red"}),
                         dbc.Button("Close", id="close-modal", className="ml-auto"),
-                        ],
+                    ],
                         style={
                             'display': 'flex',
                             'justifyContent': 'end',
@@ -92,6 +94,21 @@ def layout():
                 style={
                     "boxShadow": "0 2px 4px 0 rgba(0, 0, 0, 0.2);"
                 }
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalBody(
+                        children=html.Div(id="survey-modal-body"),
+                    )
+                ],
+                id="survey-modal",
+                is_open=False,
+                centered=True,
+                style={
+                    "boxShadow": "0 2px 4px 0 rgba(0, 0, 0, 0.2);"
+                },
+                backdrop_class_name="backdrop-survey-modal",
+                content_class_name="content-survey-modal"
             ),
             # =======================================================
             # banner and menu bar layout
@@ -130,7 +147,7 @@ def layout():
                             #     className='menu-item'
                             # ),
                             dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("GPT-4o-mini", id="menu-model-gpt4omini"),
+                                [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpt4omini"),
                                  dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
                                  dbc.DropdownMenuItem("GPT-4o  ✔", id="menu-model-gpt4o")],
                                 label="LLM Models",
@@ -150,7 +167,7 @@ def layout():
                             ),
                             dbc.DropdownMenu(
                                 [dbc.DropdownMenuItem("Wizard", id="menu-help-wizard"),
-                                 dbc.DropdownMenuItem("Tutorial", id="menu-help-tutorial"),],
+                                 dbc.DropdownMenuItem("Tutorial", id="menu-help-tutorial"), ],
                                 label="Help",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
@@ -179,43 +196,43 @@ def layout():
 
             dbc.Card(id="setting-container",
                      children=[
-                               html.H4("Prompt for Eliciting Model's ability"),
-                               dcc.Textarea(rows=7, id="system-prompt-input", className="mb-4 prompt-input p-2",
-                                            value=current_user.system_prompt),
-                               html.H4("Prompt for Handling Dataset"),
-                               dcc.Textarea(rows=7, id="prefix-prompt-input", className="mb-4 prompt-input p-2",
-                                            value=current_user.prefix_prompt),
-                               html.Div([html.H4("Prompt for Enhancing Personalization"), html.Span(
-                                   html.I(className="fas fa-question-circle"),
-                                   id="tooltip-snapshot",
-                                   style={
-                                       "fontSize": "20px",
-                                       "color": "#aaa",
-                                       "cursor": "pointer",
-                                       "marginLeft": "5px",
-                                       "alignSelf": "center"
-                                   }
-                               )], style={"display": "flex", "justifyContent": "space-between"}),
-                               dcc.Textarea(rows=8, id="persona-prompt-input", className="mb-4 prompt-input p-2",
-                                            value=current_user.persona_prompt),
-                               html.H4("Prompt for Generating Follow-up Questions"),
-                               dcc.Textarea(rows=2, id="next-question-input-1", className="mb-4 prompt-input p-2",
-                                            value=current_user.follow_up_questions_prompt_1),
-                               # html.H4("Prompt for Generating Follow-up Questions 2"),
-                               # dcc.Textarea(rows=2, id="next-question-input-2", className="mb-4 prompt-input p-2",
-                               #              value=current_user.follow_up_questions_prompt_2),
-                               dcc.Loading(id="update-prompt-loading", children=html.Div(children=[
-                                   dbc.Button("Reset Default", id="reset-prompt-button", className="prompt-button",
-                                              n_clicks=0),
-                                   dbc.Button("Save", id="update-prompt-button", className="prompt-button", n_clicks=0),
-                                   dbc.Button("Home", id="return-home-button", className="prompt-button", n_clicks=0),
-                                   ], className="save-button"),
-                               ),
+                         html.H4("Prompt for Eliciting Model's ability"),
+                         dcc.Textarea(rows=7, id="system-prompt-input", className="mb-4 prompt-input p-2",
+                                      value=current_user.system_prompt),
+                         html.H4("Prompt for Handling Dataset"),
+                         dcc.Textarea(rows=7, id="prefix-prompt-input", className="mb-4 prompt-input p-2",
+                                      value=current_user.prefix_prompt),
+                         html.Div([html.H4("Prompt for Enhancing Personalization"), html.Span(
+                             html.I(className="fas fa-question-circle"),
+                             id="tooltip-snapshot",
+                             style={
+                                 "fontSize": "20px",
+                                 "color": "#aaa",
+                                 "cursor": "pointer",
+                                 "marginLeft": "5px",
+                                 "alignSelf": "center"
+                             }
+                         )], style={"display": "flex", "justifyContent": "space-between"}),
+                         dcc.Textarea(rows=8, id="persona-prompt-input", className="mb-4 prompt-input p-2",
+                                      value=current_user.persona_prompt),
+                         html.H4("Prompt for Generating Follow-up Questions"),
+                         dcc.Textarea(rows=2, id="next-question-input-1", className="mb-4 prompt-input p-2",
+                                      value=current_user.follow_up_questions_prompt_1),
+                         # html.H4("Prompt for Generating Follow-up Questions 2"),
+                         # dcc.Textarea(rows=2, id="next-question-input-2", className="mb-4 prompt-input p-2",
+                         #              value=current_user.follow_up_questions_prompt_2),
+                         dcc.Loading(id="update-prompt-loading", children=html.Div(children=[
+                             dbc.Button("Reset Default", id="reset-prompt-button", className="prompt-button",
+                                        n_clicks=0),
+                             dbc.Button("Save", id="update-prompt-button", className="prompt-button", n_clicks=0),
+                             dbc.Button("Home", id="return-home-button", className="prompt-button", n_clicks=0),
+                         ], className="save-button"),
+                                     ),
 
-                               # dbc.Tooltip(
-                               #     "{{}} matches the field of the user information",
-                               #     target="tooltip-snapshot",
-                               # )
+                         # dbc.Tooltip(
+                         #     "{{}} matches the field of the user information",
+                         #     target="tooltip-snapshot",
+                         # )
                      ],
                      className="prompt-card p-4", style={"display": "none"}),
 
@@ -247,6 +264,7 @@ def layout():
                     # User Profile Area
                     html.Div(id="user-profile-area", className="profile-area"),
                     dcc.Store(id="username-edit-success", data=False),
+                    dcc.Store(id="survey-edit-success", data=False),
                     dbc.Card(id="chat-box", children=[
                         html.Div([
                             # Chat display area
@@ -406,28 +424,46 @@ def layout():
                     ]),
 
                     dbc.Card(body=True, id="report-view", className="card", children=[
-                            html.Div([
-                                html.H2("Bias Report",
-                                        style={'color': '#614385', 'marginBottom': '20px', 'textAlign': 'center'}),
-                                html.Div(children=[
-                                    html.P(" Choose a column as the target attribute to generate bias report."),
-                                    dcc.Dropdown(id='column-names-dropdown'),
-                                    html.Div(id='plot-exception-msg'), ], style={'marginBottom': '20px'}),
-                                html.Div(id="bias-report", className="bias-report-area", children=[]),
-                                dcc.Tabs(id="report-tabs", value='tab-1', children=[
-                                    dcc.Tab(label='Charts', children=[
-                                        html.Div(id='graphs-container'),
-                                    ]),
-                                    dcc.Tab(label='Statistics', children=[
-                                        html.Div(children=[
-                                            html.Br(),
-                                            html.H3("Statistics", style={'textAlign': 'center'}),
-                                            html.Div(id='bias-stats', className="table-container"),
-                                        ])
-                                    ]),
-                                ])
-
+                        html.Div([
+                            html.H2("Bias Report",
+                                    style={'color': '#614385', 'marginBottom': '20px', 'textAlign': 'center'}),
+                            html.Div(children=[
+                                html.P(" Choose a column as the target attribute to generate bias report."),
+                                dcc.Dropdown(id='column-names-dropdown'),
+                                html.Div(id='plot-exception-msg'), ], style={'marginBottom': '20px'}),
+                            html.Div(id="bias-report", className="bias-report-area", children=[]),
+                            dcc.Tabs(id="report-tabs", value='tab-1', children=[
+                                dcc.Tab(label='Charts', children=[
+                                    html.Div(id='graphs-container'),
+                                ]),
+                                dcc.Tab(label='Statistics', children=[
+                                    html.Div(children=[
+                                        html.Br(),
+                                        html.H3("Statistics", style={'textAlign': 'center'}),
+                                        dash_table.DataTable(id='bias-overview', page_size=25, page_action='native',
+                                                             sort_action='native',
+                                                             style_cell={'textAlign': 'center',
+                                                                         'fontFamiliy': 'Arial'},
+                                                             style_header={'backgroundColor': '#614385',
+                                                                           'color': 'white',
+                                                                           'fontWeight': 'bold'
+                                                                           }, style_table={'overflowX': 'auto'},
+                                                             style_data_conditional=[
+                                                                 {
+                                                                     'if': {'row_index': 'odd'},
+                                                                     'backgroundColor': '#f2f2f2'
+                                                                 },
+                                                                 {
+                                                                     'if': {'row_index': 'even'},
+                                                                     'backgroundColor': 'white'
+                                                                 },
+                                                             ]
+                                                             )
+                                    ])
+                                ]),
                             ])
+
+                        ])
                     ]),
                     # dbc.Card(body=True, children=[
                     #     # dcc.Tabs(id='tabs-figures', value='single', children=[
@@ -444,7 +480,7 @@ def layout():
 
                 dbc.Col(width=3, id="right-column", children=[
 
-                    dbc.Card(id = "snapshot-view", children=[
+                    dbc.Card(id="snapshot-view", children=[
                         html.Div([
                             html.Div([
                                 html.Div([
@@ -564,8 +600,7 @@ def layout():
                                 "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
                                         custom_spinner=html.H3(
                                             ["Running and Analyzing...", dbc.Spinner(color="primary")]),
-                            ),
-
+                                        ),
 
                         ], className='llm-chart', style={'overflowX': 'auto'})
                     ], className='card'),
@@ -585,7 +620,8 @@ def layout():
                                         "alignSelf": "center"
                                     }
                                 )
-                            ], style={"display": "flex", "alignItems": "center","justifyContent": "space-between","width": "100%"}),
+                            ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                                      "width": "100%"}),
                             dbc.Tooltip(
                                 "The variable df is a reference of the Pandas dataframe of the current dataset. "
                                 "Any Modification on it will be reflected in the data view",
@@ -607,7 +643,7 @@ def layout():
                         ),
                     ], style={'padding': '15px'})
                 ]),
-            ], id="home-container")
+            ], id="home-container"),
         ], className="body fade-in")
     ])
 
@@ -622,7 +658,8 @@ def layout():
 def logout_and_redirect(logout_clicks, help_clicks, setting_clicks):
     ctx = callback_context
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    if (logout_clicks is not None and logout_clicks > 0) or (help_clicks is not None and help_clicks > 0) or (setting_clicks is not None and setting_clicks > 0):
+    if (logout_clicks is not None and logout_clicks > 0) or (help_clicks is not None and help_clicks > 0) or (
+            setting_clicks is not None and setting_clicks > 0):
         if button_id == "logout-button":
             logout_user()
             return "/"
@@ -630,6 +667,7 @@ def logout_and_redirect(logout_clicks, help_clicks, setting_clicks):
             return "/helps/"
         if button_id == "menu-prompt":
             return "/settings/prompts"
+
 
 @callback(
     Output("setting-container", "style"),
@@ -646,13 +684,24 @@ def show_page_content(pathname):
 
 
 # ================================================================
+# =survey modal ===================================================
+
+@callback(
+    Output("survey-modal-body", "children"),
+    Input("survey-edit-success", "data"),
+    Input("username-edit-success", "data")
+)
+def update_survey_content(survey_update, username_update):
+    return survey_modal()
+
+
+# ================================================================
 # =Chat history===================================================
 
 
 def format_message(msg):
     role_class = "user-message" if msg['role'] == 'user' else "assistant-message"
     content = msg.get("content")
-    text = ""
     try:
         parsed_content = ast.literal_eval(content)
         if isinstance(parsed_content, dict) and "answer" in parsed_content:
@@ -720,8 +769,8 @@ def update_chat_history(pathname, trigger):
         ]
 
         history_blocks.append(
-                                dbc.Card(card_content, className="mb-3 chat-history-card")
-                            )
+            dbc.Card(card_content, className="mb-3 chat-history-card")
+        )
 
     return history_blocks
 
@@ -748,9 +797,10 @@ def toggle_collapse(n_clicks, is_open):
 @callback(
     Output("user-profile-area", "children"),
     Input("user-profile-area", "id"),
-    Input("username-edit-success", "data")
+    Input("username-edit-success", "data"),
+    Input("survey-edit-success", "data")
 )
-def update_user_profile(trigger, edit_success):
+def update_user_profile(trigger, edit_success, edit_survey_success):
     user = User.query.get(current_user.id)
     return dbc.Card([
         dbc.CardBody([
@@ -822,12 +872,11 @@ def update_user_profile(trigger, edit_success):
                     ], className="px-0", style={"marginBottom": "0"}),
                     html.Div(
                         dbc.Button(
-                                ["Edit User's Information"],
-                                id="profile-edit-info-button",
-                                size="sm",
-                                className="profile-edit-info-button",
-                                href="/survey"
-                            ), style={"width": "100%", "display": "flex", "justifyContent": "center"}
+                            ["Edit User's Information"],
+                            id="profile-edit-info-button",
+                            size="sm",
+                            className="profile-edit-info-button",
+                        ), style={"width": "100%", "display": "flex", "justifyContent": "center"}
                     )
                 ], style={"paddingBottom": "0", }),
                 id="profile-collapse",
@@ -875,3 +924,12 @@ def reset_default_prompts(n_clicks):
         DEFAULT_PREFIX_PROMPT
     ]
 
+
+@callback(
+    Output("survey-modal", "is_open"),
+    Input("profile-edit-info-button", "n_clicks"),
+    prevent_initial_call=True
+)
+def open_survey_modal(n_clicks):
+    if n_clicks:
+        return True
