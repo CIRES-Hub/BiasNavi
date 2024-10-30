@@ -63,11 +63,23 @@ def generate_bias_report(target, styles):
             warning = True
             filtered_attrs.append(attr)
 
+    figures = draw_multi_dist_plot(global_vars.df, target, refined_attrs)
+    graphs = [html.Hr(),
+              html.H3("Distributions", style={'textAlign': 'center'})]
+    for i, fig in enumerate(figures):
+        # Create a dcc.Graph component with the figure
+        graphs.append(dcc.Graph(id={"type": "report-graph", "index": str(i)}, figure=fig))
+        graphs.append(dcc.Loading(
+            html.Div([], id={"type": "report-graph-explanation", "index": str(i)}, style={"display": "none"})))
+        graphs.append(html.Button('Explain', id={"type": "report-graph-button", "index": str(i)}, n_clicks=0,
+                                  className='primary-button'))
+
     bias_stats = [calculate_demographic_report(global_vars.df, target, [refined_attr]) for refined_attr in
                   refined_attrs]
     tables = []
     for table_id, stat in enumerate(bias_stats):
-        data_table = dash_table.DataTable(id=f'bias-table_{table_id}', page_size=25, page_action='native',
+        data_table = dash_table.DataTable(id={"type": "report-table", "index": str(table_id)}, page_size=25,
+                                          page_action='native',
                                           data=stat.to_dict('records'),
                                           sort_action='native',
                                           style_cell={'textAlign': 'center',
@@ -86,17 +98,11 @@ def generate_bias_report(target, styles):
                                                   'backgroundColor': 'white'
                                               },
                                           ],
-                                        )
+                                          )
         tables.append(data_table)
-    figures = draw_multi_dist_plot(global_vars.df, target, refined_attrs)
-    graphs = [html.Hr(),
-              html.H3("Distributions", style={'textAlign': 'center'})]
-    for i, fig in enumerate(figures):
-        # Create a dcc.Graph component with the figure
-        graphs.append(dcc.Graph(id={"type": "report-graph", "index": str(i)}, figure=fig))
-        graphs.append(dcc.Loading(
-            html.Div([], id={"type": "report-graph-explanation", "index": str(i)}, style={"display": "none"})))
-        graphs.append(html.Button('Explain', id={"type": "report-graph-button", "index": str(i)}, n_clicks=0,
+        tables.append(dcc.Loading(
+            html.Div([], id={"type": "report-table-explanation", "index": str(table_id)}, style={"display": "none"})))
+        tables.append(html.Button('Explain', id={"type": "report-table-button", "index": str(table_id)}, n_clicks=0,
                                   className='primary-button'))
 
     warning_msg = ""
@@ -114,10 +120,27 @@ def generate_bias_report(target, styles):
     State({'type': 'report-graph', 'index': MATCH}, 'figure'),
     prevent_initial_call=True
 )
-def show_figure_modal(n_clicks, fig):
+def explain_report_figure(n_clicks, fig):
     if n_clicks and n_clicks > 0 and fig is not None:
         img_bytes = pio.to_image(fig, format='png')
         encoded_img = base64.b64encode(img_bytes).decode('utf-8')
         explanation = global_vars.agent.describe_image('Describe this subgroup distribution chart.',
                                                        f"data:image/png;base64,{encoded_img}")
         return dcc.Markdown(explanation.content, className="chart-explanation"), {"display": "block"}
+
+
+@app.callback(
+    Output({'type': 'report-table-explanation', 'index': MATCH}, 'children'),
+    Output({'type': 'report-table-explanation', 'index': MATCH}, 'style'),
+    Input({'type': 'report-table-button', 'index': MATCH}, 'n_clicks'),
+    State({'type': 'report-table', 'index': MATCH}, 'data'),
+    prevent_initial_call=True
+)
+def explain_report_table(n_clicks, tb):
+    if n_clicks and n_clicks > 0 and tb is not None:
+        data_string = "\n".join(
+            [f"Row {i + 1}: {row}" for i, row in enumerate(tb)]
+        )
+        query = f"Explain this table data {data_string} given the distance metric in the table header. The distance figure is calculated by comparing the distribution of the subgraph with the distribution of all."
+        answer, media, suggestions = query_llm(query, current_user.id)
+        return dcc.Markdown(answer, className="chart-explanation"), {"display": "block"}
