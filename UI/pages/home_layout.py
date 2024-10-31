@@ -110,6 +110,25 @@ def layout():
                 backdrop_class_name="backdrop-survey-modal",
                 content_class_name="content-survey-modal"
             ),
+
+            dbc.Modal(
+                [
+                    dbc.ModalHeader("Consulting Options"),
+                    dbc.ModalBody(
+                        html.Div([
+                            dcc.Dropdown(id='export-format-dropdown', options=[
+                                v.value for v in ConversationFormat],
+                                         value=ConversationFormat.SIMPLIFIED_JSON.value),
+                        ], className="query-header"),
+                    ),
+                    dbc.ModalFooter([dbc.Button(
+                        "Export", id="download-button", className="ml-auto"),
+                        dcc.Download(id="export"), dbc.Button("Close", id="close", className="ml-auto")]),
+                ],
+                id="export-history-modal",
+                is_open=False,
+            ),
+
             # =======================================================
             # banner and menu bar layout
             dbc.Row(justify="center", align="center", children=[
@@ -130,8 +149,10 @@ def layout():
 
                             ),
                             dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("Export Chat History"), dbc.DropdownMenuItem(
-                                    "Export Dataset Analysis Report")],
+                                [
+                                    dbc.DropdownMenuItem("Export Chat History", id="menu-export-chat"),
+                                    dbc.DropdownMenuItem(
+                                        "Export Dataset Analysis Report")],
                                 label="Export",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
@@ -270,14 +291,6 @@ def layout():
                             # Chat display area
                             html.Div([
                                 html.H4("Chat with BiasNavi", className="secondary-title")
-                            ], className="query-header"),
-                            html.Div([
-                                dcc.Dropdown(id='export-format-dropdown', options=[
-                                    v.value for v in ConversationFormat],
-                                             value=ConversationFormat.SIMPLIFIED_JSON.value),
-                                html.Button(
-                                    "Export", id="download-button", className="primary-button"),
-                                dcc.Download(id="export")
                             ], className="query-header"),
                             dcc.Loading(
                                 id="loading-1",

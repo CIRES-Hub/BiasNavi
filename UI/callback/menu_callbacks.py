@@ -86,3 +86,13 @@ def change_llm_model(n_clicks_gpt3dot5, n_clicks_gpt4, n_clicks_gpt4o):
         return "GPT-4o-mini", "GPT-4", "GPT-4o ✔"
 
     raise dash.exceptions.PreventUpdate
+
+@app.callback(
+    Output("export-history-modal", "is_open"),
+    [Input("menu-export-chat", "n_clicks"), Input("close", "n_clicks")],
+    [State("export-history-modal", "is_open")],
+)
+def toggle_modal(n1, n2, is_open):
+    if n1 or n2:
+        return not is_open
+    return is_open
