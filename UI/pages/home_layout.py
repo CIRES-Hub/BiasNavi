@@ -196,6 +196,7 @@ def layout():
                                 id="help-button"
                             ),
                             dbc.NavLink("Prompts", id="menu-prompt", className='nav-item'),
+                            dbc.NavLink("User Profile", id="profile-edit-info-button", className='nav-item'),
 
                             dbc.DropdownMenu(
                                 [
@@ -282,8 +283,6 @@ def layout():
                             className='upload',
                             multiple=True
                         )], className='card', style={"display": "none"}),
-                    # User Profile Area
-                    html.Div(id="user-profile-area", className="profile-area"),
                     dcc.Store(id="username-edit-success", data=False),
                     dcc.Store(id="survey-edit-success", data=False),
                     dbc.Card(id="chat-box", children=[
@@ -788,97 +787,6 @@ def toggle_collapse(n_clicks, is_open):
 
 # ================================================================
 # =Chat history===================================================
-
-@callback(
-    Output("user-profile-area", "children"),
-    Input("user-profile-area", "id"),
-    Input("username-edit-success", "data"),
-    Input("survey-edit-success", "data")
-)
-def update_user_profile(trigger, edit_success, edit_survey_success):
-    user = User.query.get(current_user.id)
-    return dbc.Card([
-        dbc.CardBody([
-            dbc.Row([
-                # dbc.Col([
-                #     html.Img(src='/assets/default-avatar.png',
-                #              className='profile-avatar mx-auto d-block',),
-                # ], width=12, className='mb-3'),
-                dbc.Col([
-                    html.Div([
-                        html.H5(user.username or user.email, id="username-display",
-                                className='profile-name d-inline-block mb-0 me-2'),
-                        html.I(className="fas fa-edit edit-icon",
-                               id="edit-username-icon", )
-                    ], className="d-flex align-items-center justify-content-center mb-1"),
-
-                    dbc.Modal([
-                        dbc.ModalHeader("Edit Username"),
-                        dbc.ModalBody([
-                            dbc.Input(
-                                id="new-username-input", placeholder="Enter new username", type="text"),
-                        ]),
-                        dbc.ModalFooter([
-                            dbc.Button("Save", id="save-username-button",
-                                       className="ms-auto", n_clicks=0),
-                            dbc.Button(
-                                "Cancel", id="cancel-username-edit", className="ms-2", n_clicks=0),
-                        ]),
-                    ], id="edit-username-modal", is_open=False),
-                    html.P(user.professional_role or "Role not specified",
-                           className='profile-title text-center mb-3'),
-                ], width=12),
-                dbc.Button(
-                    ["More Info ", html.I(
-                        className="fas fa-chevron-down", id="more-info-icon")],
-                    id="profile-more-info-button",
-                    size="sm",
-                    className="profile-more-info-button"
-                ),
-            ], className='align-items-center'),
-            dbc.Collapse(
-                dbc.CardBody([
-                    html.Ul([
-                        html.Li([
-                            html.B("Industry: "),
-                            html.Span(
-                                user.industry_sector or 'Not provided')
-                        ], className="mb-2"),
-                        html.Li([
-                            html.B("Expertise: "),
-                            html.Span(
-                                user.expertise_level or 'Not provided')
-                        ], className="mb-2"),
-                        html.Li([
-                            html.B("Technical Expertise: "),
-                            html.Span(
-                                user.technical_level or 'Not provided')
-                        ], className="mb-2"),
-                        html.Li([
-                            html.B("Bias Awareness: "),
-                            html.Span(
-                                user.bias_awareness or 'Not provided')
-                        ], className="mb-2"),
-                        html.Li([
-                            html.B("Interests: "),
-                            html.Span(', '.join(user.areas_of_interest)
-                                      if user.areas_of_interest else 'None provided')
-                        ]),
-                    ], className="px-0", style={"marginBottom": "0"}),
-                    html.Div(
-                        dbc.Button(
-                            ["Edit User's Information"],
-                            id="profile-edit-info-button",
-                            size="sm",
-                            className="profile-edit-info-button",
-                        ), style={"width": "100%", "display": "flex", "justifyContent": "center"}
-                    )
-                ], style={"paddingBottom": "0", }),
-                id="profile-collapse",
-                is_open=False,
-            ),
-        ])
-    ], className="profile-area shadow-sm")
 
 
 @callback(

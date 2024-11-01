@@ -70,7 +70,7 @@ def update_survey_info(submit_clicks, skip_clicks, user_name, professional_role,
 
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-    if button_id == "submit-button":
+    if submit_clicks is not None and button_id == "submit-button":
         if not all([professional_role, industry_sector, expertise_level, areas_of_interest, technical_level, bias_awareness]):
             return dash.no_update, "Please fill in all.", dash.no_update, False
 
