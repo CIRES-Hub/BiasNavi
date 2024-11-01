@@ -26,7 +26,7 @@ def survey_modal():
                 dbc.Col(
                     dbc.Card(
                         dbc.CardBody([
-                            html.H3("Background Survey",
+                            html.H3("User Profile",
                                     className="card-title text-center mb-4"),
 
                             dbc.Form([

@@ -55,51 +55,60 @@ def toggle_wizard(n_clicks_open, n_clicks_next, is_open, modal_style, menu_datas
         {
             "title": "Import Your Dataset",
             "body": "You can upload your csv dataset here.",
-            "position": {"top": "0px", "left": "0px", },
-            "highlight": "menu-dataset"
+            "top": "50px",
+            "left": "-500px",
+            "highlight": "menu-dataset",
+
         },
         {
             "title": "Chat with Your Dataset",
             "body": "Type your query here to interact with AI to know more about the bias in your dataset. RAG can be used to enhance the answer quality",
-            "position": {"top": "300px", "left": "0px"},
-            "highlight": "chat-box"
+            "top": "300px",
+            "left": "-300px",
+            "highlight": "chat-box",
         },
         {
             "title": "Customize the Prompts for Chat",
             "body": "You can edit the prompts here to make the chat more personalized and effective.",
-            "position": {"top": "50px", "left": "100px"},
-            "highlight": "menu-prompt"
+            "top": "50px",
+            "left": "50px",
+            "highlight": "menu-prompt",
         },
         {
             "title": "Check and Manipulate Your Dataset",
             "body": "You can check the uploaded dataset in the data view here and manipulate the table to edit your data. "
                     "You can save a edited dataset snapshot here and download the edited dataset.",
-            "position": {"top": "300px", "left": "100px"},
-            "highlight": "data-view"
+            "top": "300px",
+            "left": "100px",
+            "highlight": "data-view",
         },
         {
             "title": "Restore and Delete Dataset Snapshots",
             "body": "You can check the uploaded dataset here and manipulate the table to edit your data.",
-            "position": {"top": "100px", "left": "200px"},
-            "highlight": "snapshot-view"
+            "top": "100px",
+            "left": "300px",
+            "highlight": "snapshot-view",
         },
         {
             "title": "Evaluate Your Dataset",
             "body": "After editing your dataset, you can evaluate your dataset here to see if the bias is mitigated.",
-            "position": {"top": "300px", "left": "200px"},
-            "highlight": "evaluation-view"
+            "top": "300px",
+            "left": "300px",
+            "highlight": "evaluation-view",
         },
         {
             "title": "Modify Your Dataset With Python",
             "body": "You can modify your dataset with python code running in a safe sandbox here.",
-            "position": {"top": "500px", "left": "200px"},
-            "highlight": "code-view"
+            "top": "500px",
+            "left": "300px",
+            "highlight": "code-view",
         },
         {
             "title": "Get Your Dataset Report",
             "body": "You can analyze your dataset with BiasNavi and get a comprehensive report here.",
-            "position": {"top": "600px", "left": "100px"},
-            "highlight": "report-view"
+            "top": "600px",
+            "left": "0px",
+            "highlight": "report-view",
         },
     ]
 
@@ -113,7 +122,7 @@ def toggle_wizard(n_clicks_open, n_clicks_next, is_open, modal_style, menu_datas
             step = 0
             return (
                 True,
-                {**modal_style, **steps[step]["position"]},
+                {**modal_style, "top":steps[step]["top"],"left":steps[step]["left"]},
                 steps[step]["title"],
                 steps[step]["body"],
                 highlight_style if steps[step]["highlight"] == "menu-dataset" else base_styles["menu-dataset"],
@@ -134,7 +143,7 @@ def toggle_wizard(n_clicks_open, n_clicks_next, is_open, modal_style, menu_datas
             if step < len(steps):
                 return (
                     True,
-                    {**modal_style, **steps[step]["position"]},
+                    {**modal_style, "top":steps[step]["top"],"left":steps[step]["left"]},
                     steps[step]["title"],
                     steps[step]["body"],
                     highlight_style if steps[step]["highlight"] == "menu-dataset" else base_styles["menu-dataset"],

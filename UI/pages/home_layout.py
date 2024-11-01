@@ -38,7 +38,7 @@ def layout():
                 id="wizard-modal",
                 is_open=False,
                 backdrop=False,  # Allow interaction with the underlying page
-                style={"position": "absolute", "z-index": "1050", "color": "#614385"},  # Float above other elements
+                style={"position": "fixed !important", "z-index": "1500", "color": "#614385"},  # Float above other elements
             ),
             dcc.Store(id="base-styles", data={}),
             html.Div(id="overlay",
@@ -113,7 +113,7 @@ def layout():
 
             dbc.Modal(
                 [
-                    dbc.ModalHeader("Consulting Options"),
+                    dbc.ModalHeader("Exporting Options"),
                     dbc.ModalBody(
                         html.Div([
                             dcc.Dropdown(id='export-format-dropdown', options=[
@@ -126,6 +126,7 @@ def layout():
                         dcc.Download(id="export"), dbc.Button("Close", id="close", className="ml-auto")]),
                 ],
                 id="export-history-modal",
+                centered=True,
                 is_open=False,
             ),
 
@@ -186,6 +187,8 @@ def layout():
                                 toggleClassName="dropdown-toggle",
                                 className='menu-item'
                             ),
+                            dbc.NavLink("Prompts", id="menu-prompt", className='nav-item'),
+                            dbc.NavLink("User Profile", id="profile-edit-info-button", className='nav-item'),
                             dbc.DropdownMenu(
                                 [dbc.DropdownMenuItem("Wizard", id="menu-help-wizard"),
                                  dbc.DropdownMenuItem("Tutorial", id="menu-help-tutorial"), ],
@@ -195,9 +198,6 @@ def layout():
                                 className='menu-item',
                                 id="help-button"
                             ),
-                            dbc.NavLink("Prompts", id="menu-prompt", className='nav-item'),
-                            dbc.NavLink("User Profile", id="profile-edit-info-button", className='nav-item'),
-
                             dbc.DropdownMenu(
                                 [
                                     dbc.DropdownMenuItem(
