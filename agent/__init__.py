@@ -185,7 +185,7 @@ class DatasetAgent:
 
     def configure_chat_prompt(self):
         system_message_prompt = self.configure_system_msg_prompt()
-        user_message_prompt = self.configure_system_msg_prompt()
+        user_message_prompt = self.configure_user_msg_prompt()
         prompt = ChatPromptTemplate.from_messages(
             [
                 system_message_prompt,

@@ -191,7 +191,7 @@ def layout():
                             dbc.NavLink("User Profile", id="profile-edit-info-button", className='nav-item'),
                             dbc.DropdownMenu(
                                 [dbc.DropdownMenuItem("Wizard", id="menu-help-wizard"),
-                                 dbc.DropdownMenuItem("Tutorial", id="menu-help-tutorial"), ],
+                                 dbc.DropdownMenuItem("Tutorial", id="menu-help-tutorial", href="https://jayhuynh.github.io/biasnavi-website/"), ],
                                 label="Help",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",

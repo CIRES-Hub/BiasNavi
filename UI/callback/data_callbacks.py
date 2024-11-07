@@ -85,7 +85,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             False,
-            f"Dataset: {filename} (maximum row number:{len(global_vars.df)})",
+            f"Dataset: {filename} ({len(global_vars.df)} rows in total)",
             [{'ver': '1', 'desc': 'Original', 'time': formatted_date_time}],
             ['1'],
             False,
