@@ -7,7 +7,7 @@ from flask_login import current_user
 from dash import html, dcc, callback, Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 from utils.constant import DEFAULT_PERSONA_PROMPT
-
+from UI.variable import global_vars
 
 # Update Username
 @app.callback(
@@ -94,6 +94,7 @@ def update_survey_info(submit_clicks, skip_clicks, user_name, professional_role,
                                                                 ),
 
             db.session.commit()
+            global_vars.agent.update_agent_prompt()
             return '/home', 'Survey information updated!', False, True
         except Exception as e:
             db.session.rollback()

@@ -7,7 +7,8 @@ from langchain_core.messages.base import messages_to_dict
 import os
 from enum import Enum
 import json
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate, HumanMessagePromptTemplate, \
+    SystemMessagePromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables import ConfigurableField
 from agent.utils import create_pandas_dataframe_agent
@@ -47,6 +48,7 @@ def local_image_to_data_url(image_path):
     # Construct the data URL
     return f"data:{mime_type};base64,{base64_encoded_data}"
 
+
 # def pass_argument_next_questions_class(question1, question2):
 #     class NextQuestionFormat(BaseModel):
 #         response: str = Field(description="Answer to the user's query")
@@ -71,61 +73,10 @@ class DatasetAgent:
         self.elem_queue = []
         self.execution_error: list[Exception] = []
         self.list_commands: list[str] = []
+        self.file_name = file_name
         self.parser = PydanticOutputParser(pydantic_object=ResponseFormat)
-
-        multimodal_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", "You are a data analyst. Describe the image provided in detail and find some insights about bias. If there are potential biases, tell the user the ways to mitigate these biases."),
-                MessagesPlaceholder(variable_name="chat_history"),
-                (
-                    "user",
-                    [
-                        {
-                            "type": "text",
-                            "text": "{text}",
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": "{encoded_image_url}",
-                        },
-                    ],
-                ),
-            ]
-        )
-
-        user_prompt = PromptTemplate(
-            template ="""
-            "Please answer the my question: {input}. The response should be tailored to my background: {background} Ensure that your explanation is informative while understandable for me. To make your answer clearer and instructive, you can include examples and step-by-step instructions appropriate for my background. When you are asked to explain images, explain it!"
-            """,
-            input_variables=["input"],
-            partial_variables={"background": current_user.persona_prompt},
-        )
-        user_message_prompt = HumanMessagePromptTemplate(prompt=user_prompt)
-        system_prompt = PromptTemplate(
-            template="""          
-            
-            {custom_system_prompt}
-            {format_instructions}
-            {question_prompt}          
-            
-            """,
-            partial_variables={"format_instructions": self.parser.get_format_instructions(), "question_prompt": current_user.follow_up_questions_prompt_1,"custom_system_prompt": current_user.system_prompt}
-        )
-        # system_prompt = PromptTemplate(
-        #     template="""
-        #     {custom_system_prompt}
-        #     """,
-        #     partial_variables={"custom_system_prompt": current_user.system_prompt}
-        # )
-        system_message_prompt = SystemMessagePromptTemplate(prompt=system_prompt)
-        
-        self.prompt = ChatPromptTemplate.from_messages(
-            [
-                system_message_prompt,
-                MessagesPlaceholder(variable_name="chat_history"),
-                user_message_prompt
-            ]
-        )
+        multimodal_prompt = self.configure_multimodal_prompt()
+        self.prompt = self.configure_chat_prompt()
 
         self.agent = create_pandas_dataframe_agent(
             self.llm,
@@ -156,12 +107,93 @@ class DatasetAgent:
             history_messages_key="chat_history",
         )
 
-        self.file_name = file_name
-
         self.agent_with_trimmed_history = (
-            RunnablePassthrough.assign(messages_trimmed=self.trim_messages)
-            | self.agent_with_chat_history
+                RunnablePassthrough.assign(messages_trimmed=self.trim_messages)
+                | self.agent_with_chat_history
         )
+
+    def update_agent_prompt(self):
+        # invoked when the user changed their prompts or user profile.
+        prompt = self.configure_chat_prompt()
+        self.chain.first = prompt
+        self.history = self.agent_with_chat_history.get_session_history(self.session_id)
+        self.agent_with_chat_history = RunnableWithMessageHistory(
+            self.chain,
+            lambda session_id: self.history,
+            history_messages_key="chat_history",
+        )
+        self.agent_with_trimmed_history = (
+                RunnablePassthrough.assign(messages_trimmed=self.trim_messages)
+                | self.agent_with_chat_history
+        )
+
+    def configure_multimodal_prompt(self):
+        multimodal_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system",
+                 "You are a data analyst. Describe the image provided in detail and find some insights about bias. If there are potential biases, tell the user the ways to mitigate these biases."),
+                MessagesPlaceholder(variable_name="chat_history"),
+                (
+                    "user",
+                    [
+                        {
+                            "type": "text",
+                            "text": "{text}",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": "{encoded_image_url}",
+                        },
+                    ],
+                ),
+            ]
+        )
+        return multimodal_prompt
+
+    def configure_user_msg_prompt(self):
+        user_prompt = PromptTemplate(
+            template="""
+                    "Please answer the my question: {input}. The response should be tailored to my background: {background} Ensure that your explanation is informative while understandable for me. To make your answer clearer and instructive, you can include examples and step-by-step instructions appropriate for my background. When you are asked to explain images, explain it!"
+                    """,
+            input_variables=["input"],
+            partial_variables={"background": current_user.persona_prompt},
+        )
+        user_message_prompt = HumanMessagePromptTemplate(prompt=user_prompt)
+        return user_message_prompt
+
+    def configure_system_msg_prompt(self):
+        system_prompt = PromptTemplate(
+            template="""          
+
+                    {custom_system_prompt}
+                    {format_instructions}
+                    {question_prompt}          
+
+                    """,
+            partial_variables={"format_instructions": self.parser.get_format_instructions(),
+                               "question_prompt": current_user.follow_up_questions_prompt_1,
+                               "custom_system_prompt": current_user.system_prompt}
+        )
+        # system_prompt = PromptTemplate(
+        #     template="""
+        #     {custom_system_prompt}
+        #     """,
+        #     partial_variables={"custom_system_prompt": current_user.system_prompt}
+        # )
+        system_message_prompt = SystemMessagePromptTemplate(prompt=system_prompt)
+        return system_message_prompt
+
+    def configure_chat_prompt(self):
+        system_message_prompt = self.configure_system_msg_prompt()
+        user_message_prompt = self.configure_system_msg_prompt()
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                system_message_prompt,
+                MessagesPlaceholder(variable_name="chat_history"),
+                user_message_prompt
+            ]
+        )
+        return prompt
 
     def trim_messages(self, trimmed_message):
         # store the most recent 20 messages
@@ -173,18 +205,17 @@ class DatasetAgent:
             self.history.add_message(message)
         return True
 
-    def describe_image(self, query,image_data):
+    def describe_image(self, query, image_data):
         # image_url = "./UI/assets/cat.jpg"
         # image_data = local_image_to_data_url(image_url)
         result = self.multimodal_chain_with_history.with_config(
-                configurable={"session_id": self.session_id}).invoke({"text":query, "encoded_image_url": image_data})
+            configurable={"session_id": self.session_id}).invoke({"text": query, "encoded_image_url": image_data})
         return result
 
     def run(self, text):
         self.elem_queue.clear()
         self.execution_error.clear()
         self.list_commands.clear()
-
 
         if self.model_name == "gpt-4-turbo":
             result = self.agent_with_trimmed_history.with_config(
@@ -208,8 +239,8 @@ class DatasetAgent:
             self.execution_error.append(e)
             result = result['output']
             return result, self.elem_queue, suggestions
-        
-         # Improve table removal logic
+
+        # Improve table removal logic
         table_pattern = r'(?s)\|.*?\|\n\|[-:]+\|\n(.*?)\n\n'
         result = re.sub(table_pattern, '', result)
 
@@ -313,23 +344,23 @@ class DatasetAgent:
         self.history.add_message(SystemLogMessage(content=message))
         self.persist_history(persistence_type=persistence_type,
                              c_format=c_format, path=path)
-    
+
     def persist_commands(self,
                          message,
                          persistent_type: PersistenceType = PersistenceType.DATABASE,
                          c_format: ConversationFormat = ConversationFormat.SIMPLIFIED_JSON,
                          path: str = 'histories'):
         self.history.add_message(AssistantLogMessage(content=message))
-        
+
         if not os.path.exists(path):
             os.makedirs(path)
         if persistent_type == PersistenceType.DATABASE and c_format == ConversationFormat.TEXT:
             raise TypeError(
                 "Only JSON-like conversations can be written to the database")
-            
+
         history = json.dumps(self._get_simplified_history())
         extension = '.json'
-        
+
         if persistent_type == PersistenceType.FILE:
             with open(os.path.join(path, str(self.session_id) + extension), 'w') as f:
                 f.write(history)

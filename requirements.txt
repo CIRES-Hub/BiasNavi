@@ -4,9 +4,9 @@ dash_daq==0.5.0
 dash_editor_components==0.0.2
 dcor==0.6
 docker_py==1.10.6
-Flask==1.1.2
+Flask==2.2.5  # Updated to meet flask-sqlalchemy requirements
 Flask_Login==0.6.3
-flask_sqlalchemy==3.1.1
+flask_sqlalchemy==3.1.1  # Updated to match Flask version
 langchain==0.3.3
 langchain_chroma==0.1.4
 langchain_community==0.3.2
@@ -28,4 +28,4 @@ scipy==1.13.0
 seaborn==0.13.2
 setuptools==68.2.2
 SQLAlchemy==2.0.31
-Werkzeug==2.0.3
+Werkzeug>=2.2.3  # Ensure compatibility with Flask 2.2.5
