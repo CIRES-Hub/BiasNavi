@@ -14,6 +14,7 @@ from utils.constant import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, 
 import ast
 from UI.pages.components.survey_modal import survey_modal
 
+
 dash.register_page(__name__, path='/home/', title='Home')
 
 
@@ -90,9 +91,9 @@ def layout():
                 ],
                 id="upload-modal",
                 is_open=True,
-                centered=True,  # This ensures the modal is centered
+                centered=True,
                 style={
-                    "boxShadow": "0 2px 4px 0 rgba(0, 0, 0, 0.2);"
+                    "boxShadow": "0 2px 4px 0 rgba(0, 0, 0, 0.2);",
                 }
             ),
             dbc.Modal(
@@ -110,7 +111,22 @@ def layout():
                 backdrop_class_name="backdrop-survey-modal",
                 content_class_name="content-survey-modal"
             ),
-
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle("Dataset Summary"), close_button=True),
+                    dbc.ModalBody(children=html.Div(id="data-summary-body")),
+                    dbc.ModalFooter(
+                        dbc.Button("Close", id="data-summary-close", className="ml-auto")
+                    ),
+                ],
+                id="data-summary-modal",
+                is_open=False,
+                centered=True,
+                size="xl",
+                style={
+                    "boxShadow": "0 2px 4px 0 rgba(0, 0, 0, 0.2);",
+                }
+            ),
             dbc.Modal(
                 [
                     dbc.ModalHeader("Exporting Options"),
@@ -380,8 +396,10 @@ def layout():
                                       style={'margin': '10px', 'width': '10%'}),
                             html.Button('Show Rows', id='show-rows-button',
                                         className='primary-button', style={'margin': '10px'}),
+                            html.Button('Dataset Summary', id='data-summary-button',
+                                        n_clicks=0, className='primary-button', style={'margin': '10px'}),
                             html.Button('Save Snapshot', id='open-modal-button',
-                                        n_clicks=0, className='primary-button'),
+                                        n_clicks=0, className='primary-button', style={'margin': '10px'}),
                             html.Button('Download Data', id='download-data-button',
                                         n_clicks=0, className='primary-button', style={'marginLeft': '10px'}),
                             dcc.Download(id='download-data-csv'),

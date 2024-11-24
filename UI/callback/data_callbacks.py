@@ -17,7 +17,7 @@ from dash.dash_table.Format import Format, Scheme
 from UI.functions import query_llm
 import time
 import random
-
+import pandas as pd
 
 
 @app.callback(
@@ -38,14 +38,15 @@ import random
      Input('upload-data-modal', 'contents'),
      Input('show-rows-button', 'n_clicks')],
     [State('upload-data', 'filename'),
-    State('upload-data-modal', 'filename'),
+     State('upload-data-modal', 'filename'),
      State('input-start-row', 'value'),
      State('input-end-row', 'value'),
      State('snapshot-table', 'data'),
      ],
     prevent_initial_call=True,
 )
-def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_clicks, list_of_names, list_of_names_modal, start_row, end_row, snapshot_data):
+def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_clicks, list_of_names, list_of_names_modal,
+                                 start_row, end_row, snapshot_data):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
     if triggered_id == 'upload-data' or triggered_id == 'upload-data-modal':
         if triggered_id == 'upload-data':
@@ -79,7 +80,8 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         # global_vars.df = DataWrangler.fill_missing_values(raw_data)
         global_vars.df = raw_data  # DataWrangler.fill_missing_values(raw_data)
         global_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
-        global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name, conversation_session=global_vars.conversation_session)
+        global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name,
+                                         conversation_session=global_vars.conversation_session)
         return (
             global_vars.df.to_dict('records'),
             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
@@ -128,7 +130,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             ""
         )
 
-    return [], [], [], False, "", [], [], dash.no_update, dash.no_update,""
+    return [], [], [], False, "", [], [], dash.no_update, dash.no_update, ""
 
 
 @app.callback(
@@ -142,7 +144,6 @@ def toggle_snapshot_modal(open_click, close_click, save_click, is_open):
     if open_click or close_click or save_click:
         return not is_open
     return is_open
-
 
 
 @app.callback(
@@ -188,7 +189,6 @@ def delete_snapshot(n_clicks, selected_rows, snapshots):
     return dash.no_update, dash.no_update
 
 
-
 @app.callback(
     Output('table-overview', 'columns', allow_duplicate=True, ),
     Output('table-overview', 'data', allow_duplicate=True, ),
@@ -206,7 +206,6 @@ def restore_data_snapshot(n_clicks, selected_rows):
     return dash.no_update, dash.no_update
 
 
-
 @app.callback(
     Output('download-data-csv', 'data'),
     [Input('download-data-button', 'n_clicks')],
@@ -220,7 +219,6 @@ def download_csv(n_clicks, rows):
         formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
         return dcc.send_data_frame(df.to_csv, f'{formatted_date_time}_edited_{global_vars.file_name}')
     return None
-
 
 
 @app.callback(
@@ -284,7 +282,7 @@ def update_model_dropdown(selected_task):
     Output('eval-res', 'children'),
     Output('fairness-scores', 'children'),
     Output('eval-explanation', 'children'),
-    Input('eval-button','n_clicks'),
+    Input('eval-button', 'n_clicks'),
     State('dataset-selection', 'value'),
     State('sensi-attr-selection', 'value'),
     State('label-selection', 'value'),
@@ -298,20 +296,24 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
         return html.P('The label cannot be in the sensitive attributes!', style={"color": "red"}), [], [], []
     if data[label].dtype in ['float64', 'float32'] and task == 'Classification':
         return html.P('The target attribute is continuous (float) but the task is set to classification. '
-                      'Consider binning the target or setting the task to regression.',style={"color": "red"}), [], [], []
+                      'Consider binning the target or setting the task to regression.',
+                      style={"color": "red"}), [], [], []
     if data[label].dtype == 'object' or data[label].dtype.name == 'bool' or data[label].dtype.name == 'category':
         if task == 'Regression':
-            return html.P('The target attribute is categorical and cannot be used for regression task.',style={"color": "red"}), [], [], []
-    de = DatasetEval(data,label,ratio=0.2,task_type=task,sensitive_attribute=sens_attr,model_type=model)
+            return html.P('The target attribute is categorical and cannot be used for regression task.',
+                          style={"color": "red"}), [], [], []
+    de = DatasetEval(data, label, ratio=0.2, task_type=task, sensitive_attribute=sens_attr, model_type=model)
     res, scores = de.train_and_test()
     tables = []
-    for tid,frame in enumerate(scores):
+    for tid, frame in enumerate(scores):
         tables.append(dash_table.DataTable(
             id=f'table-{tid + 1}',
             columns=[
                 {
                     'name': col, 'id': col, 'type': 'numeric',
-                    'format': Format(precision=0, scheme=Scheme.fixed) if frame[col].dtype in ['int64','O'] else Format(precision=4, scheme=Scheme.fixed)
+                    'format': Format(precision=0, scheme=Scheme.fixed) if frame[col].dtype in ['int64',
+                                                                                               'O'] else Format(
+                        precision=4, scheme=Scheme.fixed)
                 }
                 for col in frame.columns
             ],
@@ -322,7 +324,7 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
                           'color': 'white',
                           'fontWeight': 'bold'
                           },
-            style_table={'overflowX': 'auto', 'marginTop': '20px', 'marginLeft':'0px'},  # Add margin here
+            style_table={'overflowX': 'auto', 'marginTop': '20px', 'marginLeft': '0px'},  # Add margin here
             style_data_conditional=[
                 {
                     'if': {'row_index': 'odd'},
@@ -342,27 +344,27 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
         ))
     if task == 'Classification':
         tooltip = html.Div([
-                    html.Div([
-                        html.H5("Results", style={'paddingLeft': 0}),
-                        html.Span(
-                            html.I(className="fas fa-question-circle"),
-                            id="tooltip-eval",
-                            style={
-                                "fontSize": "20px",
-                                "color": "#aaa",
-                                "cursor": "pointer",
-                                "marginLeft": "5px",
-                                "alignSelf": "center"
-                            }
-                        )
-                    ], style={"display": "flex", "alignItems": "center","justifyContent": "space-between","width": "100%"}),
-                    dbc.Tooltip(
-                        "The figures in the table represent the average predicted probability that the subgroup is classified "
-                        "into the corresponding category. The disparity score is calculated as the difference between "
-                        "the maximum and minimum values in each column. A larger score indicates a higher degree of potential bias.",
-                        target="tooltip-eval",
-                    ),
-                ])
+            html.Div([
+                html.H5("Results", style={'paddingLeft': 0}),
+                html.Span(
+                    html.I(className="fas fa-question-circle"),
+                    id="tooltip-eval",
+                    style={
+                        "fontSize": "20px",
+                        "color": "#aaa",
+                        "cursor": "pointer",
+                        "marginLeft": "5px",
+                        "alignSelf": "center"
+                    }
+                )
+            ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between", "width": "100%"}),
+            dbc.Tooltip(
+                "The figures in the table represent the average predicted probability that the subgroup is classified "
+                "into the corresponding category. The disparity score is calculated as the difference between "
+                "the maximum and minimum values in each column. A larger score indicates a higher degree of potential bias.",
+                target="tooltip-eval",
+            ),
+        ])
     else:
         tooltip = html.Div([
             html.Div([
@@ -387,14 +389,14 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
             ),
         ])
     res_explanation = [
-        html.Div(id="dataset_result_explanation", style={"marginTop":"20px"}),
+        html.Div(id="dataset_result_explanation", style={"marginTop": "20px"}),
     ]
-    return [html.Hr(), tooltip,], res, tables, res_explanation
+    return [html.Hr(), tooltip, ], res, tables, res_explanation
 
 
 @app.callback(
     Output('dataset_result_explanation', 'children'),
-    Input('eval-button','n_clicks'),
+    Input('eval-button', 'n_clicks'),
     Input('eval-res', 'children'),
     Input('fairness-scores', 'children'),
     State('sensi-attr-selection', 'value'),
@@ -409,4 +411,73 @@ def explain_dataset_evaluation(n_clicks, acc, data, sens_attr, label, task, mode
     )
     query = f"Assess the bias level in the dataset using the following results: {data_string}. The model accuracy is {acc}. These results were generated by executing the {task} task with the {model} model. The analysis centers on the sensitive attributes {sens_attr}, with {label} serving as the target attribute. The objective is to identify and minimize disparities among subgroups of the sensitive attributes without sacrificing accuracy."
     answer, media, suggestions = query_llm(query, current_user.id)
-    return [html.H5("Analysis"),dcc.Markdown(answer,className="chart-explanation")]
+    return [html.H5("Analysis"), dcc.Markdown(answer, className="chart-explanation")]
+
+
+@app.callback(
+    Output("data-summary-modal", "is_open"),
+    Output("data-summary-body", "children"),
+    Input("data-summary-button", "n_clicks"),
+    Input("data-summary-close", "n_clicks"),
+    State("data-summary-modal", "is_open"),
+    prevent_initial_call=True
+)
+def display_data_summary(n1, n2, is_open):
+    if global_vars.df is not None:
+        # Summarize the DataFrame and include column names as the first column
+        summary = summarize_dataframe(global_vars.df)
+        summary.reset_index(inplace=True)  # Turn column names into a column
+        summary.rename(columns={"index": "Column Name"}, inplace=True)
+
+        # Ensure serializable
+        summary = summary.fillna("").astype(str)
+
+        # Define the DataTable
+        table = dash_table.DataTable(
+            columns=[
+                {"name": col, "id": col} for col in summary.columns
+            ],
+            data=summary.to_dict("records"),  # Ensure serializable
+            style_cell={"textAlign": "center", "fontFamily": "Arial"},
+            style_header={"backgroundColor": "#614385", "color": "white", "fontWeight": "bold"},
+            style_table={"overflowX": "auto", "marginTop": "20px", "marginLeft": "0px"},
+            style_data_conditional=[
+                {"if": {"row_index": "odd"}, "backgroundColor": "#f2f2f2"},
+                {"if": {"row_index": "even"}, "backgroundColor": "white"},
+            ]
+        )
+
+        # Toggle modal and return table
+        if n1 or n2:
+            return not is_open, table
+
+    return is_open, []
+
+def summarize_dataframe(df):
+    """
+    Summarizes a pandas DataFrame by providing:
+    - Column names and data types
+    - Number of missing values
+    - Number of unique values
+    - Basic descriptive statistics for numerical and categorical columns
+    """
+    summary = pd.DataFrame({
+        "Data Type": df.dtypes.astype(str),  # Convert dtype to string
+        "Missing Values": df.isnull().sum(),
+        "Unique Values": df.nunique(),
+    })
+
+    # Add numerical column statistics
+    numerical_summary = df.describe().T
+    numerical_summary = numerical_summary[["mean", "std", "min", "25%", "50%", "75%", "max"]]
+    summary = summary.join(numerical_summary, how="left")
+
+    # Add categorical column statistics
+    categorical_summary = pd.DataFrame({
+        "Top Value": df.select_dtypes(include=["object", "category"]).mode().iloc[0],
+        "Top Frequency": df.select_dtypes(include=["object", "category"]).apply(lambda col: col.value_counts().iloc[0]),
+    })
+    summary = summary.join(categorical_summary, how="left")
+
+    return summary
+
