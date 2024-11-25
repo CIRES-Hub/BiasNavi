@@ -113,13 +113,13 @@ def layout():
             ),
             dbc.Modal(
                 [
-                    dbc.ModalHeader(dbc.ModalTitle("Dataset Summary"), close_button=True),
-                    dbc.ModalBody(children=html.Div(id="data-summary-body")),
+                    dbc.ModalHeader(dbc.ModalTitle("Dataset Statistics"), close_button=True),
+                    dbc.ModalBody(children=html.Div(id="data-stat-body")),
                     dbc.ModalFooter(
-                        dbc.Button("Close", id="data-summary-close", className="ml-auto")
+                        dbc.Button("Close", id="data-stat-close", className="ml-auto")
                     ),
                 ],
-                id="data-summary-modal",
+                id="data-stat-modal",
                 is_open=False,
                 centered=True,
                 size="xl",
@@ -396,7 +396,7 @@ def layout():
                                       style={'margin': '10px', 'width': '10%'}),
                             html.Button('Show Rows', id='show-rows-button',
                                         className='primary-button', style={'margin': '10px'}),
-                            html.Button('Dataset Summary', id='data-summary-button',
+                            html.Button('Dataset Statistics', id='data-stat-button',
                                         n_clicks=0, className='primary-button', style={'margin': '10px'}),
                             html.Button('Save Snapshot', id='open-modal-button',
                                         n_clicks=0, className='primary-button', style={'margin': '10px'}),

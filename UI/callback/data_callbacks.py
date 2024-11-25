@@ -415,11 +415,11 @@ def explain_dataset_evaluation(n_clicks, acc, data, sens_attr, label, task, mode
 
 
 @app.callback(
-    Output("data-summary-modal", "is_open"),
-    Output("data-summary-body", "children"),
-    Input("data-summary-button", "n_clicks"),
-    Input("data-summary-close", "n_clicks"),
-    State("data-summary-modal", "is_open"),
+    Output("data-stat-modal", "is_open"),
+    Output("data-stat-body", "children"),
+    Input("data-stat-button", "n_clicks"),
+    Input("data-stat-close", "n_clicks"),
+    State("data-stat-modal", "is_open"),
     prevent_initial_call=True
 )
 def display_data_summary(n1, n2, is_open):
@@ -431,7 +431,10 @@ def display_data_summary(n1, n2, is_open):
 
         # Ensure serializable
         summary = summary.fillna("").astype(str)
-
+        total_missing = global_vars.df.isnull().sum().sum()
+        total_values = global_vars.df.size
+        missing_rate = (total_missing / total_values) * 100
+        desc = f"This dataset comprises {global_vars.df.shape[0]} rows and {global_vars.df.shape[1]} columns. with an overall missing rate {missing_rate:.2f}%. "
         # Define the DataTable
         table = dash_table.DataTable(
             columns=[
@@ -449,7 +452,7 @@ def display_data_summary(n1, n2, is_open):
 
         # Toggle modal and return table
         if n1 or n2:
-            return not is_open, table
+            return not is_open, [desc,table]
 
     return is_open, []
 
