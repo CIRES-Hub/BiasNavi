@@ -37,7 +37,7 @@ class RAG(object):
                 | prompt)
 
     def invoke(self, query):
-        return self.rag_chain.invoke(query).to_messages()[0].content
+        return self.rag_chain.invoke(query)
 
     def clean(self):
         self.vectorstore.delete_collection()

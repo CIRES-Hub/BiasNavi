@@ -1,6 +1,7 @@
 from UI.app import app
-from dash import html, dcc, Input, Output, ClientsideFunction, State
-
+from dash import html, dcc, Input, Output, ClientsideFunction, State, Input, Output, MATCH
+import dash_bootstrap_components as dbc
+import json
 # Enable automatically scrolling down of the chat box
 app.clientside_callback(
     """
@@ -25,3 +26,14 @@ app.clientside_callback(
     Input('menu-import-data', 'n_clicks')
 )
 
+# callback for showing a spinner within dbc.Button()
+app.clientside_callback(
+    """
+    function (click) {
+        return [""" + json.dumps(dbc.Spinner(size='sm').to_plotly_json()) + """, " Running..."]
+    }
+    """,
+    Output({'type': 'spinner-btn', 'index': MATCH}, 'children'),
+    Input({'type': 'spinner-btn', 'index': MATCH}, 'n_clicks'),
+    prevent_initial_call=True
+)

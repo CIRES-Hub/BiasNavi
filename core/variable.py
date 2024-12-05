@@ -1,6 +1,7 @@
 from agent import DatasetAgent
 import time
 
+
 class Variables(object):
     def __init__(self):
         self.df = None
@@ -13,5 +14,7 @@ class Variables(object):
         self.suggested_questions = None
         self.data_snapshots = []
         self.conversation_session = None
+        self.current_stage = "Identify"
+
 
 global_vars = Variables()

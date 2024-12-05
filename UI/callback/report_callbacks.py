@@ -1,9 +1,8 @@
 from UI.app import app
 from dash.dependencies import Input, Output, State
 from dash import dcc, html, dash_table
-from UI.variable import global_vars
 from UI.functions import *
-from dash import callback_context, MATCH, ALL, ctx
+from dash import MATCH
 import plotly.io as pio
 import base64
 from flask_login import current_user
@@ -33,7 +32,7 @@ def generate_bias_report(target, styles):
             Please format your output as follows: list the sensitive attributes separated by commas, followed by a period. 
             Then, provide an explanation of why these attributes are considered sensitive.
             """
-    answer, media, suggestions = query_llm(query, current_user.id)
+    answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
 
     if not sensitive_attrs:
         return [], html.P(["No sensitive attributes are detected."]), [], [], styles
@@ -142,5 +141,5 @@ def explain_report_table(n_clicks, tb):
             [f"Row {i + 1}: {row}" for i, row in enumerate(tb)]
         )
         query = f"Explain this table data {data_string} given the distance metric in the table header. The distance figure is calculated by comparing the distribution of the subgraph with the distribution of all."
-        answer, media, suggestions = query_llm(query, current_user.id)
+        answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
         return dcc.Markdown(answer, className="chart-explanation"), {"display": "block"}

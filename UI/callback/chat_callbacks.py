@@ -17,12 +17,14 @@ from UI.functions import query_llm
 
 @app.callback(
     [Output("query-area", "children"),
-     Output("error-export", "is_open", allow_duplicate=True),
+     Output("error-alert", "is_open", allow_duplicate=True),
      Output('llm-media-area', 'children'),
      Output("chat-update-trigger", "data"),
      Output("next-suggested-questions", "children"),
      Output("commands-input", "value"),
-     Output('query-input', 'value')],
+     Output('query-input', 'value'),
+     Output("pipeline-alert", "is_open"),
+     Output("pipeline-slider", "value"),],
     [Input('send-button', 'n_clicks'),
      Input('query-input', 'n_submit'),
      Input({"type": 'next-suggested-question', "index": ALL}, 'n_clicks')],
@@ -35,13 +37,13 @@ from UI.functions import query_llm
 def update_messages(n_clicks, n_submit, question_clicked, input_text, query_records, suggested_questions):
     if not input_text and not question_clicked:
         #no input information provided
-        return query_records, True, None, dash.no_update, suggested_questions, "", ""
+        return query_records, True, None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
     if n_clicks is None and question_clicked is None:
         # no controls clicked
-        return query_records, True, None, dash.no_update, suggested_questions, "", ""
+        return query_records, True, None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
     if global_vars.df is None:
         # no dataset loaded
-        return query_records, True, None, dash.no_update, suggested_questions, "", ""
+        return query_records, True, None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
     trigger = ctx.triggered_id
     query = ''
     if not isinstance(trigger, str) and 'next-suggested-question' in trigger.type:
@@ -56,8 +58,14 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
     if global_vars.rag and global_vars.use_rag:
         input_text = global_vars.rag.invoke(query)
         global_vars.rag_prompt = query
-    output_text, media, new_suggested_questions = query_llm(query, current_user.id)
-
+    output_text, media, new_suggested_questions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+    print(stage)
+    change_stage = False
+    stages = ["Identify","Measure","Surface","Adapt"]
+    if stage is not None and stage in stages:
+        if stage != global_vars.current_stage:
+            global_vars.current_stage = stage
+            change_stage = True
     if new_suggested_questions is not None:
         for i in range(len(new_suggested_questions)):
             if new_suggested_questions[i]:
@@ -77,9 +85,9 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
     list_commands = global_vars.agent.list_commands
     if not media:
         return query_records, False, dash.no_update, time.time(), suggested_questions, ('\n').join(list_commands) if len(
-            list_commands) > 0 else "", ""
+            list_commands) > 0 else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update
     return query_records, False, media, time.time(), suggested_questions, ('\n').join(list_commands) if len(
-        list_commands) > 0 else "", ""
+        list_commands) > 0 else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update
 
 
 @app.callback(
@@ -171,8 +179,11 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
         if not rag_output:
             return html.Div([""])
         if global_vars.rag and global_vars.use_rag:
-            global_vars.rag_prompt = global_vars.rag.invoke(query)
-        rag_output.append(html.Div(["RAG enhanced prompt: " + global_vars.rag_prompt]))
+            message = global_vars.rag.invoke(query)
+            output_text, media, new_suggested_questions, stage = query_llm(message, global_vars.current_stage, current_user.id)
+
+
+        rag_output.append(html.Div(["RAG enhanced prompt: " + output_text]))
         global_vars.rag_prompt = None
         return rag_output
 

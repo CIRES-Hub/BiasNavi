@@ -475,7 +475,7 @@
     margin-top: 8px;
 }
 
-.profile-edit-info-button {
+.menu-profile {
     background-color: #614385;
     color: #ffffff;
     border: none;
@@ -663,4 +663,18 @@
 .content-survey-modal {
     background-color: transparent;
     border: none;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: white;
+    padding: 10px;
+}
+
+#pipeline-slider .rc-slider-track {
+    background-color: #614385; /* Change track color */
+}
+
+#pipeline-slider .rc-slider-handle {
+    background-color: white; /* Change marker color */
+    border-color: #614385;
 }

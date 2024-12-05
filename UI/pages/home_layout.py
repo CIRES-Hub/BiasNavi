@@ -14,8 +14,9 @@ from utils.constant import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, 
 import ast
 from UI.pages.components.survey_modal import survey_modal
 
-
 dash.register_page(__name__, path='/home/', title='Home')
+
+pipeline_stages = ["Identify", "Measure", "Surface", "Adapt"]
 
 
 def layout():
@@ -39,7 +40,8 @@ def layout():
                 id="wizard-modal",
                 is_open=False,
                 backdrop=False,  # Allow interaction with the underlying page
-                style={"position": "fixed !important", "z-index": "1500", "color": "#614385"},  # Float above other elements
+                style={"position": "fixed !important", "z-index": "1500", "color": "black"},
+                # Float above other elements
             ),
             dcc.Store(id="base-styles", data={}),
             html.Div(id="overlay",
@@ -114,9 +116,13 @@ def layout():
             dbc.Modal(
                 [
                     dbc.ModalHeader(dbc.ModalTitle("Dataset Statistics"), close_button=True),
-                    dbc.ModalBody(children=html.Div(id="data-stat-body")),
-                    dbc.ModalFooter(
-                        dbc.Button("Close", id="data-stat-close", className="ml-auto")
+                    dbc.ModalBody(children=[html.Div(id="data-stat-body"),
+                                            html.Div(id="data-stat-summary", style={"marginTop": "20px"})
+                                            ]),
+                    dbc.ModalFooter(children=[
+                        dbc.Button("Analyze", id={'type': 'spinner-btn', 'index': 1}, className="ml-auto",
+                                   style={"marginLeft": "20px"}),
+                        dbc.Button("Close", id="data-stat-close", className="ml-auto")]
                     ),
                 ],
                 id="data-stat-modal",
@@ -146,6 +152,25 @@ def layout():
                 is_open=False,
             ),
 
+            dbc.Modal(
+                [
+                    dbc.ModalHeader("Choose a Question"),
+                    dbc.ModalBody(
+                        dcc.Dropdown(
+                            id="question-modal-list",
+                            placeholder="Choose a question",
+                        )
+                    ),
+                    dbc.ModalFooter([
+                        dbc.Button("Choose", id="question-modal-choose-btn", className="ms-auto", n_clicks=0),
+                        dbc.Button("Close", id="question-modal-close-btn", className="ms-auto", n_clicks=0)]
+                    ),
+                ],
+                id="question-modal",
+                is_open=False,  # Initially not open
+                centered=True,
+            ),
+
             # =======================================================
             # banner and menu bar layout
             dbc.Row(justify="center", align="center", children=[
@@ -173,7 +198,8 @@ def layout():
                                 label="Export",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
-                                className='menu-item'
+                                className='menu-item',
+                                id="menu-export",
                             ),
                             # dbc.DropdownMenu(
                             #     [dbc.DropdownMenuItem("Predefined Prompt 1"),
@@ -191,7 +217,8 @@ def layout():
                                 label="LLM Models",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
-                                className='menu-item'
+                                className='menu-item',
+                                id="menu-model",
                             ),
                             dbc.DropdownMenu(
                                 [dbc.DropdownMenuItem("Hide ChatBox", id="menu-hide-chatbox"),
@@ -201,18 +228,20 @@ def layout():
                                 label="View",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
-                                className='menu-item'
+                                className='menu-item',
+                                id = "menu-view",
                             ),
                             dbc.NavLink("Prompts", id="menu-prompt", className='nav-item'),
-                            dbc.NavLink("User Profile", id="profile-edit-info-button", className='nav-item'),
+                            dbc.NavLink("User Profile", id="menu-profile", className='nav-item'),
                             dbc.DropdownMenu(
                                 [dbc.DropdownMenuItem("Wizard", id="menu-help-wizard"),
-                                 dbc.DropdownMenuItem("Tutorial", id="menu-help-tutorial", href="https://jayhuynh.github.io/biasnavi-website/"), ],
+                                 dbc.DropdownMenuItem("Tutorial", id="menu-help-tutorial",
+                                                      href="https://jayhuynh.github.io/biasnavi-website/"), ],
                                 label="Help",
                                 nav=True,
                                 toggleClassName="dropdown-toggle",
                                 className='menu-item',
-                                id="help-button"
+                                id="menu-help"
                             ),
                             dbc.DropdownMenu(
                                 [
@@ -240,17 +269,7 @@ def layout():
                          html.H4("Prompt for Handling Dataset"),
                          dcc.Textarea(rows=7, id="prefix-prompt-input", className="mb-4 prompt-input p-2",
                                       value=current_user.prefix_prompt),
-                         html.Div([html.H4("Prompt for Enhancing Personalization"), html.Span(
-                             html.I(className="fas fa-question-circle"),
-                             id="tooltip-snapshot",
-                             style={
-                                 "fontSize": "20px",
-                                 "color": "#aaa",
-                                 "cursor": "pointer",
-                                 "marginLeft": "5px",
-                                 "alignSelf": "center"
-                             }
-                         )], style={"display": "flex", "justifyContent": "space-between"}),
+                         html.H4("Prompt for Enhancing Personalization"),
                          dcc.Textarea(rows=8, id="persona-prompt-input", className="mb-4 prompt-input p-2",
                                       value=current_user.persona_prompt),
                          html.H4("Prompt for Generating Follow-up Questions"),
@@ -259,18 +278,13 @@ def layout():
                          # html.H4("Prompt for Generating Follow-up Questions 2"),
                          # dcc.Textarea(rows=2, id="next-question-input-2", className="mb-4 prompt-input p-2",
                          #              value=current_user.follow_up_questions_prompt_2),
-                         dcc.Loading(id="update-prompt-loading", children=html.Div(children=[
+                         html.Div(children=[
                              dbc.Button("Reset Default", id="reset-prompt-button", className="prompt-button",
                                         n_clicks=0),
-                             dbc.Button("Save", id="update-prompt-button", className="prompt-button", n_clicks=0),
+                             dbc.Button("Save", id={'type': 'spinner-btn', 'index': 2}, className="prompt-button",
+                                        n_clicks=0),
                              dbc.Button("Home", id="return-home-button", className="prompt-button", n_clicks=0),
                          ], className="save-button"),
-                                     ),
-
-                         # dbc.Tooltip(
-                         #     "{{}} matches the field of the user information",
-                         #     target="tooltip-snapshot",
-                         # )
                      ],
                      className="prompt-card p-4", style={"display": "none"}),
 
@@ -280,13 +294,12 @@ def layout():
                 dbc.Col(width=3, id="left-column", children=[
                     dbc.Card(children=[
                         html.Div(id="output-placeholder"),
-                        dbc.Toast(
+                        dbc.Alert(
                             "Only the csv file is supported currently",
                             id="error-file-format",
-                            header="Reminder",
                             is_open=False,
                             dismissable=True,
-                            icon="danger",
+                            color="danger",
                             duration=4000,
                         ),
                         dcc.Upload(
@@ -301,12 +314,68 @@ def layout():
                         )], className='card', style={"display": "none"}),
                     dcc.Store(id="username-edit-success", data=False),
                     dcc.Store(id="survey-edit-success", data=False),
+
+                    dbc.Card(id="pipeline-card",children=[
+
+                        # Chat display area
+                        html.Div([
+                            html.H4("Bias Management Pipeline", className="secondary-title"),
+                            html.Span(
+                                html.I(className="fas fa-question-circle"),
+                                id="tooltip-pipeline",
+                                style={
+                                    "fontSize": "20px",
+                                    "color": "#aaa",
+                                    "cursor": "pointer",
+                                    "marginLeft": "5px",
+                                    "alignSelf": "center"
+                                }
+                            )
+                        ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                                  "width": "100%"}),
+                        dbc.Tooltip(
+                            "You can manually choose the stage or let the AI assistant to proceed to the next stage. "
+                            "The current stage is critical in content generation. The explanation of each stage is as "
+                            "follows. Identify: Detect potential bias or fairness issues in the dataset or system. "
+                            "Measure: Quantify the magnitude of detected biases using appropriate metrics. Surface: "
+                            "Present the identified biases clearly and effectively to the user. Adapt: Provide "
+                            "actionable tools or methods for mitigating biases based on user preferences.",
+                            target="tooltip-pipeline",
+                        ),
+                        html.Div(
+                            dcc.Slider(
+                                id='pipeline-slider',
+                                min=0,
+                                max=len(pipeline_stages) - 1,
+                                step=1,
+                                marks={i: {"label": stage, 'style': {'font-size': '16px'}} for i, stage in
+                                       enumerate(pipeline_stages)},
+                                value=0,  # Default to the first stage
+                            ),
+                            style={"margin": "20px"}
+                        ),
+                        html.Div(
+                            dbc.Alert(
+                                f"The pipeline has proceeded to a new stage.",
+                                id="pipeline-alert",
+                                is_open=False,
+                                dismissable=True,
+                                color="primary",
+                                duration=4000,
+                            ),
+                        )
+
+                    ], className='card', style={"padding": "10px"}),
+
                     dbc.Card(id="chat-box", children=[
                         html.Div([
-                            # Chat display area
+
                             html.Div([
-                                html.H4("Chat with BiasNavi", className="secondary-title")
-                            ], className="query-header"),
+                                html.H4("Chat with BiasNavi", className="secondary-title"),
+                                html.Button(id="common-question-btn", children="Common Questions",
+                                            style={"backgroundColor": "white", "color": "grey", "border": "none"}, )
+                            ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                                      "width": "100%"}),
                             dcc.Loading(
                                 id="loading-1",
                                 children=[
@@ -314,13 +383,12 @@ def layout():
                                 # dcc.Textarea(id='query-area', className='query-area', readOnly=True)],
                                 type="default",  # Choose from "graph", "cube", "circle", "dot", or "default"
                             ),
-                            dbc.Toast(
+                            dbc.Alert(
                                 "Forget to import a dataset or enter a query?",
-                                id="error-export",
-                                header="Reminder",
+                                id="error-alert",
                                 is_open=False,
                                 dismissable=True,
-                                icon="danger",
+                                color="danger",
                                 duration=4000,
                             ),
                             # generated follow-up questions
@@ -389,7 +457,6 @@ def layout():
                 dbc.Col(width=6, id="middle-column", children=[
                     dbc.Card(body=True, id='data-view', className='card', children=[
                         dcc.Loading(id="table-loading", children=[html.Div([
-                            html.H5(id="dataset-name", className="dataset-name"),
                             dcc.Input(id='input-start-row', type='number', placeholder='Start row',
                                       style={'margin': '10px', 'width': '10%'}),
                             dcc.Input(id='input-end-row', type='number', placeholder='End row',
@@ -455,8 +522,9 @@ def layout():
 
                     dbc.Card(body=True, id="report-view", className="card", children=[
                         html.Div([
-                            html.H2("Bias Report",
-                                    style={'color': '#614385', 'marginBottom': '20px', 'textAlign': 'center'}),
+                            html.Div([
+                                html.H4("Bias Report", className="secondary-title")
+                            ], className="query-header"),
                             html.Div(children=[
                                 html.P(" Choose a column as the target attribute to generate bias report."),
                                 dcc.Dropdown(id='column-names-dropdown'),
@@ -596,23 +664,18 @@ def layout():
                                 ], className='left-align-div'),
 
                             ], id='evaluation-options'),
-                            dcc.Loading(id="table-loading", children=[
-                                html.Div(html.Button('Run', id='eval-button',
-                                                     n_clicks=0, className='primary-button'),
-                                         className='right-align-div'),
-                                html.Div(id='eval-info'),
-                                html.Div(
-                                    children=[
-                                        html.Div(id='eval-res', style={'marginBottom': '10px', 'marginTop': '10px'}),
-                                        html.Div(id='fairness-scores'),
-                                        html.Div(id='eval-explanation')
 
-                                    ]),
-                            ], overlay_style={
-                                "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
-                                        custom_spinner=html.H3(
-                                            ["Running and Analyzing...", dbc.Spinner(color="primary")]),
-                                        ),
+                            html.Div(html.Button('Run', id={'type': 'spinner-btn', 'index': 0},
+                                                 n_clicks=0, className='primary-button'),
+                                     className='right-align-div'),
+                            html.Div(id='eval-info'),
+                            html.Div(
+                                children=[
+                                    html.Div(id='eval-res', style={'marginBottom': '10px', 'marginTop': '10px'}),
+                                    html.Div(id='fairness-scores'),
+                                    html.Div(id='eval-explanation')
+
+                                ]),
 
                         ], className='llm-chart', style={'overflowX': 'auto'})
                     ], className='card'),
@@ -663,7 +726,7 @@ def layout():
 @callback(
     Output('url', 'pathname', allow_duplicate=True),
     Input('logout-button', 'n_clicks'),
-    Input('help-button', 'n_clicks'),
+    Input('menu-help', 'n_clicks'),
     Input('menu-prompt', 'n_clicks'),
     prevent_initial_call=True
 )
@@ -675,7 +738,7 @@ def logout_and_redirect(logout_clicks, help_clicks, setting_clicks):
         if button_id == "logout-button":
             logout_user()
             return "/"
-        if button_id == "help-button":
+        if button_id == "menu-help":
             return "/helps/"
         if button_id == "menu-prompt":
             return "/settings/prompts"
@@ -848,7 +911,7 @@ def reset_default_prompts(n_clicks):
 
 @callback(
     Output("survey-modal", "is_open"),
-    Input("profile-edit-info-button", "n_clicks"),
+    Input("menu-profile", "n_clicks"),
     prevent_initial_call=True
 )
 def open_survey_modal(n_clicks):

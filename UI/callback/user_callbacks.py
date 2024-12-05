@@ -2,12 +2,11 @@ import dash
 from UI.app import app
 from db_models.users import User
 from db_models.databases import db
-from dash.dependencies import Input, Output, State
 from flask_login import current_user
-from dash import html, dcc, callback, Input, Output, State, callback_context
+from dash import Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 from utils.constant import DEFAULT_PERSONA_PROMPT
-from UI.variable import global_vars
+from core.variable import global_vars
 
 # Update Username
 @app.callback(

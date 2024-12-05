@@ -1,4 +1,3 @@
-from uuid import UUID
 from langchain_openai import ChatOpenAI
 from langchain.agents.agent_types import AgentType
 from langchain_community.chat_message_histories import ChatMessageHistory
@@ -13,10 +12,10 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables import ConfigurableField
 from agent.utils import create_pandas_dataframe_agent
 from db_models.system_log import SystemLogMessage, AssistantLogMessage
+from langchain_core.messages import HumanMessage
 import re
-from pydantic import BaseModel, Field
 from langchain.output_parsers import PydanticOutputParser
-from db_models.conversation import db, Conversation
+from db_models.conversation import Conversation
 from flask_login import current_user
 from agent.parser import ResponseFormat
 import base64
@@ -74,6 +73,7 @@ class DatasetAgent:
         self.execution_error: list[Exception] = []
         self.list_commands: list[str] = []
         self.file_name = file_name
+        self.current_stage = "Identify"
         self.parser = PydanticOutputParser(pydantic_object=ResponseFormat)
         multimodal_prompt = self.configure_multimodal_prompt()
         self.prompt = self.configure_chat_prompt()
@@ -131,7 +131,8 @@ class DatasetAgent:
         multimodal_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system",
-                 "You are a data analyst. Describe the image provided in detail and find some insights about bias. If there are potential biases, tell the user the ways to mitigate these biases."),
+                 "You are a data scientist. Describe the image provided in detail and find some insights about bias. "
+                 "If there are potential biases, tell the user the ways to mitigate these biases."),
                 MessagesPlaceholder(variable_name="chat_history"),
                 (
                     "user",
@@ -152,16 +153,21 @@ class DatasetAgent:
 
     def configure_user_msg_prompt(self):
         user_prompt = PromptTemplate(
-            template="""
-                    "Please answer the my question: {input}. The response should be tailored to my background: {background} Ensure that your explanation is informative while understandable for me. To make your answer clearer and instructive, you can include examples and step-by-step instructions appropriate for my background. When you are asked to explain images, explain it!"
-                    """,
-            input_variables=["input"],
+            template=""""The current stage of bias management is {stage}. Please answer the my question: {input}. The 
+            response should be tailored to my background: {background} and align with the {stage}. Ensure that your 
+            explanation is informative while understandable for me. To make your answer clearer and instructive, 
+            you can include examples and step-by-step instructions appropriate for my background. When you are asked 
+            to explain images, explain it!""",
+            input_variables=["input", "stage"],
             partial_variables={"background": current_user.persona_prompt},
         )
         user_message_prompt = HumanMessagePromptTemplate(prompt=user_prompt)
         return user_message_prompt
 
     def configure_system_msg_prompt(self):
+        pipeline_prompt = """
+            The         
+        """
         system_prompt = PromptTemplate(
             template="""          
 
@@ -196,12 +202,12 @@ class DatasetAgent:
         return prompt
 
     def trim_messages(self, trimmed_message):
-        # store the most recent 20 messages
+        # store the most recent 30 messages
         stored_messages = self.history.messages
-        if len(stored_messages) <= 20:
+        if len(stored_messages) <= 30:
             return False
         self.history.clear()
-        for message in stored_messages[-20:]:
+        for message in stored_messages[-30:]:
             self.history.add_message(message)
         return True
 
@@ -212,33 +218,40 @@ class DatasetAgent:
             configurable={"session_id": self.session_id}).invoke({"text": query, "encoded_image_url": image_data})
         return result
 
-    def run(self, text):
+    def run(self, text, stage):
         self.elem_queue.clear()
         self.execution_error.clear()
         self.list_commands.clear()
 
         if self.model_name == "gpt-4-turbo":
             result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text})
+                configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
         elif self.model_name == "gpt-4o-2024-08-06":
             result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text})
+                configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
         else:
             result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text})
+                configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
 
         # Parse response 
         suggestions = []
+        stage = ""
         try:
             result = self.parser.parse(result['output'])
             suggestions.append(result.question1)
             suggestions.append(result.question2)
+            stage = result.stage
             result = result.answer
+            if stage is not self.current_stage and stage in ["Identify", "Measure", "Surface", "Adapt"]:
+                self.current_stage = stage
+            else:
+                stage = self.current_stage
+
         except Exception as e:
             # cannot be parsed in the above format, directly return the answer
             self.execution_error.append(e)
             result = result['output']
-            return result, self.elem_queue, suggestions
+            return result, self.elem_queue, suggestions, stage
 
         # Improve table removal logic
         table_pattern = r'(?s)\|.*?\|\n\|[-:]+\|\n(.*?)\n\n'
@@ -252,9 +265,9 @@ class DatasetAgent:
             result = f"""There was an error processing your request. Please provide a clearer query and try again.
                     (Error message: {str(self.execution_error[0])})"""
         if len(self.elem_queue) > 0:
-            return result, self.elem_queue, suggestions
+            return result, self.elem_queue, suggestions, stage
         else:
-            return result, None, suggestions
+            return result, None, suggestions, stage
 
     def set_llm_model(self, model):
         self.model_name = model
@@ -344,6 +357,9 @@ class DatasetAgent:
         self.history.add_message(SystemLogMessage(content=message))
         self.persist_history(persistence_type=persistence_type,
                              c_format=c_format, path=path)
+
+    def add_user_action_to_history(self, message):
+        self.history.add_message(HumanMessage(content=message))
 
     def persist_commands(self,
                          message,

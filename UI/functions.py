@@ -1,6 +1,5 @@
 from metric import fairlens as fl
-import os
-from UI.variable import global_vars
+from core.variable import global_vars
 import re
 
 
@@ -36,9 +35,9 @@ def parse_suggested_questions(response):
         return []
 
 
-def query_llm(query, user_id):
-    print(query)
-    response, media, suggestions = global_vars.agent.run(query)
+def query_llm(query, stage, user_id):
+    print(query,stage)
+    response, media, suggestions, stage = global_vars.agent.run(query, stage)
     global_vars.agent.persist_history(user_id=str(user_id))
     global_vars.suggested_questions = suggestions
-    return response, media, suggestions
+    return response, media, suggestions, stage

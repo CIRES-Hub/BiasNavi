@@ -25,15 +25,16 @@ import pandas as pd
      Output('table-overview', 'columns'),
      Output('column-names-dropdown', 'options'),
      Output('error-file-format', 'is_open'),
-     Output('dataset-name', 'children'),
      Output('snapshot-table', 'data'),
      Output('dataset-selection', 'options'),
+
      # Output('console-area', 'children', allow_duplicate=True),
      # Output("commands-input", "disabled", allow_duplicate=True),
      # Output("run-commands", "disabled", allow_duplicate=True),
      Output("upload-modal", "is_open"),
      Output("upload-data-modal", "style"),
-     Output("upload-data-error-msg", "children")],
+     Output("upload-data-error-msg", "children"),
+     Output('query-area', 'children', allow_duplicate=True)],
     [Input('upload-data', 'contents'),
      Input('upload-data-modal', 'contents'),
      Input('show-rows-button', 'n_clicks')],
@@ -42,23 +43,24 @@ import pandas as pd
      State('input-start-row', 'value'),
      State('input-end-row', 'value'),
      State('snapshot-table', 'data'),
+     State('query-area', 'children'),
      ],
     prevent_initial_call=True,
 )
 def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_clicks, list_of_names, list_of_names_modal,
-                                 start_row, end_row, snapshot_data):
+                                 start_row, end_row, snapshot_data, chat_content):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
     if triggered_id == 'upload-data' or triggered_id == 'upload-data-modal':
         if triggered_id == 'upload-data':
             if not list_of_contents or not list_of_names:
-                return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents[0]
             filename = list_of_names[0]
         elif triggered_id == 'upload-data-modal':
             if not list_of_contents_modal or not list_of_names_modal:
-                return [], [], [], False, "", [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset."
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update
 
             # Process the first file only
             contents = list_of_contents_modal[0]
@@ -68,7 +70,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, "Error: Not a CSV file."
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -82,22 +84,29 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         global_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
         global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name,
                                          conversation_session=global_vars.conversation_session)
+        if chat_content is None:
+            chat_content = []
+        chat_content.append(dcc.Markdown("The dataset has been successfully uploaded! 🎉 Let's dive into exploring it. You can "
+                            "start by asking some commonly asked questions—just click **the button in the top-right "
+                            "corner** to get started. Feel free to ask anything else you'd like to know about the "
+                            "dataset!", className="llm-msg"))
         return (
             global_vars.df.to_dict('records'),
             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             False,
-            f"Dataset: {filename} ({len(global_vars.df)} rows in total)",
             [{'ver': '1', 'desc': 'Original', 'time': formatted_date_time}],
             ['1'],
             False,
             dash.no_update,
-            ""
+            "",
+            chat_content
+
         )
 
     elif triggered_id == 'show-rows-button':
         if global_vars.df is None:
-            return [], [], [], False, "", [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update, "Error: Dataframe is empty."
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Dataframe is empty."
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
@@ -113,7 +122,8 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
-                ""
+                "",
+                dash.no_update
             )
 
         xdf = global_vars.df.iloc[start_row:end_row]
@@ -127,10 +137,11 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             dash.no_update,
             False,
             dash.no_update,
-            ""
+            "",
+            dash.no_update
         )
 
-    return [], [], [], False, "", [], [], dash.no_update, dash.no_update, ""
+    return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update
 
 
 @app.callback(
@@ -282,7 +293,8 @@ def update_model_dropdown(selected_task):
     Output('eval-res', 'children'),
     Output('fairness-scores', 'children'),
     Output('eval-explanation', 'children'),
-    Input('eval-button', 'n_clicks'),
+    Output({'type': 'spinner-btn', 'index': 0}, 'children', allow_duplicate=True),
+    Input({'type': 'spinner-btn', 'index': 0}, 'children'),
     State('dataset-selection', 'value'),
     State('sensi-attr-selection', 'value'),
     State('label-selection', 'value'),
@@ -290,18 +302,18 @@ def update_model_dropdown(selected_task):
     State('model-selection', 'value'),
     prevent_initial_call=True
 )
-def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
+def evaluate_dataset(_, df_id, sens_attr, label, task, model):
     data = global_vars.data_snapshots[int(df_id) - 1]
     if label in sens_attr:
-        return html.P('The label cannot be in the sensitive attributes!', style={"color": "red"}), [], [], []
+        return html.P('The label cannot be in the sensitive attributes!', style={"color": "red"}), [], [], [], " Run"
     if data[label].dtype in ['float64', 'float32'] and task == 'Classification':
         return html.P('The target attribute is continuous (float) but the task is set to classification. '
                       'Consider binning the target or setting the task to regression.',
-                      style={"color": "red"}), [], [], []
+                      style={"color": "red"}), [], [], [], " Run"
     if data[label].dtype == 'object' or data[label].dtype.name == 'bool' or data[label].dtype.name == 'category':
         if task == 'Regression':
             return html.P('The target attribute is categorical and cannot be used for regression task.',
-                          style={"color": "red"}), [], [], []
+                          style={"color": "red"}), [], [], [], " Run"
     de = DatasetEval(data, label, ratio=0.2, task_type=task, sensitive_attribute=sens_attr, model_type=model)
     res, scores = de.train_and_test()
     tables = []
@@ -388,30 +400,16 @@ def evaluate_dataset(n_clicks, df_id, sens_attr, label, task, model):
                 target="tooltip-eval",
             ),
         ])
-    res_explanation = [
-        html.Div(id="dataset_result_explanation", style={"marginTop": "20px"}),
-    ]
-    return [html.Hr(), tooltip, ], res, tables, res_explanation
-
-
-@app.callback(
-    Output('dataset_result_explanation', 'children'),
-    Input('eval-button', 'n_clicks'),
-    Input('eval-res', 'children'),
-    Input('fairness-scores', 'children'),
-    State('sensi-attr-selection', 'value'),
-    State('label-selection', 'value'),
-    State('task-selection', 'value'),
-    State('model-selection', 'value'),
-    prevent_initial_call=True
-)
-def explain_dataset_evaluation(n_clicks, acc, data, sens_attr, label, task, model):
     data_string = "\n".join(
-        [f"Row {i + 1}: {row}" for i, row in enumerate(data)]
+        [f"Row {i + 1}: {row}" for i, row in enumerate(tables)]
     )
-    query = f"Assess the bias level in the dataset using the following results: {data_string}. The model accuracy is {acc}. These results were generated by executing the {task} task with the {model} model. The analysis centers on the sensitive attributes {sens_attr}, with {label} serving as the target attribute. The objective is to identify and minimize disparities among subgroups of the sensitive attributes without sacrificing accuracy."
-    answer, media, suggestions = query_llm(query, current_user.id)
-    return [html.H5("Analysis"), dcc.Markdown(answer, className="chart-explanation")]
+    query = f"Assess the bias level in the dataset using the following results: {data_string}. The model accuracy is {res}. These results were generated by executing the {task} task with the {model} model. The analysis centers on the sensitive attributes {sens_attr}, with {label} serving as the target attribute. The objective is to identify and minimize disparities among subgroups of the sensitive attributes without sacrificing accuracy."
+    answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+    res_explanation = [dcc.Markdown(answer, className="chart-explanation")]
+    return [html.Hr(), tooltip, ], res, tables, res_explanation, " Run"
+
+
+
 
 
 @app.callback(
@@ -422,7 +420,7 @@ def explain_dataset_evaluation(n_clicks, acc, data, sens_attr, label, task, mode
     State("data-stat-modal", "is_open"),
     prevent_initial_call=True
 )
-def display_data_summary(n1, n2, is_open):
+def display_data_stat(n1, n2, is_open):
     if global_vars.df is not None:
         # Summarize the DataFrame and include column names as the first column
         summary = summarize_dataframe(global_vars.df)
@@ -434,7 +432,7 @@ def display_data_summary(n1, n2, is_open):
         total_missing = global_vars.df.isnull().sum().sum()
         total_values = global_vars.df.size
         missing_rate = (total_missing / total_values) * 100
-        desc = f"This dataset comprises {global_vars.df.shape[0]} rows and {global_vars.df.shape[1]} columns. with an overall missing rate {missing_rate:.2f}%. "
+        desc = f"This dataset: {global_vars.file_name}, comprises {global_vars.df.shape[0]} rows and {global_vars.df.shape[1]} columns. with an overall missing rate {missing_rate:.2f}%. "
         # Define the DataTable
         table = dash_table.DataTable(
             columns=[
@@ -455,6 +453,37 @@ def display_data_summary(n1, n2, is_open):
             return not is_open, [desc,table]
 
     return is_open, []
+
+@app.callback(
+    Output("data-stat-summary", "children"),
+    Output({'type': 'spinner-btn', 'index': 1}, "children",allow_duplicate=True),
+    Input({'type': 'spinner-btn', 'index': 1}, "children"),
+    State("data-stat-body", "children"),
+    prevent_initial_call=True
+)
+def display_data_summary(_, data):
+    if global_vars.df is not None:
+        # Summarize the DataFrame and include column names as the first column
+        data_string = "\n".join(
+            [f"Row {i + 1}: {row}" for i, row in enumerate(data)]
+        )
+        query = f"""
+                The dataset is with the following summary statistics {data_string}. Please First provide a summary of this 
+                dataset and then: 
+                1. Identify any notable trends, patterns, or insights based on the provided 
+                statistics. 
+                2. Highlight potential issues, such as missing values, outliers, or unusual 
+                distributions.                 
+                3. Identify any signs of bias in the dataset, such as imbalances in distributions across key features.              
+                4. Suggest strategies to mitigate bias, such as rebalancing, feature engineering, or fairness-aware 
+                approaches. 
+                """
+
+        answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+        global_vars.agent.add_user_action_to_history(f"I have analyzed the dataset. ")
+        return [dcc.Markdown(answer, className="chart-explanation")], "Analyze"
+
+    return [], "Analyze"
 
 def summarize_dataframe(df):
     """
