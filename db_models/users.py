@@ -1,5 +1,5 @@
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy.dialects.postgresql import UUID, ARRAY, TEXT
 import uuid
 import sys
 from flask_login import UserMixin, login_user
@@ -19,11 +19,11 @@ class User(db.Model, UserMixin):
     professional_role = db.Column(db.String(100))
     industry_sector = db.Column(db.String(100))
     expertise_level = db.Column(db.String(100))
-    persona_prompt = db.Column(db.String(1000))
-    follow_up_questions_prompt_1 = db.Column(db.String(1000))
-    follow_up_questions_prompt_2 = db.Column(db.String(1000))
-    system_prompt = db.Column(db.String(1000))
-    prefix_prompt = db.Column(db.String(1000))
+    persona_prompt = db.Column(TEXT)
+    follow_up_questions_prompt_1 = db.Column(TEXT)
+    follow_up_questions_prompt_2 = db.Column(TEXT)
+    system_prompt = db.Column(TEXT)
+    prefix_prompt = db.Column(TEXT)
     technical_level = db.Column(db.String(100))
     bias_awareness = db.Column(db.String(100))
     areas_of_interest = db.Column(ARRAY(db.String(100)))
