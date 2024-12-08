@@ -1,14 +1,22 @@
+import dash
+
 from UI.app import app
 from dash.dependencies import Input, Output, State
 from core.variable import global_vars
 
 
 @app.callback(
-    Output("pipeline-alert", "is_open",allow_duplicate=True),
+    Output("pipeline-alert", "is_open", allow_duplicate=True),
+    Output({'type': 'spinner-btn', 'index': 4},"style"),
+    Output({'type': 'spinner-btn', 'index': 5},"style"),
+    Output({'type': 'spinner-btn', 'index': 6},"style"),
     Input("pipeline-slider", "value"),
+    State({'type': 'spinner-btn', 'index': 4},"style"),
+    State({'type': 'spinner-btn', 'index': 5},"style"),
+    State({'type': 'spinner-btn', 'index': 6},"style"),
     prevent_initial_call=True
 )
-def change_pipeline_stage(val):
+def change_pipeline_stage(val, m_style, s_style, a_style):
     stages = ["Identify","Measure","Surface","Adapt"]
     if global_vars.agent:
         new_stage = stages[val]
@@ -16,7 +24,29 @@ def change_pipeline_stage(val):
         global_vars.current_stage = new_stage
         global_vars.agent.add_user_action_to_history(f"I have modify the current stage of the bias management "
                                                      f"pipeline to {new_stage}. It's the time to go to this stage.")
-    return True
+        if val == 0:
+            m_style["display"] = "none"
+            s_style["display"] = "none"
+            a_style["display"] = "none"
+            return True, m_style, s_style, a_style
+        elif val == 1:
+            m_style["display"] = "block"
+            s_style["display"] = "none"
+            a_style["display"] = "none"
+            return True, m_style, s_style, a_style
+        elif val == 2:
+            m_style["display"] = "block"
+            s_style["display"] = "block"
+            a_style["display"] = "none"
+            return True, m_style, s_style, a_style
+        elif val == 3:
+            m_style["display"] = "block"
+            s_style["display"] = "block"
+            a_style["display"] = "block"
+            return True, m_style, s_style, a_style
+    else:
+        return False, dash.no_update, dash.no_update, dash.no_update
+
 
 
 bias_management_questions = {
@@ -57,19 +87,21 @@ bias_management_questions = {
     [State("question-modal", "is_open")],
     prevent_initial_call=True,
 )
-def toggle_modal(open_clicks, close_clicks, is_open):
+def display_common_questions(open_clicks, close_clicks, is_open):
     questions = bias_management_questions.get(global_vars.current_stage, [])
     options = [{"label": question, "value": question} for question in questions]
     if open_clicks or close_clicks:
         return not is_open, options
     return is_open, options
 
+
 @app.callback(
     Output("query-input", "value", allow_duplicate=True),
     Output("question-modal", "is_open", allow_duplicate=True),
-    [Input("question-modal-choose-btn", "n_clicks")],
-    [State("question-modal-list", "value")],
+    [Input("question-modal-choose-btn", "n_clicks"),
+     State("question-modal-list", "value")],
     prevent_initial_call=True,
 )
-def toggle_modal(click, value):
-    return value, False
+def choose_question(n_clicks, question):
+    return question, False
+

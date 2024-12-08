@@ -18,6 +18,7 @@ from UI.functions import query_llm
 @app.callback(
     [Output("query-area", "children"),
      Output("error-alert", "is_open", allow_duplicate=True),
+    Output("error-alert", "children", allow_duplicate=True),
      Output('llm-media-area', 'children'),
      Output("chat-update-trigger", "data"),
      Output("next-suggested-questions", "children"),
@@ -37,15 +38,15 @@ from UI.functions import query_llm
 def update_messages(n_clicks, n_submit, question_clicked, input_text, query_records, suggested_questions):
     if not input_text and not question_clicked:
         #no input information provided
-        return query_records, True, None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
+        return query_records, True, "Please enter a query first.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
     if n_clicks is None and question_clicked is None:
         # no controls clicked
-        return query_records, True, None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
+        return query_records, True, "Please enter a query first.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
     if global_vars.df is None:
         # no dataset loaded
-        return query_records, True, None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
+        return query_records, True, "Please upload a dataset first.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
     trigger = ctx.triggered_id
-    query = ''
+
     if not isinstance(trigger, str) and 'next-suggested-question' in trigger.type:
         query = global_vars.suggested_questions[int(trigger.index[-1])]
     else:
@@ -58,7 +59,7 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
     if global_vars.rag and global_vars.use_rag:
         input_text = global_vars.rag.invoke(query)
         global_vars.rag_prompt = query
-    output_text, media, new_suggested_questions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+    answer, media, new_suggested_questions, stage = query_llm(query, global_vars.current_stage, current_user.id)
     print(stage)
     change_stage = False
     stages = ["Identify","Measure","Surface","Adapt"]
@@ -76,7 +77,7 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
                     id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)
                 suggested_questions.append(new_suggested_question)
 
-    response = output_text + '\n'
+    response = answer + '\n'
     global_vars.dialog.append("\n" + response)
     # Simulate a response from the system
     new_response_message = dcc.Markdown(response, className="llm-msg")
@@ -84,14 +85,14 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
     query_records.append(new_response_message)
     list_commands = global_vars.agent.list_commands
     if not media:
-        return query_records, False, dash.no_update, time.time(), suggested_questions, ('\n').join(list_commands) if len(
+        return query_records, False, "", dash.no_update, time.time(), suggested_questions, ('\n').join(list_commands) if len(
             list_commands) > 0 else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update
-    return query_records, False, media, time.time(), suggested_questions, ('\n').join(list_commands) if len(
+    return query_records, False, "", media, time.time(), suggested_questions, ('\n').join(list_commands) if len(
         list_commands) > 0 else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update
 
 
 @app.callback(
-    Output("export", "data"),
+    Output("export-conversation", "data"),
     Input("download-button", "n_clicks"),
     Input("export-format-dropdown", "value"),
     prevent_initial_call=True,
@@ -205,12 +206,13 @@ def show_figure_modal(n_clicks, id):
 @app.callback(
     Output({'type': 'llm-media-explanation', 'index': MATCH}, 'children'),
     Output({'type': 'llm-media-explanation', 'index': MATCH}, 'style'),
-    Input({'type': 'llm-media-button', 'index': MATCH}, 'n_clicks'),
+    Output({'type': 'llm-media-button', 'index': MATCH}, 'children', allow_duplicate=True),
+    Input({'type': 'llm-media-button', 'index': MATCH}, 'children'),
     State({'type': 'llm-generated-chart', 'index': MATCH}, 'src'),
     prevent_initial_call=True
 )
-def show_figure_modal(n_clicks, content):
-    if n_clicks and n_clicks > 0 and content is not None:
+def explain_llm_figure(_, content):
+    if content is not None:
         explanation = global_vars.agent.describe_image('', content)
-        return dcc.Markdown(explanation.content,className="chart-explanation"), {"display": "block"}
+        return dcc.Markdown(explanation.content,className="llm-text"), {"display": "block", "marginBottom": "20px", "marginTop": "20px"}, "Explain"
 

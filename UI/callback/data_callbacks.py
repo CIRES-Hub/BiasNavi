@@ -34,7 +34,8 @@ import pandas as pd
      Output("upload-modal", "is_open"),
      Output("upload-data-modal", "style"),
      Output("upload-data-error-msg", "children"),
-     Output('query-area', 'children', allow_duplicate=True)],
+     Output('query-area', 'children', allow_duplicate=True),
+     Output("pipeline-slider", "value", allow_duplicate=True)],
     [Input('upload-data', 'contents'),
      Input('upload-data-modal', 'contents'),
      Input('show-rows-button', 'n_clicks')],
@@ -53,14 +54,14 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
     if triggered_id == 'upload-data' or triggered_id == 'upload-data-modal':
         if triggered_id == 'upload-data':
             if not list_of_contents or not list_of_names:
-                return [], [], [], False, [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents[0]
             filename = list_of_names[0]
         elif triggered_id == 'upload-data-modal':
             if not list_of_contents_modal or not list_of_names_modal:
-                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents_modal[0]
@@ -70,7 +71,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update, dash.no_update
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -84,6 +85,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         global_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
         global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name,
                                          conversation_session=global_vars.conversation_session)
+        global_vars.current_stage = "Identify"
         if chat_content is None:
             chat_content = []
         chat_content.append(dcc.Markdown("The dataset has been successfully uploaded! 🎉 Let's dive into exploring it. You can "
@@ -100,13 +102,14 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             False,
             dash.no_update,
             "",
-            chat_content
+            chat_content,
+            0
 
         )
 
     elif triggered_id == 'show-rows-button':
         if global_vars.df is None:
-            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Dataframe is empty."
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "No data is loaded.", dash.no_update, dash.no_update
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
@@ -121,9 +124,9 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
-                dash.no_update,
                 "",
-                dash.no_update
+                dash.no_update,
+                dash.no_update,
             )
 
         xdf = global_vars.df.iloc[start_row:end_row]
@@ -135,13 +138,13 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             dash.no_update,
             dash.no_update,
             dash.no_update,
-            False,
             dash.no_update,
             "",
-            dash.no_update
+            dash.no_update,
+            dash.no_update,
         )
 
-    return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update
+    return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update, dash.no_update
 
 
 @app.callback(
@@ -290,6 +293,7 @@ def update_model_dropdown(selected_task):
 
 @app.callback(
     Output('eval-info', 'children'),
+    Output('eval-info', 'is_open'),
     Output('eval-res', 'children'),
     Output('fairness-scores', 'children'),
     Output('eval-explanation', 'children'),
@@ -303,17 +307,19 @@ def update_model_dropdown(selected_task):
     prevent_initial_call=True
 )
 def evaluate_dataset(_, df_id, sens_attr, label, task, model):
+    if global_vars.df is None or not global_vars.data_snapshots:
+        return 'No dataset is loaded!', True, [], [], [], " Run"
+    if df_id is None or sens_attr is None or label is None or task is None or model is None:
+        return 'The experimental setting is incomplete!', True, [], [], [], " Run"
     data = global_vars.data_snapshots[int(df_id) - 1]
     if label in sens_attr:
-        return html.P('The label cannot be in the sensitive attributes!', style={"color": "red"}), [], [], [], " Run"
+        return 'The label cannot be in the sensitive attributes!', True, [], [], [], " Run"
     if data[label].dtype in ['float64', 'float32'] and task == 'Classification':
-        return html.P('The target attribute is continuous (float) but the task is set to classification. '
-                      'Consider binning the target or setting the task to regression.',
-                      style={"color": "red"}), [], [], [], " Run"
+        return ('The target attribute is continuous (float) but the task is set to classification. Consider binning '
+                'the target or setting the task to regression.'), True, [], [], [], " Run"
     if data[label].dtype == 'object' or data[label].dtype.name == 'bool' or data[label].dtype.name == 'category':
         if task == 'Regression':
-            return html.P('The target attribute is categorical and cannot be used for regression task.',
-                          style={"color": "red"}), [], [], [], " Run"
+            return 'The target attribute is categorical and cannot be used for regression task.', True, [], [], [], " Run"
     de = DatasetEval(data, label, ratio=0.2, task_type=task, sensitive_attribute=sens_attr, model_type=model)
     res, scores = de.train_and_test()
     tables = []
@@ -405,8 +411,9 @@ def evaluate_dataset(_, df_id, sens_attr, label, task, model):
     )
     query = f"Assess the bias level in the dataset using the following results: {data_string}. The model accuracy is {res}. These results were generated by executing the {task} task with the {model} model. The analysis centers on the sensitive attributes {sens_attr}, with {label} serving as the target attribute. The objective is to identify and minimize disparities among subgroups of the sensitive attributes without sacrificing accuracy."
     answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
-    res_explanation = [dcc.Markdown(answer, className="chart-explanation")]
-    return [html.Hr(), tooltip, ], res, tables, res_explanation, " Run"
+    answer = format_reply_to_markdown(answer)
+    res_explanation = [dcc.Markdown(answer, className="llm-text")]
+    return "", False, [html.Hr(), tooltip, res], tables, res_explanation, " Run"
 
 
 
@@ -480,8 +487,9 @@ def display_data_summary(_, data):
                 """
 
         answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+        answer = format_reply_to_markdown(answer)
         global_vars.agent.add_user_action_to_history(f"I have analyzed the dataset. ")
-        return [dcc.Markdown(answer, className="chart-explanation")], "Analyze"
+        return [dcc.Markdown(answer, className="llm-text")], "Analyze"
 
     return [], "Analyze"
 

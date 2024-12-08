@@ -65,13 +65,28 @@
     font-size: larger;
 }
 
+.section {
+
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2); /* Horizontal offset, vertical offset, blur radius, spread radius, color */
+    background-color: white; /* Card background color */
+    margin: 50px 0;
+    padding: 20px;
+    position: relative;
+    border: 1px solid #d0d0d0;
+    /* Add other styling for the card as needed */
+}
+
+.section:empty {
+    display: none;
+}
+
 .card {
     border-radius: 12px; /* Rounded borders for the card */
     box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2); /* Horizontal offset, vertical offset, blur radius, spread radius, color */
     background-color: white; /* Card background color */
-    margin: 10px 0;
     padding: 10px;
     position: relative;
+    margin: 10px 0 20px;
     /* Add other styling for the card as needed */
 }
 
@@ -303,13 +318,13 @@
     display: inline-block
 }
 
-.chart-explanation{
+.llm-text{
     text-align: left;
     padding: 10px;
     background-color: #f5f4ed;
     color: black;
     border-radius: 15px;
-    margin: 5px 5px 30px 5px;
+    margin: 5px;
     width: fit-content;
     max-width: 100%;
     word-wrap: break-word;

@@ -120,8 +120,7 @@ def layout():
                                             html.Div(id="data-stat-summary", style={"marginTop": "20px"})
                                             ]),
                     dbc.ModalFooter(children=[
-                        dbc.Button("Analyze", id={'type': 'spinner-btn', 'index': 1}, className="ml-auto",
-                                   style={"marginLeft": "20px"}),
+                        dbc.Button("Analyze", id={'type': 'spinner-btn', 'index': 1}, className="ml-auto"),
                         dbc.Button("Close", id="data-stat-close", className="ml-auto")]
                     ),
                 ],
@@ -145,7 +144,7 @@ def layout():
                     ),
                     dbc.ModalFooter([dbc.Button(
                         "Export", id="download-button", className="ml-auto"),
-                        dcc.Download(id="export"), dbc.Button("Close", id="close", className="ml-auto")]),
+                        dcc.Download(id="export-conversation"), dbc.Button("Close", id="close", className="ml-auto")]),
                 ],
                 id="export-history-modal",
                 centered=True,
@@ -154,16 +153,19 @@ def layout():
 
             dbc.Modal(
                 [
-                    dbc.ModalHeader("Choose a Question"),
+                    dbc.ModalHeader("Commonly Asked Questions"),
                     dbc.ModalBody(
                         dcc.Dropdown(
                             id="question-modal-list",
                             placeholder="Choose a question",
                         )
                     ),
-                    dbc.ModalFooter([
-                        dbc.Button("Choose", id="question-modal-choose-btn", className="ms-auto", n_clicks=0),
-                        dbc.Button("Close", id="question-modal-close-btn", className="ms-auto", n_clicks=0)]
+                    dbc.ModalFooter(
+                        [
+                            dbc.Button("Choose", id="question-modal-choose-btn", className="me-2", n_clicks=0),
+                            dbc.Button("Close", id="question-modal-close-btn", n_clicks=0),
+                        ],
+                        className="d-flex justify-content-end"
                     ),
                 ],
                 id="question-modal",
@@ -300,7 +302,7 @@ def layout():
                             is_open=False,
                             dismissable=True,
                             color="danger",
-                            duration=4000,
+                            duration=5000,
                         ),
                         dcc.Upload(
                             id='upload-data',
@@ -361,7 +363,7 @@ def layout():
                                 is_open=False,
                                 dismissable=True,
                                 color="primary",
-                                duration=4000,
+                                duration=5000,
                             ),
                         )
 
@@ -389,7 +391,7 @@ def layout():
                                 is_open=False,
                                 dismissable=True,
                                 color="danger",
-                                duration=4000,
+                                duration=5000,
                             ),
                             # generated follow-up questions
                             html.Div(id='next-suggested-questions'),
@@ -457,18 +459,18 @@ def layout():
                 dbc.Col(width=6, id="middle-column", children=[
                     dbc.Card(body=True, id='data-view', className='card', children=[
                         dcc.Loading(id="table-loading", children=[html.Div([
+                            html.Button('Dataset Statistics', id='data-stat-button',
+                                        n_clicks=0, className='primary-button', style={'margin': '10px 10px 10px 0'}),
+                            html.Button('Save Snapshot', id='open-modal-button',
+                                        n_clicks=0, className='primary-button', style={'margin': '10px'}),
+                            html.Button('Download Data', id='download-data-button',
+                                        n_clicks=0, className='primary-button', style={'margin': '10px'}),
+                            html.Button('Show Data', id='show-rows-button',
+                                        className='primary-button', style={'margin': '10px'}),
                             dcc.Input(id='input-start-row', type='number', placeholder='Start row',
                                       style={'margin': '10px', 'width': '10%'}),
                             dcc.Input(id='input-end-row', type='number', placeholder='End row',
                                       style={'margin': '10px', 'width': '10%'}),
-                            html.Button('Show Rows', id='show-rows-button',
-                                        className='primary-button', style={'margin': '10px'}),
-                            html.Button('Dataset Statistics', id='data-stat-button',
-                                        n_clicks=0, className='primary-button', style={'margin': '10px'}),
-                            html.Button('Save Snapshot', id='open-modal-button',
-                                        n_clicks=0, className='primary-button', style={'margin': '10px'}),
-                            html.Button('Download Data', id='download-data-button',
-                                        n_clicks=0, className='primary-button', style={'marginLeft': '10px'}),
                             dcc.Download(id='download-data-csv'),
                             dbc.Modal(
                                 [
@@ -514,34 +516,69 @@ def layout():
                         ],
                                     overlay_style={
                                         "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
-                                    custom_spinner=html.H1(
-                                        ["Loading data...", dbc.Spinner(color="primary")]),
                                     ),
-                        html.Div(id='datatable-interactivity-container')
+                        html.Div(id='datatable-interactivity-container'),
+                        dbc.Alert(
+                            "",
+                            id="data-alert",
+                            is_open=False,
+                            dismissable=True,
+                            color="primary",
+                            duration=5000,
+                        )
                     ]),
 
                     dbc.Card(body=True, id="report-view", className="card", children=[
                         html.Div([
                             html.Div([
-                                html.H4("Bias Report", className="secondary-title")
+                                html.H4("Bias Management", className="secondary-title")
                             ], className="query-header"),
                             html.Div(children=[
-                                html.P(" Choose a column as the target attribute to generate bias report."),
-                                dcc.Dropdown(id='column-names-dropdown'),
-                                html.Div(id='plot-exception-msg'), ], style={'marginBottom': '20px'}),
-                            html.Div(id="bias-report", className="bias-report-area", children=[]),
-                            dcc.Tabs(id="report-tabs", value='tab-1', children=[
-                                dcc.Tab(label='Charts', children=[
-                                    html.Div(id='graphs-container'),
-                                ]),
-                                dcc.Tab(label='Statistics', children=[
-                                    html.Div(children=[
-                                        html.Br(),
-                                        html.H3("Statistics", style={'textAlign': 'center'}),
-                                        html.Div(id='bias-stats', className="table-container")
-                                    ])
-                                ]),
-                            ])
+                                html.Div( style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center'},children=[
+                                    html.Button('Identify Bias', id={'type': 'spinner-btn', 'index': 3},
+                                                n_clicks=0, className='primary-button', style={'margin': '10px 10px 10px 0'}),
+                                    html.Button('Measure Bias', id={'type': 'spinner-btn', 'index': 4},
+                                                n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"}),
+                                    html.Button('Surface Bias', id={'type': 'spinner-btn', 'index': 5},
+                                                n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"}),
+                                    html.Button('Adapt Bias', id={'type': 'spinner-btn', 'index': 6},
+                                                n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"})]
+                                ),
+                                dcc.Store(id='sensitive-attr-store', data={}),
+                                html.Div(
+                                    [
+                                        html.Label("Target Attribute:",
+                                                   style={"marginRight": "10px", "whiteSpace": "nowrap"}),
+                                        # Add margin to the label
+                                        dcc.Dropdown(
+                                            id='column-names-dropdown',
+                                            placeholder="Choose a column as the target attribute",
+                                            style={"flex": "1"}  # Allow the dropdown to expand
+                                        )
+                                    ],
+                                    style={
+                                        "display": "flex",
+                                        "alignItems": "center",
+                                        "marginTop": "20px",
+                                        "marginBottom": "20px"
+                                    }
+                                ),
+                                dbc.Alert(
+                                    "",
+                                    id="report-alert",
+                                    is_open=False,
+                                    dismissable=True,
+                                    color="warning",
+                                    duration=5000,
+                                )
+                            ]),
+                            html.Div(id="bias-identifying-area", className="section"),
+
+                            html.Div(id='bias-measuring-area', className="table-container section"),
+
+                            html.Div(id='bias-surfacing-area', className="section"),
+
+                            html.Div(id='bias-adapting-area', className="section"),
 
                         ])
                     ]),
@@ -668,7 +705,14 @@ def layout():
                             html.Div(html.Button('Run', id={'type': 'spinner-btn', 'index': 0},
                                                  n_clicks=0, className='primary-button'),
                                      className='right-align-div'),
-                            html.Div(id='eval-info'),
+                            dbc.Alert(
+                                "",
+                                id="eval-info",
+                                is_open=False,
+                                dismissable=True,
+                                color="danger",
+                                duration=5000,
+                            ),
                             html.Div(
                                 children=[
                                     html.Div(id='eval-res', style={'marginBottom': '10px', 'marginTop': '10px'}),

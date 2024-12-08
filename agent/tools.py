@@ -58,11 +58,11 @@ class RunPythonCode(PythonAstREPLTool):
             ], style={'display': 'flex', 'align-items': 'center', 'justify-content': 'center'})),
             dbc.ModalFooter()
         ], id={"type": "llm-media-modal", "index": current_id}, centered=True, className="figure-modal", size="lg"))
-        self.elem_queue.append(dcc.Loading(
-            html.Div([
-            ], id={"type": "llm-media-explanation", "index": current_id}, style={"display":"none"})))
         self.elem_queue.append(
             dbc.Button("Explain", id={"type": "llm-media-button", "index": current_id}, className="primary-button", n_clicks=0), )
+        self.elem_queue.append(
+            html.Div([
+            ], id={"type": "llm-media-explanation", "index": current_id}, style={"display":"none"}))
 
 
 

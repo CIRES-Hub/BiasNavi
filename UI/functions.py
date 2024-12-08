@@ -36,8 +36,34 @@ def parse_suggested_questions(response):
 
 
 def query_llm(query, stage, user_id):
-    print(query,stage)
+    print(query, stage)
     response, media, suggestions, stage = global_vars.agent.run(query, stage)
     global_vars.agent.persist_history(user_id=str(user_id))
     global_vars.suggested_questions = suggestions
     return response, media, suggestions, stage
+
+
+def format_reply_to_markdown(reply):
+    """
+    Converts an LLM reply into proper Markdown format.
+
+    Args:
+        reply (str): The raw reply from the LLM.
+
+    Returns:
+        str: A Markdown-friendly formatted reply.
+    """
+
+    # Remove wrapping curly braces if present
+    if reply.startswith("{") and reply.endswith("}"):
+        reply = reply[1:-1]
+
+    reply = reply.replace("\\n\\n", "  \n")
+
+    reply = reply.replace("\\n", "  \n")
+
+    reply = re.sub(r"(?<!\n)\n(?!\n)", "  \n", reply)
+
+    # add more if necessary...
+
+    return reply

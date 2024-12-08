@@ -37,3 +37,37 @@ app.clientside_callback(
     Input({'type': 'spinner-btn', 'index': MATCH}, 'n_clicks'),
     prevent_initial_call=True
 )
+
+app.clientside_callback(
+    """
+    function (click) {
+        return [""" + json.dumps(dbc.Spinner(size='sm').to_plotly_json()) + """, " Analyzing..."]
+    }
+    """,
+    Output({'type': 'report-table-button', 'index': MATCH}, 'children'),
+    Input({'type': 'report-table-button', 'index': MATCH}, 'n_clicks'),
+    prevent_initial_call=True
+)
+
+app.clientside_callback(
+    """
+    function (click) {
+        return [""" + json.dumps(dbc.Spinner(size='sm').to_plotly_json()) + """, " Analyzing..."]
+    }
+    """,
+    Output({'type': 'llm-media-button', 'index': MATCH}, 'children'),
+    Input({'type': 'llm-media-button', 'index': MATCH}, 'n_clicks'),
+    prevent_initial_call=True
+)
+
+
+app.clientside_callback(
+    """
+    function (click) {
+        return [""" + json.dumps(dbc.Spinner(size='sm').to_plotly_json()) + """, " Analyzing..."]
+    }
+    """,
+    Output({'type': 'report-graph-button', 'index': MATCH}, 'children'),
+    Input({'type': 'report-graph-button', 'index': MATCH}, 'n_clicks'),
+    prevent_initial_call=True
+)

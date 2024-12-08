@@ -20,9 +20,8 @@ Calculate distribution distances.
 Performing code snippets
 
 For each user query, determine whether the provided functionalities are relevant at the current stage and decide if the pipeline should:
-Proceed to the next stage, or
-Remain at the current stage.
-Base your decision on the user’s input and the pipeline’s history, and always explicitly return the current stage name (Identify, Measure, Surface, or Adapt). If moving to the next stage, notify the user in your response and explain the transition.
+Proceed to the next stage, or Remain at the current stage.
+Base your decision on the user’s input and the pipeline’s history, and always explicitly return the current stage name (either Identify, Measure, Surface, or Adapt). If moving to the next stage, notify the user in your response and explain the transition. Remember, even if you think it's not the good timing to proceed to the next stage, once the user asks to move to the next stage, you should do it.
 
 Your responses should ensure users are guided step-by-step through the pipeline while making full use of the toolkit's functionalities.""")
 
