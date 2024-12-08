@@ -1,5 +1,6 @@
 import dash
 import docker.errors
+import logging
 from UI.app import app
 from dash.dependencies import Input, Output, State
 from agent import DatasetAgent
@@ -12,6 +13,8 @@ import os
 import shutil
 import time
 import random
+
+logger = logging.getLogger(__name__)
 
 
 @app.callback(
@@ -149,7 +152,8 @@ def execute_commands(n_click, commands):
 
                 return [str(e), False, False, dash.no_update, dash.no_update, dash.no_update]
             else:
-                print(type(e))
+                logger.error(type(e))
+                logger.error(e)
                 return [str(e), False, False, dash.no_update, dash.no_update, dash.no_update]
     return [dash.no_update, False, False, dash.no_update, dash.no_update, dash.no_update]
 
