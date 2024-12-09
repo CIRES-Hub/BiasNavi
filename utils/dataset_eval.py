@@ -131,7 +131,7 @@ class DatasetEval:
             # Standard accuracy evaluation
             y_pred = self.pipline.predict(self.X_test)
             accuracy = accuracy_score(self.y_test, y_pred)
-            res = f"Model Accuracy: {accuracy:.4f}"
+            res = f"Accuracy: {accuracy:.4f}"
             print(res)
 
             # If a sensitive attribute is defined, calculate disparity

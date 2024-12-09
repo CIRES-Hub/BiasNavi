@@ -23,14 +23,17 @@ logger = logging.getLogger(__name__)
      Output("run-commands", "disabled", allow_duplicate=True),
      Output('table-overview', 'data', allow_duplicate=True),
      Output('table-overview', 'columns', allow_duplicate=True),
-     Output('column-names-dropdown', 'options', allow_duplicate=True)],
+     Output('column-names-dropdown', 'options', allow_duplicate=True),
+     Output('data-alert', 'children', allow_duplicate=True),
+     Output('data-alert', 'is_open', allow_duplicate=True),
+     ],
     Input("run-commands", "n_clicks"),
     State("commands-input", "value"),
     prevent_initial_call=True
 )
 def execute_commands(n_click, commands):
     if global_vars.df is None and n_click > 0:
-        return ["Have you imported a dataset and entered a query?", False, False, dash.no_update, dash.no_update, dash.no_update]
+        return ["Have you imported a dataset and entered a query?", False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
     if n_click > 0 and commands is not None:
         try:
             print("Running sandbox...")
@@ -88,7 +91,7 @@ def execute_commands(n_click, commands):
                     False,
                     global_vars.df.to_dict('records'),
                     [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
-                    [{'label': col, 'value': col} for col in global_vars.df.columns]]
+                    [{'label': col, 'value': col} for col in global_vars.df.columns], "The data might have been changed.", True]
 
         except Exception as e:
             if isinstance(e, docker.errors.NotFound):
@@ -123,11 +126,11 @@ def execute_commands(n_click, commands):
                             False, 
                             global_vars.df.to_dict('records'),
                             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
-                            [{'label': col, 'value': col} for col in global_vars.df.columns]]
+                            [{'label': col, 'value': col} for col in global_vars.df.columns],dash.no_update, dash.no_update]
 
                 except Exception as e:
                     print("Create container failed: ", e)
-                    return ["Sandbox is not available", False, False, dash.no_update, dash.no_update, dash.no_update]
+                    return ["Sandbox is not available", False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
             elif isinstance(e, docker.errors.APIError):
                 if e.status_code is not None and e.status_code == 409:
                     user_container = client.containers.get(container_name)
@@ -148,13 +151,13 @@ def execute_commands(n_click, commands):
                             False,
                             global_vars.df.to_dict('records'),
                             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
-                            [{'label': col, 'value': col} for col in global_vars.df.columns]]
+                            [{'label': col, 'value': col} for col in global_vars.df.columns], dash.no_update, dash.no_update]
 
-                return [str(e), False, False, dash.no_update, dash.no_update, dash.no_update]
+                return [str(e), False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
             else:
                 logger.error(type(e))
                 logger.error(e)
-                return [str(e), False, False, dash.no_update, dash.no_update, dash.no_update]
-    return [dash.no_update, False, False, dash.no_update, dash.no_update, dash.no_update]
+                return [str(e), False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
+    return [dash.no_update, False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
 
 

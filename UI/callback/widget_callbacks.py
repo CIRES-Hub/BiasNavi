@@ -105,3 +105,10 @@ def display_common_questions(open_clicks, close_clicks, is_open):
 def choose_question(n_clicks, question):
     return question, False
 
+@app.callback(
+    Output("upload-modal", "is_open", allow_duplicate=True),
+    Input("close-upload-modal", "n_clicks"),
+    prevent_initial_call=True,
+)
+def close_upload_modal(n_clicks):
+    return False

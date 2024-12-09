@@ -112,12 +112,12 @@ class RunPythonCode(PythonAstREPLTool):
                     else:
                         return processed_item
             except Exception as eval_exception:
-                if not re.search("\w\s*=", module_end_str):
+                if not re.search(r"\w\s*=", module_end_str):
                     self.execution_error.append(eval_exception)
                 with redirect_stdout(io_buffer):
                     exec(module_end_str, self.globals, self.locals)
                 return io_buffer.getvalue()
         except Exception as eval_exception:
-            if not re.search("\w\s*=", module_end_str):
+            if not re.search(r"\w\s*=", module_end_str):
                 self.execution_error.append(eval_exception)
             return "{}: {}".format(type(eval_exception).__name__, str(eval_exception))

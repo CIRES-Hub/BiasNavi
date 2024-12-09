@@ -38,10 +38,10 @@ from UI.functions import query_llm
 def update_messages(n_clicks, n_submit, question_clicked, input_text, query_records, suggested_questions):
     if not input_text and not question_clicked:
         #no input information provided
-        return query_records, True, "Please enter a query first.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
+        return query_records, True, "Please enter a query.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
     if n_clicks is None and question_clicked is None:
         # no controls clicked
-        return query_records, True, "Please enter a query first.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
+        return query_records, True, "Please enter a query.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
     if global_vars.df is None:
         # no dataset loaded
         return query_records, True, "Please upload a dataset first.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
@@ -77,6 +77,7 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
                     id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)
                 suggested_questions.append(new_suggested_question)
 
+    answer = format_reply_to_markdown(answer)
     response = answer + '\n'
     global_vars.dialog.append("\n" + response)
     # Simulate a response from the system

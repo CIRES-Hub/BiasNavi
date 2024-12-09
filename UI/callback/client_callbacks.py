@@ -71,3 +71,4 @@ app.clientside_callback(
     Input({'type': 'report-graph-button', 'index': MATCH}, 'n_clicks'),
     prevent_initial_call=True
 )
+

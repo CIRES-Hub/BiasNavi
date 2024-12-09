@@ -1,5 +1,4 @@
 import dash
-
 from UI.app import app
 from dash.dependencies import Input, Output, State
 from dash import dcc, html, dash_table
@@ -8,6 +7,8 @@ from dash import MATCH
 import plotly.io as pio
 import base64
 from flask_login import current_user
+import dash_bootstrap_components as dbc
+from utils.sampler import Sampler
 
 
 @app.callback(
@@ -21,7 +22,7 @@ from flask_login import current_user
     Output("sensitive-attr-store", 'data'),
     Input({'type': 'spinner-btn', 'index': 3}, 'children'),
     State('column-names-dropdown', 'value'),
-    State('table-overview', 'style_data_conditional'),
+    State('data-view-table-style', 'data'),
     prevent_initial_call=True
 )
 def identify_bias(_, target, styles):
@@ -37,7 +38,7 @@ def identify_bias(_, target, styles):
 
     attr_text = ','.join(sensitive_attrs)
     query = f"""
-                We have manually identified certain attributes in the dataset including {attr_text}, which may 
+                We have identified certain attributes in the dataset including {attr_text}, which may 
                 influence the fairness of the target attribute {target}. Based on the dataset and our prior 
                 discussions, could you confirm if these attributes are indeed sensitive? Additionally, feel free to 
                 reason whether other attributes could be included or if any of the identified sensitive attributes 
@@ -52,7 +53,34 @@ def identify_bias(_, target, styles):
         dcc.Markdown(answer, className="llm-text", style={"marginBottom": "30px"}),
     ])
     global_vars.agent.add_user_action_to_history("I have identified bias in this dataset")
-    return [html.H4("Result of Bias Identifying"), bias_report_content], styles, "", False, "The sensitive attributes are highlighted in the data view.", True, "Identify Bias", {"sensitive_attrs": sensitive_attrs}
+
+    sensitive_attrs_dropdown = dcc.Dropdown(
+        id='identified-attrs-dropdown',
+        style={'width': '100%'},
+        options=[{'label': col, 'value': col} for col in global_vars.df.columns],
+        multi=True,
+        value=sensitive_attrs,
+        clearable=True,
+        placeholder="", )
+
+    return [html.H4("Result of Bias Identifying"), bias_report_content,
+            html.B("You can add or remove sensitive attributes here.", style={"marginBottom": "20px"}),
+            sensitive_attrs_dropdown], styles, "", False, "The sensitive attributes are highlighted in the data view.", True, "Identify Bias", {
+        "sensitive_attrs": sensitive_attrs}
+
+
+@app.callback(
+    Output('sensitive-attr-store', 'data', allow_duplicate=True),
+    Output('table-overview', 'style_data_conditional',allow_duplicate=True),
+    Input('identified-attrs-dropdown', 'value'),
+    State('data-view-table-style', 'data'),
+    prevent_initial_call=True,
+)
+def update_sensitive_attrs(attrs, styles):
+    column_style = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in
+                    attrs]
+    styles += column_style
+    return {"sensitive_attrs": attrs}, styles
 
 
 @app.callback(
@@ -67,11 +95,11 @@ def identify_bias(_, target, styles):
 )
 def measure_bias(_, target, sensitive_attrs):
     if global_vars.df is None:
-        return "",  "No dataset is loaded.", True, "Measure Bias"
+        return "", "No dataset is loaded.", True, "Measure Bias"
     if target is None:
         return "", "Please choose a target before measuring bias.", True, "Measure Bias"
     if sensitive_attrs == {}:
-        return "",  "No biases are identified. Please identify bias first.", True, "Measure Bias"
+        return "", "No biases are identified. Please identify bias first.", True, "Measure Bias"
     refined_attrs = []
     filtered_attrs = []
     warning = False
@@ -90,7 +118,7 @@ def measure_bias(_, target, sensitive_attrs):
                                           data=stat.to_dict('records'),
                                           sort_action='native',
                                           style_cell={'textAlign': 'center',
-                                                      'fontFamiliy': 'Arial'},
+                                                      'fontFamiliy': 'Arial', "padding":"0px 10px"},
                                           style_header={'backgroundColor': '#614385',
                                                         'color': 'white',
                                                         'fontWeight': 'bold'
@@ -109,8 +137,8 @@ def measure_bias(_, target, sensitive_attrs):
         tables.append(data_table)
         tables.append(html.Button('Explain', id={"type": "report-table-button", "index": str(table_id)}, n_clicks=0,
                                   className='primary-button'))
-        tables.append(html.Div([], id={"type": "report-table-explanation", "index": str(table_id)}, style={"display": "none"}))
-
+        tables.append(
+            html.Div([], id={"type": "report-table-explanation", "index": str(table_id)}, style={"display": "none"}))
 
     warning_msg = ""
     if warning:
@@ -120,7 +148,7 @@ def measure_bias(_, target, sensitive_attrs):
 
 
 @app.callback(
-    Output('bias-surfacing-area', 'children', allow_duplicate=True),
+    Output('bias-surfacing-area', 'children'),
     Output('report-alert', 'children', allow_duplicate=True),
     Output('report-alert', 'is_open', allow_duplicate=True),
     Output({'type': 'spinner-btn', 'index': 5}, 'children', allow_duplicate=True),
@@ -160,8 +188,9 @@ def surface_bias(_, target, sensitive_attrs):
     global_vars.agent.add_user_action_to_history("I have measured the bias in this dataset.")
     return [html.H4("Result of Bias Surfacing")] + graphs, warning_msg, warning, "Surface Bias"
 
+
 @app.callback(
-    Output('bias-adapting-area', 'children', allow_duplicate=True),
+    Output('bias-adapting-area', 'children'),
     Output('report-alert', 'children', allow_duplicate=True),
     Output('report-alert', 'is_open', allow_duplicate=True),
     Output({'type': 'spinner-btn', 'index': 6}, 'children', allow_duplicate=True),
@@ -178,18 +207,119 @@ def adapt_bias(_, target, sensitive_attrs):
     if sensitive_attrs == {}:
         return "", "No biases are identified. Please Identify bias first.", True, "Adapt Bias"
 
-    button_area = html.Div(style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center'},children=[
-                                    html.Button('Undersample', id={'type': 'bias-adapt-btn', 'index': 0},
-                                                n_clicks=0, className='primary-button', style={'margin': '10px'}),
-                                    html.Button('Oversample', id={'type': 'bias-adapt-btn', 'index': 1},
-                                                n_clicks=0, className='primary-button', style={'margin': '10px'}),
-                                    html.Button('Augmentation', id={'type': 'bias-adapt-btn', 'index': 2},
-                                                n_clicks=0, className='primary-button', style={'margin': '10px'}),
-                                   ]
-                                )
+    query = f""" Adapting bias will provide the user with a set of tools which allows them to interact with existing 
+    biased results and to adapt them for bias in their preferred ways. Given these sensitive attributes 
+    {",".join(sensitive_attrs)} and past analysis, could you recommend one of the following actions integrated in 
+    BiasNavi: Evaluate the dataset to get more insights; Perform undersampling or oversampling to address class 
+    imbalance; Augment new data instances for insufficient classes;
+
+    or other actions to adapt bias? In your answer, you should highlight the recommended action. If the recommended 
+    action is integrated in BiasNavi, you do not need to tell how to do it and just explain why I should take that 
+    action."""
+    answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+    answer = format_reply_to_markdown(answer)
+
+    suggested_action = html.Div([
+        dcc.Markdown(answer, className="llm-text", style={"marginBottom": "30px"}),
+    ])
+
+    button_area = html.Div(style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center'}, children=[
+        dcc.Loading(children=[
+            html.Div(style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'flex-start', 'gap': '15px'},
+                     children=[
+                         html.Div(style={'display': 'flex', 'gap': '10px'},
+                                  children=[
+                                      html.Button('Undersample', id="undersample-btn",
+                                                  className='primary-button', style={'margin': '5px'},
+                                                  title="Reduces the size of the majority class by randomly removing "
+                                                        "samples to balance the dataset."),
+                                      html.Button('Oversample', id="oversample-btn",
+                                                  className='primary-button', style={'margin': '5px'},
+                                                  title="Increases the size of the minority class by replicating its "
+                                                        "samples or generating synthetic samples."),
+                                      html.Button('Augmentation (SMOTE)', id="smote-btn",
+                                                  className='primary-button', style={'margin': '5px'},
+                                                  title="Generates synthetic samples for the minority class rather than "
+                                                        "simply duplicating existing samples."),
+                                  ]),
+                         dcc.Dropdown(
+                             id='adapting-attrs-dropdown',
+                             style={'width': '100%', 'marginBottom': '20px'},
+                             options=[{'label': col, 'value': col} for col in sensitive_attrs["sensitive_attrs"]],
+                             placeholder="Choose the attribute(s) to adapt to...",
+                         )
+                     ]),
+
+            dbc.Alert(
+                "",
+                id="adapting-alert",
+                is_open=False,
+                dismissable=True,
+                color="primary",
+                duration=5000,
+            ),
+        ]),
+    ])
 
     global_vars.agent.add_user_action_to_history("I have started to adapt the bias in this dataset.")
-    return [html.H4("Result of Adapting Surfacing"), button_area], dash.no_update, dash.no_update, "Adapt Bias"
+    return [html.H4("Result of Adapting Bias"), button_area,
+            suggested_action], dash.no_update, dash.no_update, "Adapt Bias"
+
+
+@app.callback(
+    Output('data-alert', 'children', allow_duplicate=True),
+    Output('data-alert', 'is_open', allow_duplicate=True),
+    Output('adapting-alert', 'children', allow_duplicate=True),
+    Output('adapting-alert', 'is_open', allow_duplicate=True),
+    Output('table-overview', 'data', allow_duplicate=True),
+    Output('table-overview', 'columns', allow_duplicate=True),
+    Input("smote-btn", 'n_clicks'),
+    Input("oversample-btn", 'n_clicks'),
+    Input("undersample-btn", 'n_clicks'),
+    State('adapting-attrs-dropdown', 'value'),
+    prevent_initial_call=True
+)
+def handle_sampling(smote_clicks, oversample_clicks, undersample_clicks, attr):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return [dash.no_update] * 6
+
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    if not smote_clicks and not oversample_clicks and not undersample_clicks:
+        return [dash.no_update] * 6
+    if global_vars.df is None:
+        return dash.no_update, False, "Please upload a dataset first!", True, dash.no_update, dash.no_update
+    if attr is None:
+        return dash.no_update, False, "Please choose a sensitive attribute!", True, dash.no_update, dash.no_update
+
+    sampler = Sampler(global_vars.df, attr)
+    if button_id == "smote-btn":
+        new_data = sampler.smote()
+        global_vars.agent.add_user_action_to_history(f"I have performed SMOTE on the dataset based on the identified sensitive attribute {attr}.")
+        adapting_message = "New data have been augmented."
+    elif button_id == "oversample-btn":
+        new_data = sampler.oversample()
+        adapting_message = "Oversampling is completed."
+        global_vars.agent.add_user_action_to_history(
+            f"I have performed oversampling on the dataset based on the identified sensitive attribute {attr}.")
+    elif button_id == "undersample-btn":
+        new_data = sampler.undersample()
+        adapting_message = "Undersampling is completed."
+        global_vars.agent.add_user_action_to_history(
+            f"I have performed undersampling on the dataset based on the identified sensitive attribute {attr}.")
+    else:
+        return [dash.no_update] * 6
+
+    global_vars.df = new_data
+    return (
+        "The data have been updated.",
+        True,
+        adapting_message,
+        True,
+        global_vars.df.to_dict('records'),
+        [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns]
+    )
+
 
 # @app.callback(
 #     Output('bias-surfacing-area', 'children', allow_duplicate=True),
@@ -335,20 +465,20 @@ def adapt_bias(_, target, sensitive_attrs):
 @app.callback(
     Output({'type': 'report-graph-explanation', 'index': MATCH}, 'children'),
     Output({'type': 'report-graph-explanation', 'index': MATCH}, 'style'),
-    Output({'type': 'report-graph-button', 'index': MATCH}, 'children',allow_duplicate=True),
+    Output({'type': 'report-graph-button', 'index': MATCH}, 'children', allow_duplicate=True),
     Input({'type': 'report-graph-button', 'index': MATCH}, 'children'),
     State({'type': 'report-graph', 'index': MATCH}, 'figure'),
     prevent_initial_call=True
 )
 def explain_report_figure(n_clicks, fig):
-    if n_clicks and n_clicks > 0 and fig is not None:
+    if fig is not None:
         img_bytes = pio.to_image(fig, format='png')
         encoded_img = base64.b64encode(img_bytes).decode('utf-8')
         explanation = global_vars.agent.describe_image('Describe this subgroup distribution chart.',
                                                        f"data:image/png;base64,{encoded_img}")
         explanation = format_reply_to_markdown(explanation.content)
         global_vars.agent.add_user_action_to_history("I have analyzed the result of bias surfacing and get the "
-                                                     "following analysis."+explanation)
+                                                     "following analysis." + explanation)
         return dcc.Markdown(explanation, className="llm-text"), {"display": "block"}, "Explain"
 
 

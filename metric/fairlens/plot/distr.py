@@ -51,7 +51,7 @@ def distr_plot(
         bargap=0.2,
         xaxis_title=f"<b>{target_attr}</b>",
         title = {
-            'text': f"<b>Subgroup distribution of column {attr} w.r.t. {target_attr}</b>",
+            'text': f"<b>Correlation between {attr} and {target_attr}</b>",
             'y': 0.95,  # Adjust the y position of the title (1.0 is the top, 0.0 is the bottom)
             'x': 0.5,  # Center the title (0.5 is the center)
             'xanchor': 'center',

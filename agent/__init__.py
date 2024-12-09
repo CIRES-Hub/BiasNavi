@@ -155,7 +155,7 @@ class DatasetAgent:
         user_prompt = PromptTemplate(
             template=""""The current stage of bias management is {stage}. Please answer the my question: {input}. The 
             response should be tailored to my background: {background} and align with the {stage}. Ensure that your 
-            explanation is informative while understandable for me. To make your answer clearer and instructive, 
+            answer is informative while understandable for me. To make your answer clearer and instructive, 
             you can include examples and step-by-step instructions appropriate for my background. When you are asked 
             to explain images, explain it!""",
             input_variables=["input", "stage"],

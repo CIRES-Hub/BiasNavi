@@ -82,7 +82,7 @@ def layout():
                     ),
                     dbc.ModalFooter([
                         html.Div(id="upload-data-error-msg", style={"color": "red"}),
-                        dbc.Button("Close", id="close-modal", className="ml-auto"),
+                        dbc.Button("Close", id="close-upload-modal", className="ml-auto"),
                     ],
                         style={
                             'display': 'flex',
@@ -378,13 +378,8 @@ def layout():
                                             style={"backgroundColor": "white", "color": "grey", "border": "none"}, )
                             ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
                                       "width": "100%"}),
-                            dcc.Loading(
-                                id="loading-1",
-                                children=[
-                                    html.Div(id='query-area', className='query-area')],
-                                # dcc.Textarea(id='query-area', className='query-area', readOnly=True)],
-                                type="default",  # Choose from "graph", "cube", "circle", "dot", or "default"
-                            ),
+                            html.Div(id='query-area', className='query-area'),
+
                             dbc.Alert(
                                 "Forget to import a dataset or enter a query?",
                                 id="error-alert",
@@ -394,28 +389,44 @@ def layout():
                                 duration=5000,
                             ),
                             # generated follow-up questions
-                            html.Div(id='next-suggested-questions'),
+
+
 
                             # Message input row
                             html.Div([
-                                dcc.Input(id='query-input', type='text', className='query-input',
-                                          placeholder='Type your message here'),
-                                html.Button(html.Span(className="fas fa-paper-plane"), id='send-button',
-                                            title="Send your message.", n_clicks=0,
-                                            className='send-button'),
+                                dcc.Loading(
+                                    id="loading-1",
+                                    children=[
+                                        html.Div(id='next-suggested-questions', style={"marginBottom":"20px"}),
+                                        html.Div(
+                                            style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center', "gap":"10px"},
+                                            children=[
+                                                        dcc.Input(id='query-input', type='text', className='query-input',
+                                                                  placeholder='Type your message here'),
+                                                        html.Button(html.Span(className="fas fa-paper-plane"), id='send-button',
+                                                                    title="Send your message.", n_clicks=0,
+                                                                    className='send-button'),
 
-                                dcc.Upload(id="upload-rag",
-                                           children=html.Button(html.Span(className="fas fa-file"), id='RAG-button',
-                                                                title="Upload your document for RAG.", n_clicks=0,
-                                                                className='send-button'),
-                                           multiple=True),
+                                                        dcc.Upload(id="upload-rag",
+                                                                   children=html.Button(html.Span(className="fas fa-file"),
+                                                                                        id='RAG-button',
+                                                                                        title="Upload your document for RAG.",
+                                                                                        n_clicks=0,
+                                                                                        className='send-button'),
+                                                                   multiple=True),
 
-                                html.Div(id='rag-output'),
+                                                        html.Div(id='rag-output'),
 
-                                daq.ToggleSwitch(id='rag-switch', value=False),
+                                                        daq.ToggleSwitch(id='rag-switch', value=False),
 
-                                html.Div(id='rag-switch-output'),
-                            ], className="center-align-div"),
+                                                        html.Div(id='rag-switch-output'),
+                                            ])
+                                    ],
+                                    # dcc.Textarea(id='query-area', className='query-area', readOnly=True)],
+                                    type="default",  # Choose from "graph", "cube", "circle", "dot", or "default"
+                                ),
+
+                            ], style={"marginTop":"20px", "marginBottom":"10px"}),
                         ], className='query')
                     ], className='card'),
 
@@ -458,7 +469,7 @@ def layout():
                 # data views
                 dbc.Col(width=6, id="middle-column", children=[
                     dbc.Card(body=True, id='data-view', className='card', children=[
-                        dcc.Loading(id="table-loading", children=[html.Div([
+                        html.Div([
                             html.Button('Dataset Statistics', id='data-stat-button',
                                         n_clicks=0, className='primary-button', style={'margin': '10px 10px 10px 0'}),
                             html.Button('Save Snapshot', id='open-modal-button',
@@ -493,10 +504,11 @@ def layout():
                             ),
 
                         ], ),
+                        dcc.Loading(id="table-loading", children=[
                             html.Div(children=[
-                                dash_table.DataTable(id='table-overview', page_size=20, page_action='native',
+                                dash_table.DataTable(id='table-overview', page_size=10, page_action='native',
                                                      editable=True, row_deletable=True, column_selectable='single',
-                                                     style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
+                                                     style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial',"padding":"0px 10px"},
                                                      style_header={'backgroundColor': '#614385', 'color': 'white',
                                                                    'fontWeight': 'bold'
                                                                    },
@@ -512,11 +524,22 @@ def layout():
                                                          },
                                                      ]
                                                      )],
-                                style={"margin": "15px", "marginLeft": "0px"}),
+                                                    style={"margin": "15px", "marginLeft": "0px"}),
                         ],
-                                    overlay_style={
-                                        "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
-                                    ),
+                        overlay_style={
+                            "visibility": "hidden", "opacity": .8, "backgroundColor": "white"},
+                            target_components={"table-overview": ["data", "columns"] }
+                        ),
+                        dcc.Store("data-view-table-style",data=[
+                                                         {
+                                                             'if': {'row_index': 'odd'},
+                                                             'backgroundColor': '#f2f2f2'
+                                                         },
+                                                         {
+                                                             'if': {'row_index': 'even'},
+                                                             'backgroundColor': 'white'
+                                                         },
+                                                     ]),
                         html.Div(id='datatable-interactivity-container'),
                         dbc.Alert(
                             "",
@@ -534,16 +557,23 @@ def layout():
                                 html.H4("Bias Management", className="secondary-title")
                             ], className="query-header"),
                             html.Div(children=[
-                                html.Div( style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center'},children=[
-                                    html.Button('Identify Bias', id={'type': 'spinner-btn', 'index': 3},
-                                                n_clicks=0, className='primary-button', style={'margin': '10px 10px 10px 0'}),
-                                    html.Button('Measure Bias', id={'type': 'spinner-btn', 'index': 4},
-                                                n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"}),
-                                    html.Button('Surface Bias', id={'type': 'spinner-btn', 'index': 5},
-                                                n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"}),
-                                    html.Button('Adapt Bias', id={'type': 'spinner-btn', 'index': 6},
-                                                n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"})]
+                                html.Div(style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center'},
+                                        children=[
+                                        html.Button('Identify Bias', id={'type': 'spinner-btn', 'index': 3},
+                                                    n_clicks=0, className='primary-button', style={'margin': '10px 10px 10px 0'},
+                                                    title="Detect potential bias or fairness issues in the dataset or system."),
+                                        html.Button('Measure Bias', id={'type': 'spinner-btn', 'index': 4},
+                                                    n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"},
+                                                    title="Quantify the magnitude of detected biases using appropriate metrics."),
+                                        html.Button('Surface Bias', id={'type': 'spinner-btn', 'index': 5},
+                                                    n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"},
+                                                    title="Present the identified biases clearly and effectively to the user"),
+                                        html.Button('Adapt Bias', id={'type': 'spinner-btn', 'index': 6},
+                                                    n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"},
+                                                    title="Provide actionable tools or methods for mitigating biases based on user preferences.")
+                                        ]
                                 ),
+
                                 dcc.Store(id='sensitive-attr-store', data={}),
                                 html.Div(
                                     [
@@ -630,7 +660,7 @@ def layout():
                                         {"name": "Description", "id": "desc"},
                                         {"name": "Timestamp", "id": "time"}
                                     ],
-                                    style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial'},
+                                    style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial',"padding":"0px 10px"},
                                     style_header={'backgroundColor': '#614385', 'color': 'white',
                                                   'fontWeight': 'bold'
                                                   }, style_table={'overflowX': 'auto'},
@@ -656,72 +686,123 @@ def layout():
 
                     dbc.Card(id="evaluation-view", children=[
                         html.Div([
-                            html.Div([
-                                html.H4("Dataset Evaluation", className="secondary-title")
-                            ], className="query-header"),
-                            html.Div([
-                                'Snapshot:',
-                                dcc.Dropdown(
-                                    id='dataset-selection',
-                                    style={'width': '100%'},
-                                    clearable=False
-                                ),
-                                'Sensitive Attribute:',
-                                dcc.Dropdown(
-                                    id='sensi-attr-selection',
-                                    style={'width': '100%'},
-                                    multi=True,
-                                    clearable=False
-                                ),
-                                'Label:',
-                                dcc.Dropdown(
-                                    id='label-selection',
-                                    style={'width': '100%'},
-                                    clearable=False
-                                ),
-                            ], className='left-align-div'),
-                            html.Div([
+                            html.H4("Dataset Evaluation", className="secondary-title")
+                        ], className="query-header"),
+                        dbc.Tabs(
+                            [
+                            dbc.Tab(children=[
                                 html.Div([
-                                    'Task:',
-                                    dcc.Dropdown(
-                                        ['Classification', 'Regression'],
-                                        'Classification',
-                                        style={'width': '100%'},
-                                        id='task-selection',
-                                        clearable=False
+
+                                    html.Div([
+                                        'Snapshot:',
+                                        dcc.Dropdown(
+                                            id='dataset-selection',
+                                            style={'width': '70%'},
+                                            clearable=False
+                                        ),
+                                        'Sensitive Attribute:',
+                                        dcc.Dropdown(
+                                            id='sensi-attr-selection',
+                                            style={'width': '100%'},
+                                            multi=True,
+                                            clearable=False
+                                        ),
+                                    ], className='left-align-div'),
+                                    html.Div([
+                                        html.Div([
+                                            'Label:',
+                                            dcc.Dropdown(
+                                                id='label-selection',
+                                                style={'width': '100%'},
+                                                clearable=False
+                                            ),
+                                            'Task:',
+                                            dcc.Dropdown(
+                                                ['Classification', 'Regression'],
+                                                'Classification',
+                                                style={'width': '100%'},
+                                                id='task-selection',
+                                                clearable=False
+                                            ),
+                                            'Model:',
+                                            dcc.Dropdown(
+                                                ['SVM', 'Logistic', 'MLP'],
+                                                'SVM',
+                                                style={'width': '100%'},
+                                                id='model-selection',
+                                                clearable=False
+                                            ),
+                                        ], className='left-align-div'),
+
+                                    ], id='evaluation-options'),
+
+                                    html.Div(html.Button('Run', id={'type': 'spinner-btn', 'index': 0},
+                                                         n_clicks=0, className='primary-button'),
+                                             className='right-align-div'),
+                                    dbc.Alert(
+                                        "",
+                                        id="eval-info",
+                                        is_open=False,
+                                        dismissable=True,
+                                        color="danger",
+                                        duration=5000,
                                     ),
-                                    'Model:',
-                                    dcc.Dropdown(
-                                        ['SVM', 'Logistic', 'MLP'],
-                                        'SVM',
-                                        style={'width': '100%'},
-                                        id='model-selection',
-                                        clearable=False
-                                    ),
-                                ], className='left-align-div'),
+                                    html.Div(
+                                        children=[
+                                            html.Div(id='eval-res',
+                                                     style={'marginBottom': '10px', 'marginTop': '10px'}),
+                                            html.Div(id='fairness-scores'),
+                                            html.Div(id='eval-explanation')
 
-                            ], id='evaluation-options'),
+                                        ]),
 
-                            html.Div(html.Button('Run', id={'type': 'spinner-btn', 'index': 0},
-                                                 n_clicks=0, className='primary-button'),
-                                     className='right-align-div'),
-                            dbc.Alert(
-                                "",
-                                id="eval-info",
-                                is_open=False,
-                                dismissable=True,
-                                color="danger",
-                                duration=5000,
-                            ),
-                            html.Div(
-                                children=[
-                                    html.Div(id='eval-res', style={'marginBottom': '10px', 'marginTop': '10px'}),
-                                    html.Div(id='fairness-scores'),
-                                    html.Div(id='eval-explanation')
+                                ], className='llm-chart', style={'overflowX': 'auto'})
+                            ], label="Experiment"),
+                            dbc.Tab(children=[
+                                dcc.Store(id="experiment-result", data=[]),
+                                dash_table.DataTable(
+                                    id='experiment-result-table',
+                                    columns=[{'name': col, 'id': col} for col in ['Snapshot','Timestamp', "Result", 'Setting']],
+                                    row_selectable='multi',
+                                    selected_rows=[],
+                                    data=[],
+                                    style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial', "padding":"0px 10px"},
+                                    style_header={'backgroundColor': '#614385', 'color': 'white',
+                                                  'fontWeight': 'bold'
+                                                  }, style_table={'overflowX': 'auto'},
+                                    style_data_conditional=[
+                                        {
+                                            'if': {'row_index': 'odd'},
+                                            'backgroundColor': '#f2f2f2'
+                                        },
+                                        {
+                                            'if': {'row_index': 'even'},
+                                            'backgroundColor': 'white'
+                                        },
+                                    ]
+                                ),
+                                html.Div([
+                                    html.Button('Compare', id={'type': 'spinner-btn', 'index': 10},
+                                                         n_clicks=0, className='primary-button'),
 
-                                ]),
+                                    html.Button('Remove All', id="remove-all-result-btn",
+                                                         n_clicks=0, className='primary-button'),
+                                    ],
+                                    className='right-align-div'),
+                                dbc.Alert(
+                                    "",
+                                    id="comparison-alert",
+                                    is_open=False,
+                                    dismissable=True,
+                                    color="danger",
+                                    duration=5000,
+                                ),
+                                html.Div(id="chosen-experiment-res"),
+                                html.Div(id='comparison-res'),
+                            ],label="Comparison")
+                            ]
+                        )
 
-                        ], className='llm-chart', style={'overflowX': 'auto'})
                     ], className='card'),
 
                     dbc.Card(id="code-view", children=[

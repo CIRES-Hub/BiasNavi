@@ -94,7 +94,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
                             "dataset!", className="llm-msg"))
         return (
             global_vars.df.to_dict('records'),
-            [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
+            [{"name": col, "id": col, 'deletable': True} for col in global_vars.df.columns],
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             False,
             [{'ver': '1', 'desc': 'Original', 'time': formatted_date_time}],
@@ -146,6 +146,20 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
 
     return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update, dash.no_update
 
+
+@app.callback(
+    Output('data-alert', 'children'),
+    Output('data-alert', 'is_open'),
+    Input('table-overview', 'data'),
+    Input('table-overview', 'columns'),
+    prevent_initial_call=True,
+)
+def table_updated(data, columns):
+    if not data:
+        return dash.no_update, dash.no_update
+    new_df = pd.DataFrame(data)
+    global_vars.df = new_df
+    return dash.no_update,dash.no_update
 
 @app.callback(
     Output("snapshot-modal", "is_open"),
@@ -206,6 +220,8 @@ def delete_snapshot(n_clicks, selected_rows, snapshots):
 @app.callback(
     Output('table-overview', 'columns', allow_duplicate=True, ),
     Output('table-overview', 'data', allow_duplicate=True, ),
+    Output('data-alert', 'children', allow_duplicate=True),
+    Output('data-alert', 'is_open', allow_duplicate=True),
     Input('restore-snapshot-button', 'n_clicks'),
     State('snapshot-table', 'selected_rows'),
     prevent_initial_call=True,
@@ -216,8 +232,8 @@ def restore_data_snapshot(n_clicks, selected_rows):
         chosen_snapshot = global_vars.data_snapshots[row_id]
         global_vars.df = chosen_snapshot
         return [{"name": i, "id": i, 'deletable': True, 'renamable': True} for i in
-                chosen_snapshot.columns], chosen_snapshot.to_dict('records')
-    return dash.no_update, dash.no_update
+                chosen_snapshot.columns], chosen_snapshot.to_dict('records'), f"The data snapshot with ID {row_id+1} has been restored", True
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 @app.callback(
@@ -245,13 +261,20 @@ def update_histogram(active_cell):
 
     # Get the column id from the active cell
     column_id = active_cell['column_id']
+    unique_values = global_vars.df[column_id].nunique()
 
-    # Create a histogram for the selected column
+    if unique_values > 100:
+        return []
+
+    # Define a color palette (example using Plotly's built-in palette)
+    color_palette = px.colors.qualitative.Pastel1  # You can choose other palettes like Set1, Pastel, etc.
+
+    # Create a histogram for the selected column with a custom color palette
     fig = px.histogram(global_vars.df, x=column_id)
-
+    fig.update_traces(marker=dict(color=color_palette[:global_vars.df[column_id].nunique()]))
     # Update the layout properly
     fig.update_layout(
-        xaxis={"automargin": True, "tickmode": "auto", },
+        xaxis={"automargin": True, "tickmode": "auto"},
         yaxis={"automargin": True},
         height=250,
         margin={"t": 10, "l": 10, "r": 10},
@@ -298,28 +321,32 @@ def update_model_dropdown(selected_task):
     Output('fairness-scores', 'children'),
     Output('eval-explanation', 'children'),
     Output({'type': 'spinner-btn', 'index': 0}, 'children', allow_duplicate=True),
+    Output("experiment-result-table", 'data', allow_duplicate=True),
+    Output("experiment-result", 'data', allow_duplicate=True),
     Input({'type': 'spinner-btn', 'index': 0}, 'children'),
     State('dataset-selection', 'value'),
     State('sensi-attr-selection', 'value'),
     State('label-selection', 'value'),
     State('task-selection', 'value'),
     State('model-selection', 'value'),
+    State("experiment-result-table", 'data'),
+    State("experiment-result", 'data'),
     prevent_initial_call=True
 )
-def evaluate_dataset(_, df_id, sens_attr, label, task, model):
+def evaluate_dataset(_, df_id, sens_attr, label, task, model, past_res_table, past_res):
     if global_vars.df is None or not global_vars.data_snapshots:
-        return 'No dataset is loaded!', True, [], [], [], " Run"
+        return 'No dataset is loaded!', True, [], [], [], " Run", dash.no_update, dash.no_update
     if df_id is None or sens_attr is None or label is None or task is None or model is None:
-        return 'The experimental setting is incomplete!', True, [], [], [], " Run"
+        return 'The experimental setting is incomplete!', True, [], [], [], " Run", dash.no_update, dash.no_update
     data = global_vars.data_snapshots[int(df_id) - 1]
     if label in sens_attr:
-        return 'The label cannot be in the sensitive attributes!', True, [], [], [], " Run"
+        return 'The label cannot be in the sensitive attributes!', True, [], [], [], " Run", dash.no_update, dash.no_update
     if data[label].dtype in ['float64', 'float32'] and task == 'Classification':
         return ('The target attribute is continuous (float) but the task is set to classification. Consider binning '
-                'the target or setting the task to regression.'), True, [], [], [], " Run"
+                'the target or setting the task to regression.'), True, [], [], [], " Run", dash.no_update, dash.no_update
     if data[label].dtype == 'object' or data[label].dtype.name == 'bool' or data[label].dtype.name == 'category':
         if task == 'Regression':
-            return 'The target attribute is categorical and cannot be used for regression task.', True, [], [], [], " Run"
+            return 'The target attribute is categorical and cannot be used for regression task.', True, [], [], [], " Run", dash.no_update, dash.no_update
     de = DatasetEval(data, label, ratio=0.2, task_type=task, sensitive_attribute=sens_attr, model_type=model)
     res, scores = de.train_and_test()
     tables = []
@@ -413,10 +440,74 @@ def evaluate_dataset(_, df_id, sens_attr, label, task, model):
     answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
     answer = format_reply_to_markdown(answer)
     res_explanation = [dcc.Markdown(answer, className="llm-text")]
-    return "", False, [html.Hr(), tooltip, res], tables, res_explanation, " Run"
+    now = datetime.datetime.now()
+    formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    past_res_table.append({"Snapshot": df_id, "Timestamp": formatted_date_time, "Result": res,
+                           "Setting": f"sensitive attributes:{" ".join(sens_attr)}, label:{label}, model:{model}, task:{task}"})
+    past_res.append(tables)
+    return "", False, [html.Hr(), tooltip, res], tables, res_explanation, " Run", past_res_table, past_res
 
 
+@app.callback(
+    Output("experiment-result-table", 'data', allow_duplicate=True),
+    Output("experiment-result", 'data', allow_duplicate=True),
+    Input("remove-all-result-btn", 'n_clicks'),
+    prevent_initial_call=True
+)
+def remove_all_result(n_clicks):
+    if n_clicks:
+        return [],{}
+    return dash.no_update, dash.no_update
 
+@app.callback(
+    Output('chosen-experiment-res', 'children'),
+    Input('experiment-result-table', 'active_cell'),
+    State("experiment-result","data"),
+    prevent_initial_call=True
+)
+def show_past_experiment_result(active_cell, data):
+    if active_cell is None:
+        return []  # Return an empty figure if no cell is selected
+
+    # Get the row id from the active cell
+    row = active_cell['row']
+
+    return data[row]
+
+@app.callback(
+    Output('comparison-res', 'children', allow_duplicate=True),
+    Output('comparison-alert', 'children', allow_duplicate=True),
+    Output('comparison-alert', 'is_open', allow_duplicate=True),
+    Output({'type': 'spinner-btn', 'index': 10}, 'children', allow_duplicate=True),
+    Input({'type': 'spinner-btn', 'index': 10}, 'children'),
+    State('experiment-result-table', 'selected_rows'),
+    State('experiment-result-table', 'data'),
+    State("experiment-result","data"),
+    prevent_initial_call=True
+
+)
+def compare_experiment_results(_, selected_rows, table_data, res_data):
+    if selected_rows is None:
+        return [], "Choose two experiment results to compare.", True, "Compare"
+    if len(selected_rows)!=2:
+        return [], "You can only choose two experiment results to compare.", True, "Compare"
+    # Get the row id from the active cell
+    acc1 = table_data[selected_rows[0]]["Result"]
+    acc2 = table_data[selected_rows[1]]["Result"]
+    res1 = res_data[selected_rows[0]]
+    res2 = res_data[selected_rows[1]]
+
+    res_string1 = "\n".join(
+        [f"Row {i + 1}: {row}" for i, row in enumerate(res1)]
+    )
+    res_string2 = "\n".join(
+        [f"Row {i + 1}: {row}" for i, row in enumerate(res2)]
+    )
+    query = f"Please compare the results of two comparison. The first chosen result has the overall {acc1} and the accuracy across different subgroups and categories is {res_string1}. The second chosen result has the overall {acc2} and the accuracy across different subgroups and categories is {res_string2}. You should consider both the accuracy and disparity score to demonstrate which result is better."
+    answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+    answer = format_reply_to_markdown(answer)
+    res_comparison = [dcc.Markdown(answer, className="llm-text")]
+    return res_comparison, dash.no_update, dash.no_update, "compare"
 
 
 @app.callback(
@@ -493,6 +584,7 @@ def display_data_summary(_, data):
 
     return [], "Analyze"
 
+
 def summarize_dataframe(df):
     """
     Summarizes a pandas DataFrame by providing:
@@ -501,22 +593,38 @@ def summarize_dataframe(df):
     - Number of unique values
     - Basic descriptive statistics for numerical and categorical columns
     """
+    # Create a summary DataFrame with basic information
     summary = pd.DataFrame({
-        "Data Type": df.dtypes.astype(str),  # Convert dtype to string
-        "Missing Values": df.isnull().sum(),
-        "Unique Values": df.nunique(),
+        "Data Type": df.dtypes.astype(str),  # Data types of each column
+        "Missing Values": df.isnull().sum(),  # Count of missing values in each column
+        "Unique Values": df.nunique(),  # Number of unique values in each column
     })
 
-    # Add numerical column statistics
-    numerical_summary = df.describe().T
+    # Add statistics for numerical columns
+    numerical_summary = df.describe().T  # Transpose the descriptive statistics for readability
     numerical_summary = numerical_summary[["mean", "std", "min", "25%", "50%", "75%", "max"]]
-    summary = summary.join(numerical_summary, how="left")
+    summary = summary.join(numerical_summary, how="left")  # Join numerical stats to the summary
 
-    # Add categorical column statistics
+    # Handle categorical columns separately
+    categorical_columns = df.select_dtypes(include=["object", "category"])  # Select only categorical columns
+
+    # Calculate the most frequent value (mode) for each categorical column
+    top_values = categorical_columns.apply(
+        lambda col: col.mode().iloc[0] if not col.mode().empty else None  # Handle empty mode
+    )
+
+    # Calculate the frequency of the most frequent value
+    top_frequencies = categorical_columns.apply(
+        lambda col: col.value_counts().iloc[0] if not col.value_counts().empty else None  # Handle empty value_counts
+    )
+
+    # Create a summary DataFrame for categorical columns
     categorical_summary = pd.DataFrame({
-        "Top Value": df.select_dtypes(include=["object", "category"]).mode().iloc[0],
-        "Top Frequency": df.select_dtypes(include=["object", "category"]).apply(lambda col: col.value_counts().iloc[0]),
+        "Top Value": top_values,  # Most frequent value for each column
+        "Top Frequency": top_frequencies,  # Frequency of the most frequent value
     })
+
+    # Merge the categorical summary with the overall summary
     summary = summary.join(categorical_summary, how="left")
 
     return summary
