@@ -2,7 +2,7 @@ import dash
 
 from UI.app import app
 from dash.dependencies import Input, Output, State
-from core.variable import global_vars
+from UI.variable import global_vars
 
 
 @app.callback(

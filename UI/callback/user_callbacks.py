@@ -6,7 +6,7 @@ from flask_login import current_user
 from dash import Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 from utils.constant import DEFAULT_PERSONA_PROMPT
-from core.variable import global_vars
+from UI.variable import global_vars
 
 # Update Username
 @app.callback(

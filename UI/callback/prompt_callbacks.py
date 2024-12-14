@@ -3,9 +3,7 @@ from db_models.users import User
 from db_models.databases import db
 from dash.dependencies import Input, Output, State
 from flask_login import current_user
-from utils.constant import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
-    DEFAULT_PERSONA_PROMPT
-from core.variable import global_vars
+from UI.variable import global_vars
 
 @app.callback(
     Output({'type': 'spinner-btn', 'index': 2}, 'children', allow_duplicate=True),

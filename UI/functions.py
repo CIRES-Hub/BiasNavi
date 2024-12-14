@@ -1,5 +1,5 @@
 from metric import fairlens as fl
-from core.variable import global_vars
+from UI.variable import global_vars
 import re
 
 
