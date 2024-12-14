@@ -442,8 +442,10 @@ def evaluate_dataset(_, df_id, sens_attr, label, task, model, past_res_table, pa
     res_explanation = [dcc.Markdown(answer, className="llm-text")]
     now = datetime.datetime.now()
     formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    str_sens_attr = ' '.join(sens_attr)
+    settings = f"sensitive attributes: {str_sens_attr}, label:{label}, model:{model}, task:{task}"
     past_res_table.append({"Snapshot": df_id, "Timestamp": formatted_date_time, "Result": res,
-                           "Setting": f"sensitive attributes:{" ".join(sens_attr)}, label:{label}, model:{model}, task:{task}"})
+                           "Setting": settings})
     past_res.append(tables)
     return "", False, [html.Hr(), tooltip, res], tables, res_explanation, " Run", past_res_table, past_res
 
