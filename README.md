@@ -20,6 +20,9 @@ make setup
 3. Start the program.
 ```bash
 make run
+# Wait for the docker containers to start the run
+make create-db
+# To create user and database
 ```
 
 ## Additional Steps
