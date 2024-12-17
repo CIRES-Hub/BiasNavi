@@ -11,6 +11,17 @@ BiasNavi aims to manage the bias in datasets. It complies with the following pip
 ## Architecture
 <img src="architecture.jpg" alt="architecture" width="600">
 
+## How BiasNavi Help Non-Experts for Data Bias Management
+
+| **Challenge**                      | **How BiasNavi Solves It**                       |
+|------------------------------------|--------------------------------------------------|
+| Lack of technical expertise        | Conversational agent, plain-language guidance    |
+| Difficulty understanding bias      | Visualizations with easy-to-understand insights  |
+| Inability to configure tools       | Automated detection, prebuilt metrics            |
+| No coding knowledge                | Actionable bias mitigation without manual coding |
+| Uncertainty about next steps       | Recommendations, simulations, and workflows      |
+| Communicating findings             | Automated reporting and visual narratives        |
+
 ## Easy Setup
 1. Run the following command to set up the project for the first time:
 ```bash
