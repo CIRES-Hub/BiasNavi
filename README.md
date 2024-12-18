@@ -8,6 +8,9 @@ BiasNavi aims to manage the bias in datasets. It complies with the following pip
 + **Surfacing**: Present in an appropriate way to the end user the bias present in the underlying data and/or any fairness policy that have been applied to the data or system under consideration. 
 + **Adapting**: Provide the user with a set of tools that allows them to interact with existing biased results and to adapt them for bias in their preferred ways.
 
+## Demonstration Video
+[Watch the demo video here](https://drive.google.com/file/d/1NwhJ1iGTbe4YTKYVyrJm2SmcO5GDn2y2/view?usp=sharing)
+
 ## Architecture
 <img src="architecture.jpg" alt="architecture" width="600">
 
@@ -50,5 +53,3 @@ To start the database explicitly, run:
 make start-db
 ```
 
-## Demonstration Video
-[Watch the demo video here](https://drive.google.com/file/d/1NwhJ1iGTbe4YTKYVyrJm2SmcO5GDn2y2/view?usp=sharing)
