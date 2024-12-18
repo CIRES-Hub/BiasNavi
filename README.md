@@ -51,4 +51,4 @@ make start-db
 ```
 
 ## Demonstration Video
-[Google Drive](https://drive.google.com/file/d/1NwhJ1iGTbe4YTKYVyrJm2SmcO5GDn2y2/view?usp=sharing)
+[Watch the demo video here](https://drive.google.com/file/d/1NwhJ1iGTbe4YTKYVyrJm2SmcO5GDn2y2/view?usp=sharing)
