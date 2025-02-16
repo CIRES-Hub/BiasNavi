@@ -3,11 +3,10 @@ import dash
 from UI.app import app
 from dash.dependencies import Input, Output, State
 import base64
-from agent import ConversationFormat
+from agent import ConversationFormat, rag
 import datetime
 from dash import callback_context, MATCH, ALL, ctx
 import io
-from RAG import RAG
 from dash import dcc, html
 from UI.functions import *
 import dash_bootstrap_components as dbc
@@ -25,7 +24,9 @@ from UI.functions import query_llm
      Output("commands-input", "value"),
      Output('query-input', 'value'),
      Output("pipeline-alert", "is_open"),
-     Output("pipeline-slider", "value"),],
+     Output("pipeline-slider", "value"),
+     Output("recommended-op", "children", allow_duplicate=True),
+     Output("tooltip-expl", "children", allow_duplicate=True)],
     [Input('send-button', 'n_clicks'),
      Input('query-input', 'n_submit'),
      Input({"type": 'next-suggested-question', "index": ALL}, 'n_clicks')],
@@ -38,13 +39,13 @@ from UI.functions import query_llm
 def update_messages(n_clicks, n_submit, question_clicked, input_text, query_records, suggested_questions):
     if not input_text and not question_clicked:
         #no input information provided
-        return query_records, True, "Please enter a query.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
+        return query_records, True, "Please enter a query.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update,  dash.no_update
     if n_clicks is None and question_clicked is None:
         # no controls clicked
-        return query_records, True, "Please enter a query.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
+        return query_records, True, "Please enter a query.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if global_vars.df is None:
         # no dataset loaded
-        return query_records, True, "Please upload a dataset first.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update
+        return query_records, True, "Please upload a dataset first.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     trigger = ctx.triggered_id
 
     if not isinstance(trigger, str) and 'next-suggested-question' in trigger.type:
@@ -59,7 +60,7 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
     if global_vars.rag and global_vars.use_rag:
         input_text = global_vars.rag.invoke(query)
         global_vars.rag_prompt = query
-    answer, media, new_suggested_questions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+    answer, media, new_suggested_questions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
     print(stage)
     change_stage = False
     stages = ["Identify","Measure","Surface","Adapt"]
@@ -87,9 +88,9 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
     list_commands = global_vars.agent.list_commands
     if not media:
         return query_records, False, "", dash.no_update, time.time(), suggested_questions, ('\n').join(list_commands) if len(
-            list_commands) > 0 else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update
+            list_commands) > 0 else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update, op, expl
     return query_records, False, "", media, time.time(), suggested_questions, ('\n').join(list_commands) if len(
-        list_commands) > 0 else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update
+        list_commands) > 0 else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update, op, expl
 
 
 @app.callback(
@@ -182,7 +183,7 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
             return html.Div([""])
         if global_vars.rag and global_vars.use_rag:
             message = global_vars.rag.invoke(query)
-            output_text, media, new_suggested_questions, stage = query_llm(message, global_vars.current_stage, current_user.id)
+            output_text, media, new_suggested_questions, stage, op, expl = query_llm(message, global_vars.current_stage, current_user.id)
 
 
         rag_output.append(html.Div(["RAG enhanced prompt: " + output_text]))

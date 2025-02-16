@@ -28,12 +28,12 @@ def two_column_heatmap(
         df (pd.DataFrame):
             The dataframe used for computing correlations and producing a heatmap.
         num_num_metric (Callable[[pd.Series, pd.Series], float], optional):
-            The correlation metric used for numerical-numerical series pairs. Defaults to Pearson's correlation
+            The correlation bias used for numerical-numerical series pairs. Defaults to Pearson's correlation
             coefficient.
         cat_num_metric (Callable[[pd.Series, pd.Series], float], optional):
-            The correlation metric used for categorical-numerical series pairs. Defaults to Kruskal-Wallis' H Test.
+            The correlation bias used for categorical-numerical series pairs. Defaults to Kruskal-Wallis' H Test.
         cat_cat_metric (Callable[[pd.Series, pd.Series], float], optional):
-            The correlation metric used for categorical-categorical series pairs. Defaults to corrected Cramer's V
+            The correlation bias used for categorical-categorical series pairs. Defaults to corrected Cramer's V
             statistic.
         columns_x (Optional[List[str]]):
             The sensitive dataframe column names that will be used in generating the correlation heatmap.

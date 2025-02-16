@@ -56,7 +56,7 @@
 #             #                     className='menu-item'
 #             #                 ),
 #             #                 dbc.DropdownMenu(
-#             #                     [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpt4omini"),
+#             #                     [dbc.DropdownMenuItem("GPT-4o-mini  ✔", id="menu-model-gpto3mini"),
 #             #                      dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
 #             #                      dbc.DropdownMenuItem("GPT-4o", id="menu-model-gpt4o")],
 #             #                     label="LLM Models",

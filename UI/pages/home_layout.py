@@ -9,7 +9,7 @@ from flask_login import logout_user, current_user
 from dash.exceptions import PreventUpdate
 import dash_editor_components
 from agent import ConversationFormat
-from utils.constant import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
+from utils.constant_prompt import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
     DEFAULT_PERSONA_PROMPT
 import ast
 from UI.pages.components.survey_modal import survey_modal
@@ -213,7 +213,7 @@ def layout():
                             #     className='menu-item'
                             # ),
                             dbc.DropdownMenu(
-                                [dbc.DropdownMenuItem("GPT-4o-mini", id="menu-model-gpt4omini"),
+                                [dbc.DropdownMenuItem("GPT-o3-mini", id="menu-model-gpto3mini"),
                                  dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
                                  dbc.DropdownMenuItem("GPT-4o  ✔", id="menu-model-gpt4o")],
                                 label="LLM Models",
@@ -365,7 +365,27 @@ def layout():
                                 color="primary",
                                 duration=5000,
                             ),
-                        )
+                        ),
+                        html.Div([html.P("Recommended Operation:", id="recommended-op", className="op-highlight"),
+                                  html.Span(
+                                      html.I(className="fas fa-question-circle"),
+                                      id="tooltip-op",
+                                      style={
+                                          "fontSize": "20px",
+                                          "color": "#aaa",
+                                          "cursor": "pointer",
+                                          "marginLeft": "5px",
+                                          "alignSelf": "center"
+                                      }
+                                  )],
+                                 style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                                  "width": "100%"}),
+                        dbc.Tooltip(
+                            "",
+                            target="tooltip-op",
+                            id="tooltip-expl",
+                        ),
+
 
                     ], className='card', style={"padding": "10px"}),
 
@@ -470,13 +490,13 @@ def layout():
                 dbc.Col(width=6, id="middle-column", children=[
                     dbc.Card(body=True, id='data-view', className='card', children=[
                         html.Div([
-                            html.Button('Dataset Statistics', id='data-stat-button',
+                            html.Button('Data Statistics', id='data-stat-button',
                                         n_clicks=0, className='primary-button', style={'margin': '10px 10px 10px 0'}),
                             html.Button('Save Snapshot', id='open-modal-button',
                                         n_clicks=0, className='primary-button', style={'margin': '10px'}),
-                            html.Button('Download Data', id='download-data-button',
+                            html.Button('Download', id='download-data-button',
                                         n_clicks=0, className='primary-button', style={'margin': '10px'}),
-                            html.Button('Show Data', id='show-rows-button',
+                            html.Button('Go to Rows', id='show-rows-button',
                                         className='primary-button', style={'margin': '10px'}),
                             dcc.Input(id='input-start-row', type='number', placeholder='Start row',
                                       style={'margin': '10px', 'width': '10%'}),

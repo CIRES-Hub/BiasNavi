@@ -35,7 +35,9 @@ import pandas as pd
      Output("upload-data-modal", "style"),
      Output("upload-data-error-msg", "children"),
      Output('query-area', 'children', allow_duplicate=True),
-     Output("pipeline-slider", "value", allow_duplicate=True)],
+     Output("pipeline-slider", "value", allow_duplicate=True),
+     Output("recommended-op", "children", allow_duplicate=True),
+     Output("tooltip-expl", "children", allow_duplicate=True)],
     [Input('upload-data', 'contents'),
      Input('upload-data-modal', 'contents'),
      Input('show-rows-button', 'n_clicks')],
@@ -54,14 +56,14 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
     if triggered_id == 'upload-data' or triggered_id == 'upload-data-modal':
         if triggered_id == 'upload-data':
             if not list_of_contents or not list_of_names:
-                return [], [], [], False, [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents[0]
             filename = list_of_names[0]
         elif triggered_id == 'upload-data-modal':
             if not list_of_contents_modal or not list_of_names_modal:
-                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update, dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents_modal[0]
@@ -71,7 +73,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update, dash.no_update
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -103,13 +105,15 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             dash.no_update,
             "",
             chat_content,
-            0
+            0,
+            "Recommended Operation: Check Data Statistics",
+            "Checking data statistics is essential in the Identify stage as it provides a foundational understanding of the dataset, helping to reveal initial disparities, patterns, or anomalies that might indicate bias."
 
         )
 
     elif triggered_id == 'show-rows-button':
         if global_vars.df is None:
-            return [], [], [], False, [], [], dash.no_update, dash.no_update, "No data is loaded.", dash.no_update, dash.no_update
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "No data is loaded.", dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
@@ -127,6 +131,8 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
                 "",
                 dash.no_update,
                 dash.no_update,
+                dash.no_update,
+                dash.no_update
             )
 
         xdf = global_vars.df.iloc[start_row:end_row]
@@ -142,9 +148,11 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             "",
             dash.no_update,
             dash.no_update,
+            dash.no_update,
+            dash.no_update
         )
 
-    return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update, dash.no_update
+    return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 @app.callback(
@@ -323,6 +331,8 @@ def update_model_dropdown(selected_task):
     Output({'type': 'spinner-btn', 'index': 0}, 'children', allow_duplicate=True),
     Output("experiment-result-table", 'data', allow_duplicate=True),
     Output("experiment-result", 'data', allow_duplicate=True),
+    Output("recommended-op", "children", allow_duplicate=True),
+    Output("tooltip-expl", "children", allow_duplicate=True),
     Input({'type': 'spinner-btn', 'index': 0}, 'children'),
     State('dataset-selection', 'value'),
     State('sensi-attr-selection', 'value'),
@@ -335,15 +345,15 @@ def update_model_dropdown(selected_task):
 )
 def evaluate_dataset(_, df_id, sens_attr, label, task, model, past_res_table, past_res):
     if global_vars.df is None or not global_vars.data_snapshots:
-        return 'No dataset is loaded!', True, [], [], [], " Run", dash.no_update, dash.no_update
+        return 'No dataset is loaded!', True, [], [], [], " Run", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if df_id is None or sens_attr is None or label is None or task is None or model is None:
-        return 'The experimental setting is incomplete!', True, [], [], [], " Run", dash.no_update, dash.no_update
+        return 'The experimental setting is incomplete!', True, [], [], [], " Run", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     data = global_vars.data_snapshots[int(df_id) - 1]
     if label in sens_attr:
-        return 'The label cannot be in the sensitive attributes!', True, [], [], [], " Run", dash.no_update, dash.no_update
+        return 'The label cannot be in the sensitive attributes!', True, [], [], [], " Run", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if data[label].dtype in ['float64', 'float32'] and task == 'Classification':
         return ('The target attribute is continuous (float) but the task is set to classification. Consider binning '
-                'the target or setting the task to regression.'), True, [], [], [], " Run", dash.no_update, dash.no_update
+                'the target or setting the task to regression.'), True, [], [], [], " Run", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if data[label].dtype == 'object' or data[label].dtype.name == 'bool' or data[label].dtype.name == 'category':
         if task == 'Regression':
             return 'The target attribute is categorical and cannot be used for regression task.', True, [], [], [], " Run", dash.no_update, dash.no_update
@@ -437,7 +447,7 @@ def evaluate_dataset(_, df_id, sens_attr, label, task, model, past_res_table, pa
         [f"Row {i + 1}: {row}" for i, row in enumerate(tables)]
     )
     query = f"Assess the bias level in the dataset using the following results: {data_string}. The model accuracy is {res}. These results were generated by executing the {task} task with the {model} model. The analysis centers on the sensitive attributes {sens_attr}, with {label} serving as the target attribute. The objective is to identify and minimize disparities among subgroups of the sensitive attributes without sacrificing accuracy."
-    answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+    answer, media, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
     answer = format_reply_to_markdown(answer)
     res_explanation = [dcc.Markdown(answer, className="llm-text")]
     now = datetime.datetime.now()
@@ -447,7 +457,8 @@ def evaluate_dataset(_, df_id, sens_attr, label, task, model, past_res_table, pa
     past_res_table.append({"Snapshot": df_id, "Timestamp": formatted_date_time, "Result": res,
                            "Setting": settings})
     past_res.append(tables)
-    return "", False, [html.Hr(), tooltip, res], tables, res_explanation, " Run", past_res_table, past_res
+    global_vars.agent.add_user_action_to_history(f"I have evaluated the dataset and got the result and disparity scores: {data_string}")
+    return "", False, [html.Hr(), tooltip, res], tables, res_explanation, " Run", past_res_table, past_res, op, expl
 
 
 @app.callback(
@@ -481,6 +492,8 @@ def show_past_experiment_result(active_cell, data):
     Output('comparison-alert', 'children', allow_duplicate=True),
     Output('comparison-alert', 'is_open', allow_duplicate=True),
     Output({'type': 'spinner-btn', 'index': 10}, 'children', allow_duplicate=True),
+    Output("recommended-op", "children", allow_duplicate=True),
+    Output("tooltip-expl", "children", allow_duplicate=True),
     Input({'type': 'spinner-btn', 'index': 10}, 'children'),
     State('experiment-result-table', 'selected_rows'),
     State('experiment-result-table', 'data'),
@@ -490,9 +503,9 @@ def show_past_experiment_result(active_cell, data):
 )
 def compare_experiment_results(_, selected_rows, table_data, res_data):
     if selected_rows is None:
-        return [], "Choose two experiment results to compare.", True, "Compare"
+        return [], "Choose two experiment results to compare.", True, "Compare", dash.no_update, dash.no_update
     if len(selected_rows)!=2:
-        return [], "You can only choose two experiment results to compare.", True, "Compare"
+        return [], "You can only choose two experiment results to compare.", True, "Compare", dash.no_update, dash.no_update
     # Get the row id from the active cell
     acc1 = table_data[selected_rows[0]]["Result"]
     acc2 = table_data[selected_rows[1]]["Result"]
@@ -506,10 +519,10 @@ def compare_experiment_results(_, selected_rows, table_data, res_data):
         [f"Row {i + 1}: {row}" for i, row in enumerate(res2)]
     )
     query = f"Please compare the results of two comparison. The first chosen result has the overall {acc1} and the accuracy across different subgroups and categories is {res_string1}. The second chosen result has the overall {acc2} and the accuracy across different subgroups and categories is {res_string2}. You should consider both the accuracy and disparity score to demonstrate which result is better."
-    answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+    answer, media, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
     answer = format_reply_to_markdown(answer)
     res_comparison = [dcc.Markdown(answer, className="llm-text")]
-    return res_comparison, dash.no_update, dash.no_update, "compare"
+    return res_comparison, dash.no_update, dash.no_update, "compare", op, expl
 
 
 @app.callback(
@@ -557,6 +570,8 @@ def display_data_stat(n1, n2, is_open):
 @app.callback(
     Output("data-stat-summary", "children"),
     Output({'type': 'spinner-btn', 'index': 1}, "children",allow_duplicate=True),
+    Output("recommended-op", "children", allow_duplicate=True),
+    Output("tooltip-expl", "children", allow_duplicate=True),
     Input({'type': 'spinner-btn', 'index': 1}, "children"),
     State("data-stat-body", "children"),
     prevent_initial_call=True
@@ -579,12 +594,12 @@ def display_data_summary(_, data):
                 approaches. 
                 """
 
-        answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+        answer, media, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
         answer = format_reply_to_markdown(answer)
         global_vars.agent.add_user_action_to_history(f"I have analyzed the dataset. ")
-        return [dcc.Markdown(answer, className="llm-text")], "Analyze"
+        return [dcc.Markdown(answer, className="llm-text")], "Analyze", op, expl
 
-    return [], "Analyze"
+    return [], "Analyze", dash.no_update, dash.no_update
 
 
 def summarize_dataframe(df):

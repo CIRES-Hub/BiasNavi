@@ -63,7 +63,7 @@ class DatasetAgent:
             llm = ChatOpenAI(temperature=0.7, model="gpt-4o-2024-08-06").configurable_alternatives(
                 ConfigurableField(id="llm"),
                 default_key="gpt4o",
-                gpt4omini=ChatOpenAI(model="gpt-4o-mini"),
+                gpto3mini=ChatOpenAI(model="gpt-o3-mini"),
                 gpt4=ChatOpenAI(model="gpt-4-turbo"),
             )
         self.llm = llm
@@ -74,6 +74,7 @@ class DatasetAgent:
         self.list_commands: list[str] = []
         self.file_name = file_name
         self.current_stage = "Identify"
+
         self.parser = PydanticOutputParser(pydantic_object=ResponseFormat)
         multimodal_prompt = self.configure_multimodal_prompt()
         self.prompt = self.configure_chat_prompt()
@@ -93,17 +94,17 @@ class DatasetAgent:
         self.chain = self.prompt | self.agent
         self.multimodal_chain = multimodal_prompt | self.llm
 
-        self.history = ChatMessageHistory(session_id=self.session_id)
+        self.chat_history = ChatMessageHistory(session_id=self.session_id)
 
         self.agent_with_chat_history = RunnableWithMessageHistory(
             self.chain,
-            lambda session_id: self.history,
+            lambda session_id: self.chat_history,
             history_messages_key="chat_history",
         )
 
         self.multimodal_chain_with_history = RunnableWithMessageHistory(
             self.multimodal_chain,
-            lambda session_id: self.history,
+            lambda session_id: self.chat_history,
             history_messages_key="chat_history",
         )
 
@@ -116,10 +117,10 @@ class DatasetAgent:
         # invoked when the user changed their prompts or user profile.
         prompt = self.configure_chat_prompt()
         self.chain.first = prompt
-        self.history = self.agent_with_chat_history.get_session_history(self.session_id)
+        self.chat_history = self.agent_with_chat_history.get_session_history(self.session_id)
         self.agent_with_chat_history = RunnableWithMessageHistory(
             self.chain,
-            lambda session_id: self.history,
+            lambda session_id: self.chat_history,
             history_messages_key="chat_history",
         )
         self.agent_with_trimmed_history = (
@@ -156,8 +157,7 @@ class DatasetAgent:
             template=""""The current stage of bias management is {stage}. Please answer the my question: {input}. The 
             response should be tailored to my background: {background} and align with the {stage}. Ensure that your 
             answer is informative while understandable for me. To make your answer clearer and instructive, 
-            you can include examples and step-by-step instructions appropriate for my background. When you are asked 
-            to explain images, explain it!""",
+            you can include examples and step-by-step instructions appropriate for my background. """,
             input_variables=["input", "stage"],
             partial_variables={"background": current_user.persona_prompt},
         )
@@ -203,12 +203,12 @@ class DatasetAgent:
 
     def trim_messages(self, trimmed_message):
         # store the most recent 30 messages
-        stored_messages = self.history.messages
+        stored_messages = self.chat_history.messages
         if len(stored_messages) <= 30:
             return False
-        self.history.clear()
+        self.chat_history.clear()
         for message in stored_messages[-30:]:
-            self.history.add_message(message)
+            self.chat_history.add_message(message)
         return True
 
     def describe_image(self, query, image_data):
@@ -231,7 +231,7 @@ class DatasetAgent:
                 configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
         else:
             result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
+                configurable={"llm": "gpto3mini", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
 
         # Parse response 
         suggestions = []
@@ -241,6 +241,8 @@ class DatasetAgent:
             suggestions.append(result.question1)
             suggestions.append(result.question2)
             stage = result.stage
+            operation = result.operation
+            explanation = result.explanation
             result = result.answer
             if stage is not self.current_stage and stage in ["Identify", "Measure", "Surface", "Adapt"]:
                 self.current_stage = stage
@@ -251,7 +253,7 @@ class DatasetAgent:
             # cannot be parsed in the above format, directly return the answer
             self.execution_error.append(e)
             result = result['output']
-            return result, self.elem_queue, suggestions, stage
+            return result, self.elem_queue, suggestions, stage, operation, explanation
 
         # Improve table removal logic
         table_pattern = r'(?s)\|.*?\|\n\|[-:]+\|\n(.*?)\n\n'
@@ -265,9 +267,9 @@ class DatasetAgent:
             result = f"""There was an error processing your request. Please provide a clearer query and try again.
                     (Error message: {str(self.execution_error[0])})"""
         if len(self.elem_queue) > 0:
-            return result, self.elem_queue, suggestions, stage
+            return result, self.elem_queue, suggestions, stage, operation, explanation
         else:
-            return result, None, suggestions, stage
+            return result, None, suggestions, stage, operation, explanation
 
     def set_llm_model(self, model):
         self.model_name = model
@@ -275,7 +277,7 @@ class DatasetAgent:
     def _get_full_history(self) -> dict:
         return {
             "dataset": self.file_name if self.file_name is not None else 'unknown',
-            "messages": messages_to_dict(self.history.messages)
+            "messages": messages_to_dict(self.chat_history.messages)
         }
 
     def _get_agent_type(self, role) -> str:
@@ -354,19 +356,19 @@ class DatasetAgent:
                    persistence_type: PersistenceType = PersistenceType.DATABASE,
                    c_format: ConversationFormat = ConversationFormat.SIMPLIFIED_JSON,
                    path: str = 'histories'):
-        self.history.add_message(SystemLogMessage(content=message))
+        self.chat_history.add_message(SystemLogMessage(content=message))
         self.persist_history(persistence_type=persistence_type,
                              c_format=c_format, path=path)
 
     def add_user_action_to_history(self, message):
-        self.history.add_message(HumanMessage(content=message))
+        self.chat_history.add_message(HumanMessage(content=message))
 
     def persist_commands(self,
                          message,
                          persistent_type: PersistenceType = PersistenceType.DATABASE,
                          c_format: ConversationFormat = ConversationFormat.SIMPLIFIED_JSON,
                          path: str = 'histories'):
-        self.history.add_message(AssistantLogMessage(content=message))
+        self.chat_history.add_message(AssistantLogMessage(content=message))
 
         if not os.path.exists(path):
             os.makedirs(path)

@@ -9,7 +9,7 @@ from flask_login import login_user
 import docker
 import os
 import shutil
-from utils.constant import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
+from utils.constant_prompt import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
     DEFAULT_PERSONA_PROMPT
 
 dash.register_page(__name__, path='/signup/', title='Signup')

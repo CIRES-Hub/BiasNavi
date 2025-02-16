@@ -8,7 +8,11 @@ import plotly.io as pio
 import base64
 from flask_login import current_user
 import dash_bootstrap_components as dbc
-from utils.sampler import Sampler
+
+from bias.identify import identify_sensitive_attributes
+from bias.surface import draw_multi_dist_plot
+from bias.measure import calculate_demographic_report
+from bias.adapt import adapt_data
 
 
 @app.callback(
@@ -19,7 +23,9 @@ from utils.sampler import Sampler
     Output('data-alert', 'children', allow_duplicate=True),
     Output('data-alert', 'is_open', allow_duplicate=True),
     Output({'type': 'spinner-btn', 'index': 3}, 'children', allow_duplicate=True),
-    Output("sensitive-attr-store", 'data'),
+    Output("sensitive-attr-store", 'data', allow_duplicate=True),
+    Output("recommended-op", "children", allow_duplicate=True),
+    Output("tooltip-expl", "children", allow_duplicate=True),
     Input({'type': 'spinner-btn', 'index': 3}, 'children'),
     State('column-names-dropdown', 'value'),
     State('data-view-table-style', 'data'),
@@ -27,14 +33,14 @@ from utils.sampler import Sampler
 )
 def identify_bias(_, target, styles):
     if global_vars.df is None:
-        return "", dash.no_update, "No dataset is loaded.", True, dash.no_update, dash.no_update, "Identify Bias", {}
+        return "", dash.no_update, "No dataset is loaded.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
     if target is None:
-        return "", dash.no_update, "Please choose a target before identifying bias.", True, dash.no_update, dash.no_update, "Identify Bias", {}
+        return "", dash.no_update, "Please choose a target before identifying bias.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
     sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
     if not sensitive_attrs:
-        return [], dash.no_update, "No sensitive attributes are detected.", True, dash.no_update, dash.no_update, "Identify Bias", {}
+        return [], dash.no_update, "No sensitive attributes are detected.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
     if target in sensitive_attrs:
-        return [], dash.no_update, "The selected target is identified sensitive. Cannot Proceed!", True, dash.no_update, dash.no_update, "Identify Bias", {}
+        return [], dash.no_update, "The selected target is identified sensitive. Cannot Proceed!", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
 
     attr_text = ','.join(sensitive_attrs)
     query = f"""
@@ -44,7 +50,7 @@ def identify_bias(_, target, styles):
                 reason whether other attributes could be included or if any of the identified sensitive attributes 
                 have been misclassified. Please format your output as follows: First, highlight the sensitive 
                 attributes. Then, provide an explanation of why these attributes are considered sensitive."""
-    answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+    answer, media, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
     answer = format_reply_to_markdown(answer)
     column_style = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in
                     sensitive_attrs]
@@ -52,7 +58,7 @@ def identify_bias(_, target, styles):
     bias_report_content = html.Div([
         dcc.Markdown(answer, className="llm-text", style={"marginBottom": "30px"}),
     ])
-    global_vars.agent.add_user_action_to_history("I have identified bias in this dataset")
+    global_vars.agent.add_user_action_to_history("I have identified bias in this dataset.")
 
     sensitive_attrs_dropdown = dcc.Dropdown(
         id='identified-attrs-dropdown',
@@ -66,7 +72,7 @@ def identify_bias(_, target, styles):
     return [html.H4("Result of Bias Identifying"), bias_report_content,
             html.B("You can add or remove sensitive attributes here.", style={"marginBottom": "20px"}),
             sensitive_attrs_dropdown], styles, "", False, "The sensitive attributes are highlighted in the data view.", True, "Identify Bias", {
-        "sensitive_attrs": sensitive_attrs}
+        "sensitive_attrs": sensitive_attrs}, op, expl
 
 
 @app.callback(
@@ -194,6 +200,8 @@ def surface_bias(_, target, sensitive_attrs):
     Output('report-alert', 'children', allow_duplicate=True),
     Output('report-alert', 'is_open', allow_duplicate=True),
     Output({'type': 'spinner-btn', 'index': 6}, 'children', allow_duplicate=True),
+    Output("recommended-op", "children", allow_duplicate=True),
+    Output("tooltip-expl", "children", allow_duplicate=True),
     Input({'type': 'spinner-btn', 'index': 6}, 'children'),
     State('column-names-dropdown', 'value'),
     State('sensitive-attr-store', 'data'),
@@ -201,11 +209,11 @@ def surface_bias(_, target, sensitive_attrs):
 )
 def adapt_bias(_, target, sensitive_attrs):
     if global_vars.df is None:
-        return "", "No dataset is loaded.", True, "Adapt Bias"
+        return "", "No dataset is loaded.", True, "Adapt Bias", dash.no_update, dash.no_update
     if target is None:
-        return "", "Please choose a target before adapting bias.", True, "Adapt Bias"
+        return "", "Please choose a target before adapting bias.", True, "Adapt Bias", dash.no_update, dash.no_update
     if sensitive_attrs == {}:
-        return "", "No biases are identified. Please Identify bias first.", True, "Adapt Bias"
+        return "", "No biases are identified. Please Identify bias first.", True, "Adapt Bias", dash.no_update, dash.no_update
 
     query = f""" Adapting bias will provide the user with a set of tools which allows them to interact with existing 
     biased results and to adapt them for bias in their preferred ways. Given these sensitive attributes 
@@ -216,7 +224,7 @@ def adapt_bias(_, target, sensitive_attrs):
     or other actions to adapt bias? In your answer, you should highlight the recommended action. If the recommended 
     action is integrated in BiasNavi, you do not need to tell how to do it and just explain why I should take that 
     action."""
-    answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+    answer, media, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
     answer = format_reply_to_markdown(answer)
 
     suggested_action = html.Div([
@@ -263,7 +271,7 @@ def adapt_bias(_, target, sensitive_attrs):
 
     global_vars.agent.add_user_action_to_history("I have started to adapt the bias in this dataset.")
     return [html.H4("Result of Adapting Bias"), button_area,
-            suggested_action], dash.no_update, dash.no_update, "Adapt Bias"
+            suggested_action], dash.no_update, dash.no_update, "Adapt Bias", op, expl
 
 
 @app.callback(
@@ -292,18 +300,18 @@ def handle_sampling(smote_clicks, oversample_clicks, undersample_clicks, attr):
     if attr is None:
         return dash.no_update, False, "Please choose a sensitive attribute!", True, dash.no_update, dash.no_update
 
-    sampler = Sampler(global_vars.df, attr)
+
     if button_id == "smote-btn":
-        new_data = sampler.smote()
+        new_data = adapt_data(global_vars.df, attr, 'smote')
         global_vars.agent.add_user_action_to_history(f"I have performed SMOTE on the dataset based on the identified sensitive attribute {attr}.")
         adapting_message = "New data have been augmented."
     elif button_id == "oversample-btn":
-        new_data = sampler.oversample()
+        new_data = adapt_data(global_vars.df, attr, 'oversample')
         adapting_message = "Oversampling is completed."
         global_vars.agent.add_user_action_to_history(
             f"I have performed oversampling on the dataset based on the identified sensitive attribute {attr}.")
     elif button_id == "undersample-btn":
-        new_data = sampler.undersample()
+        new_data = adapt_data(global_vars.df, attr, 'undersample')
         adapting_message = "Undersampling is completed."
         global_vars.agent.add_user_action_to_history(
             f"I have performed undersampling on the dataset based on the identified sensitive attribute {attr}.")
@@ -496,7 +504,7 @@ def explain_report_table(_, tb):
             [f"Row {i + 1}: {row}" for i, row in enumerate(tb)]
         )
         query = f"Explain this table data {data_string} given the distance metric in the table header. The distance figure is calculated by comparing the distribution of the subgraph with the distribution of all."
-        answer, media, suggestions, stage = query_llm(query, global_vars.current_stage, current_user.id)
+        answer, media, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
         answer = format_reply_to_markdown(answer)
         global_vars.agent.add_user_action_to_history("I have analyzed the result of bias measuring.")
         return dcc.Markdown(answer, className="llm-text"), {"display": "block"}, "Explain"

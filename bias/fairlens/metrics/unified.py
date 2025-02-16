@@ -13,7 +13,7 @@ from .distance import BinomialDistance, DistanceMetric, EarthMoversDistance, Kol
 
 
 def auto_distance(column: pd.Series):
-    """Return a suitable statistical distance metric based on the distribution of the data.
+    """Return a suitable statistical distance bias based on the distribution of the data.
 
     Args:
         column (pd.Series):
@@ -40,8 +40,8 @@ def stat_distance(
     **kwargs,
 ):
     """Computes the statistical distance between two probability distributions ie. group 1 and group 2, with respect
-    to the target attribute. The distance metric can be chosen through the mode parameter. If mode is set to "auto",
-    the most suitable metric depending on the target attributes' distribution is chosen.
+    to the target attribute. The distance bias can be chosen through the mode parameter. If mode is set to "auto",
+    the most suitable bias depending on the target attributes' distribution is chosen.
     If group1 is a dictionary and group2 is None then the distance is computed between group1 and the rest of the
     dataset.
 
@@ -61,13 +61,13 @@ def stat_distance(
             to index a subgroup from the dataframe.
             Examples: {"Sex": ["Male"]}, df["Sex"] == "Female"
         mode (str):
-            Which distance metric to use. Can be the names of classes from `fairlens.metrics`, or their
-            id() strings. If set to "auto", the method automatically picks a suitable metric based on the
+            Which distance bias to use. Can be the names of classes from `fairlens.metrics`, or their
+            id() strings. If set to "auto", the method automatically picks a suitable bias based on the
             distribution of the target attribute. Defaults to "auto".
         p_value (bool):
-            Returns the a suitable p-value for the metric if it exists. Defaults to False.
+            Returns the a suitable p-value for the bias if it exists. Defaults to False.
         **kwargs:
-            Keyword arguments for the distance metric. Passed to the __init__ function of distance metrics.
+            Keyword arguments for the distance bias. Passed to the __init__ function of distance metrics.
 
 
     Examples:
@@ -86,7 +86,7 @@ def stat_distance(
     group1 = df[pred1][target_attr]
     group2 = df[pred2][target_attr]
 
-    # Choose the distance metric
+    # Choose the distance bias
     distance_type = ""
     if mode == "auto":
         dist_class, dist_type = auto_distance(df[target_attr])
@@ -116,19 +116,19 @@ def correlation_matrix(
     columns_x: Optional[List[str]] = None,
     columns_y: Optional[List[str]] = None,
 ) -> pd.DataFrame:
-    """This function creates a correlation matrix out of a dataframe, using a correlation metric for each
+    """This function creates a correlation matrix out of a dataframe, using a correlation bias for each
     possible type of pair of series (i.e. numerical-numerical, categorical-numerical, categorical-categorical).
 
     Args:
         df (pd.DataFrame):
             The dataframe that will be analyzed to produce correlation coefficients.
         num_num_metric (Callable[[pd.Series, pd.Series], float], optional):
-            The correlation metric used for numerical-numerical series pairs. Defaults to Pearson's correlation
+            The correlation bias used for numerical-numerical series pairs. Defaults to Pearson's correlation
             coefficient.
         cat_num_metric (Callable[[pd.Series, pd.Series], float], optional):
-            The correlation metric used for categorical-numerical series pairs. Defaults to Kruskal-Wallis' H Test.
+            The correlation bias used for categorical-numerical series pairs. Defaults to Kruskal-Wallis' H Test.
         cat_cat_metric (Callable[[pd.Series, pd.Series], float], optional):
-            The correlation metric used for categorical-categorical series pairs. Defaults to corrected Cramer's V
+            The correlation bias used for categorical-categorical series pairs. Defaults to corrected Cramer's V
             statistic.
         columns_x (Optional[List[str]]):
             The column names that determine the rows of the matrix.

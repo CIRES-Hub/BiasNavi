@@ -29,7 +29,7 @@ class DistanceMetric(ABC):
     _class_dict: Dict[str, Type["DistanceMetric"]] = {}
 
     def __init__(self, **kwargs):
-        """Initialize distance metric."""
+        """Initialize distance bias."""
         ...
 
     def __init_subclass__(cls, **kwargs):
@@ -131,7 +131,7 @@ class ContinuousDistanceMetric(DistanceMetric):
     """
 
     def __init__(self, p_value_test="bootstrap"):
-        """Initialize continuous distance metric.
+        """Initialize continuous distance bias.
 
         Args:
             p_value_test (str, optional):
@@ -172,7 +172,7 @@ class CategoricalDistanceMetric(DistanceMetric):
     """
 
     def __init__(self, bin_edges: Optional[np.ndarray] = None):
-        """Initialize categorical distance metric.
+        """Initialize categorical distance bias.
 
         Args:
             bin_edges (Optional[np.ndarray], optional):
@@ -206,7 +206,7 @@ class CategoricalDistanceMetric(DistanceMetric):
                 A normalized histogram.
             bin_edges (Optional[np.ndarray]):
                 bin_edges for binned continuous data. Used by metrics such as Earth Mover's Distance to compute the
-                distance metric space.
+                distance bias space.
 
         Returns:
             float:

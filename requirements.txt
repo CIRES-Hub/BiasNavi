@@ -11,7 +11,7 @@ langchain_chroma==0.1.4
 langchain_community==0.3.2
 langchain_core==0.3.10
 langchain_experimental==0.3.2
-langchain_openai==0.2.2
+langchain_openai==0.3
 langchain_text_splitters==0.3.0
 matplotlib==3.9.2
 modin==0.32.0
