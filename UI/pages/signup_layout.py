@@ -2,14 +2,12 @@ import dash_bootstrap_components as dbc
 from dash import html, dcc, callback, Input, Output, State, callback_context
 import dash
 from dash.exceptions import PreventUpdate
-from werkzeug.security import generate_password_hash
 from db_models.users import User
 from db_models.databases import db
-from flask_login import login_user
 import docker
 import os
 import shutil
-from utils.constant_prompt import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
+from constant_prompt import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
     DEFAULT_PERSONA_PROMPT
 
 dash.register_page(__name__, path='/signup/', title='Signup')

@@ -1,15 +1,13 @@
 import dash_bootstrap_components as dbc
 import dash_editor_components.PythonEditor
 from db_models.conversation import Conversation
-from db_models.users import User
-from dash import dcc, html, dash_table, callback, Input, Output, State, MATCH, ALL, callback_context
+from dash import dcc, html, dash_table, callback, Input, Output, State, MATCH, callback_context
 import dash_daq as daq
 import dash
 from flask_login import logout_user, current_user
-from dash.exceptions import PreventUpdate
 import dash_editor_components
 from agent import ConversationFormat
-from utils.constant_prompt import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
+from constant_prompt import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
     DEFAULT_PERSONA_PROMPT
 import ast
 from UI.pages.components.survey_modal import survey_modal

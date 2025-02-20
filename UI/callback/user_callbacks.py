@@ -5,7 +5,7 @@ from db_models.databases import db
 from flask_login import current_user
 from dash import Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
-from utils.constant_prompt import DEFAULT_PERSONA_PROMPT
+from constant_prompt import DEFAULT_PERSONA_PROMPT
 from UI.variable import global_vars
 
 # Update Username

@@ -1,7 +1,7 @@
 # BiasNavi
-A data bias management toolkit developed by ARC Training Centre for Information Resilience [CIRES](https://cires.org.au/).
+A data bias management toolkit developed by ARC Training Centre for Information Resilience [CIRES](https://cires.org.au/). It is a large language models (LLM)-empowered toolkit for data bias management. BiasNavi features an autonomous agent that seamlessly integrates with modules for bias identification, measurement, surfacing, and adaptation, reasoning over data and interactions to adaptively guide users through the bias management pipeline. With intuitive and personalized interfaces, BiasNavi empowers users to customize their workflows and address data bias effectively. 
 
-BiasNavi aims to manage the bias in datasets. It complies with the following pipeline:
+BiasNavi complies with the following bias management pipeline:
 
 + **Identifying**: Identify if the data or system being used is subject to bias or fairness issues. 
 + **Measuring**: Quantify with an appropriate metric the magnitude of different types of bias present in the data or system being considered. 
@@ -13,6 +13,14 @@ BiasNavi aims to manage the bias in datasets. It complies with the following pip
 
 ## Architecture
 <img src="architecture.jpg" alt="architecture" width="600">
+
+The architecture of BiasNavi is designed to integrate advanced large language model capabilities with modular bias management tools, creating a comprehensive, adaptive, and user-friendly platform for addressing data bias. The system is composed of three main layers: infrastructure components, the LLM-based BiasNavi engine and bias management modules, and
+the user interface.
+
+## Agent Workflow
+<img src="workflow.jpg" alt="architecture" width="600">
+
+The agent serves as the core component. It is equipped with customized profile, memory, and planning modules. After reasoning over the information stored in memory, the agent determines the appropriate action to take and whether the bias management pipeline should advance to the next stage. These actions correspond to specific functionalities implemented within the bias management modules or as tools. 
 
 ## How BiasNavi Help Non-Experts for Data Bias Management
 
