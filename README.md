@@ -61,3 +61,7 @@ To start the database explicitly, run:
 make start-db
 ```
 
+## Acknowledgement
+
+We appreciate the work of [FairLens](https://github.com/synthesized-io/fairlens). This project incorporates code from [FairLens](https://github.com/synthesized-io/fairlens), which is licensed under the BSD 3-Clause License. We have further modified and extended it to better suit our needs.
+
