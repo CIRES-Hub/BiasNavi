@@ -8,8 +8,8 @@ BiasNavi complies with the following bias management pipeline:
 + **Surfacing**: Present in an appropriate way to the end user the bias present in the underlying data and/or any fairness policy that have been applied to the data or system under consideration. 
 + **Adapting**: Provide the user with a set of tools that allows them to interact with existing biased results and to adapt them for bias in their preferred ways.
 
-## Demonstration Video
-[Watch the demo video here](https://drive.google.com/file/d/1NwhJ1iGTbe4YTKYVyrJm2SmcO5GDn2y2/view?usp=sharing)
+## User Interface
+<img src="ui_sample.jpg" alt="ui">
 
 ## Architecture
 <img src="architecture.jpg" alt="architecture" width="600">
@@ -32,6 +32,9 @@ The agent serves as the core component. It is equipped with customized profile, 
 | No coding knowledge                | Actionable bias mitigation without manual coding |
 | Uncertainty about next steps       | Recommendations, simulations, and workflows      |
 | Communicating findings             | Automated reporting and visual narratives        |
+
+## Demonstration Video
+[Watch the demo video here](https://drive.google.com/file/d/1NwhJ1iGTbe4YTKYVyrJm2SmcO5GDn2y2/view?usp=sharing)
 
 ## Easy Setup
 1. Run the following command to set up the project for the first time:
