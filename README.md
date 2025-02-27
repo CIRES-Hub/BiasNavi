@@ -66,5 +66,5 @@ make start-db
 
 ## Acknowledgement
 
-We appreciate the work of [FairLens](https://github.com/synthesized-io/fairlens). This project incorporates code from [FairLens](https://github.com/synthesized-io/fairlens), which is licensed under the BSD 3-Clause License. We have further modified and extended it to better suit our needs.
+We appreciate the work of [FairLens](https://github.com/synthesized-io/fairlens), which provides approaches and metrics to identify and measure bias. This project incorporates the code of FairLens and we have further modified and extended it to better suit our needs. The use of the code complies with the BSD 3 license.
 
