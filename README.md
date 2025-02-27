@@ -1,5 +1,5 @@
 # BiasNavi
-A data bias management toolkit developed by ARC Training Centre for Information Resilience [CIRES](https://cires.org.au/). It is a large language models (LLM)-empowered toolkit for data bias management. BiasNavi features an autonomous agent that seamlessly integrates with modules for bias identification, measurement, surfacing, and adaptation, reasoning over data and interactions to adaptively guide users through the bias management pipeline. With intuitive and personalized interfaces, BiasNavi empowers users to customize their workflows and address data bias effectively. 
+A data bias management toolkit developed by [ARC Training Centre for Information Resilience (CIRES)](https://cires.org.au/). It is a large language models (LLM)-empowered toolkit for data bias management. BiasNavi features an autonomous agent that seamlessly integrates with modules for bias identification, measurement, surfacing, and adaptation, reasoning over data and interactions to adaptively guide users through the bias management pipeline. With intuitive and personalized interfaces, BiasNavi empowers users to customize their workflows and address data bias effectively. 
 
 BiasNavi complies with the following bias management pipeline:
 
