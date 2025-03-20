@@ -39,12 +39,14 @@ The agent serves as the core component. It is equipped with customized profile, 
 ## Easy Setup
 1. Run the following command to set up the project for the first time:
 ```bash
+python install -r ./requirements.txt
+#wait for installing the dependencies
 make setup
 # Wait for the docker containers to start the run
 make create-db
 # To create user and database
 ```
-2. Config your API key and database URL in the file named `config.sample.yaml` under the root directory of the project and rename it to `config.yaml`
+2. Config your API key and database URL in the file `config.yaml`
 3. Start the program.
 ```bash
 make run
