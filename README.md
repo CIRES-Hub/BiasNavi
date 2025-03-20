@@ -46,7 +46,7 @@ make setup
 make create-db
 # To create user and database
 ```
-2. Config your API key and database URL in the file named `config.sample.yaml` under the root directory of the project and rename it to `config.yaml`
+2. Config your API key and database URL in the file `config.yaml`
 3. Start the program.
 ```bash
 make run
