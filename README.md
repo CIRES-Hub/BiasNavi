@@ -39,6 +39,8 @@ The agent serves as the core component. It is equipped with customized profile, 
 ## Easy Setup
 1. Run the following command to set up the project for the first time:
 ```bash
+python install -r ./requirements.txt
+#wait for installing the dependencies
 make setup
 # Wait for the docker containers to start the run
 make create-db
