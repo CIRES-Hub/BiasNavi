@@ -1,3 +1,3 @@
 settings:
-          api_key: your_openai_api_key
-          database_url: database_url: postgresql+psycopg2://biasnavi:biasnavi@localhost:5432/biasnavi
+    api_key: #your key
+    database_url: postgresql+psycopg2://biasnavi:biasnavi@localhost:5432/biasnavi

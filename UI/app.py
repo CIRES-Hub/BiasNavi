@@ -10,11 +10,11 @@ from uuid import UUID
 import yaml
 
 
-def read_configs(file_path='config.yaml'):
+def read_configs(file_path='config.yml'):
     # Load the YAML file
-    error_msg = """Please configure your openai api_key or database url in the file config.yaml before running the program.
+    error_msg = """Please configure your openai api_key or database url in the file config.yml before running the program.
 
-        The config.yaml under the root directory of this project should have the following format:
+        The config.yml under the root directory of this project should have the following format:
 
         settings:
           api_key: your_openai_api_key

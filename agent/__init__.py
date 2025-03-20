@@ -63,7 +63,7 @@ class DatasetAgent:
             llm = ChatOpenAI(temperature=0.7, model="gpt-4o-2024-08-06").configurable_alternatives(
                 ConfigurableField(id="llm"),
                 default_key="gpt4o",
-                gpto3mini=ChatOpenAI(model="gpt-o3-mini"),
+                gpt4omini=ChatOpenAI(model="GPT-4o-mini"),
                 gpt4=ChatOpenAI(model="gpt-4-turbo"),
             )
         self.llm = llm
@@ -231,7 +231,7 @@ class DatasetAgent:
                 configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
         else:
             result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpto3mini", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
+                configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
 
         # Parse response 
         suggestions = []
