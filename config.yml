@@ -1,0 +1,3 @@
+settings:
+          api_key: your_openai_api_key
+          database_url: your_postgres_db_url_here

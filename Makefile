@@ -2,8 +2,6 @@
 
 # First time setup
 setup:
-	echo "Installing dependencies"
-	pip install -r ./requirements.txt
 	echo "Setting up a database"
 	docker compose -f docker-compose.yml up -d --wait
 	echo "You're all set!"
