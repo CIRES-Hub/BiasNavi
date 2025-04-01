@@ -12,6 +12,7 @@ from UI.functions import *
 import dash_bootstrap_components as dbc
 from flask_login import current_user
 from UI.functions import query_llm
+from agent.rag import RAG
 
 
 @app.callback(
@@ -32,11 +33,12 @@ from UI.functions import query_llm
      Input({"type": 'next-suggested-question', "index": ALL}, 'n_clicks')],
     [State('query-input', 'value'),
      State('query-area', 'children'),
-     State('next-suggested-questions', 'children')],
+     State('next-suggested-questions', 'children'),
+     State('rag-switch', 'value'),],
     prevent_initial_input=True,
     prevent_initial_call=True
 )
-def update_messages(n_clicks, n_submit, question_clicked, input_text, query_records, suggested_questions):
+def update_messages(n_clicks, n_submit, question_clicked, input_text, query_records, suggested_questions, rag_status):
     if not input_text and not question_clicked:
         #no input information provided
         return query_records, True, "Please enter a query.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update,  dash.no_update
@@ -57,10 +59,10 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
     suggested_questions = []
     if not query_records:
         query_records = []
-    if global_vars.rag and global_vars.use_rag:
-        input_text = global_vars.rag.invoke(query)
-        global_vars.rag_prompt = query
-    answer, media, new_suggested_questions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
+    context=''
+    if global_vars.rag and rag_status:
+        context = global_vars.rag.retrieve(query)
+    answer, media, new_suggested_questions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id, context)
     print(stage)
     change_stage = False
     stages = ["Identify","Measure","Surface","Adapt"]
@@ -113,19 +115,19 @@ def export_conversation(n_clicks, format):
     return dict(content=history, filename=f"query-history-{formatted_date_time}" + extension)
 
 
-@app.callback(
-    Output('rag-switch-output', 'children'),
-    Output('rag-card', 'style'),
-    Output('RAG-button', 'style'),
-    Input('rag-switch', 'value')
-)
-def rag_switch(value):
-    if value:
-        global_vars.use_rag = True
-        return 'RAG: On', {'display': 'block'}, {'display': 'block'}
-    else:
-        global_vars.use_rag = False
-        return 'RAG: OFF', {'display': 'none'}, {'display': 'none'}
+# @app.callback(
+#     Output('rag-switch-output', 'children'),
+#     Output('rag-card', 'style'),
+#     Output('RAG-button', 'style'),
+#     Input('rag-switch', 'value')
+# )
+# def rag_switch(value):
+#     if value:
+#         global_vars.use_rag = True
+#         return 'RAG: On', {'display': 'block'}, {'display': 'block'}
+#     else:
+#         global_vars.use_rag = False
+#         return 'RAG: OFF', {'display': 'none'}, {'display': 'none'}
 
 
 @app.callback(
@@ -134,65 +136,77 @@ def rag_switch(value):
     State('upload-rag', 'filename'),
     Input('RAG-button', 'n_clicks'),
     Input('send-button', 'n_clicks'),
-    [State('RAG-area', 'children')],
+    State('RAG-area', 'children'),
     State('query-input', 'value'),
+    State('rag-switch', 'value'),
     prevent_initial_call=True
 )
-def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, rag_output, query):
-    triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
-    if triggered_id == 'upload-rag':
-        if list_of_contents is not None:
-            filename = ''
-            output = 'RAG files: '
-            # Assuming that only the first file is processed
-            contents = list_of_contents[0]
-            filename = list_of_names[0]
+def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, rag_output, query, rag_status):
+    ctx = callback_context
+    if not ctx.triggered:
+        return dash.no_update
 
-            # Decode the contents of the file
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    allowed_extensions = ('pdf', 'txt')
+
+    if triggered_id == 'upload-rag':
+        if list_of_contents is None:
+            return dash.no_update
+
+        filename = list_of_names[0]
+        contents = list_of_contents[0]
+
+        try:
             content_type, content_string = contents.split(',')
             decoded = base64.b64decode(content_string)
-            try:
-                # Assume the file is plain text
-                if 'pdf' in filename:
-                    # Assume that the user uploaded a CSV
-                    output += filename + '\n'
-                    if global_vars.rag:
-                        global_vars.rag.clean()
+            file_type = filename.split('.')[-1].lower()
 
-                    global_vars.rag = RAG(io.BytesIO(decoded))
+            if file_type in allowed_extensions:
+                output = f"RAG files: {filename}\n"
 
-                    return [html.Div([
-                        # placeholder
-                        output
-                    ])]
-                else:
-                    return html.Div([
-                        "This file format is not supported. Only PDF files are supported."
-                    ])
+                if global_vars.rag:
+                    global_vars.rag.clean()
 
-            except Exception as e:
-                print(e)
+                global_vars.rag = RAG(io.BytesIO(decoded), file_type)
+
+                return [html.Div([output])]
+            else:
                 return html.Div([
-                    'There was an error processing this file.'
+                    f"This file format ({file_type}) is not supported. Only {', '.join(allowed_extensions)} files are supported."
                 ])
 
+        except Exception as e:
+            print(f"Error processing file upload: {e}")
+            return html.Div(['There was an error processing this file.'])
+
     elif triggered_id == 'send-button':
-        if not global_vars.rag or not global_vars.use_rag:
+        if not rag_status:
+            return dash.no_update
+        if not global_vars.rag or not rag_output:
+            return dash.no_update
+
+        try:
+            docs = global_vars.rag.retrieve(query)
+            rag_output=html.Div(["Retrieved relevant context: \n" + docs])
+
             return rag_output
-        if not rag_output:
-            return html.Div([""])
-        if global_vars.rag and global_vars.use_rag:
-            message = global_vars.rag.invoke(query)
-            output_text, media, new_suggested_questions, stage, op, expl = query_llm(message, global_vars.current_stage, current_user.id)
 
+        except Exception as e:
+            print(f"Error processing query: {e}")
+            return html.Div(['There was an error processing your request.'])
 
-        rag_output.append(html.Div(["RAG enhanced prompt: " + output_text]))
-        global_vars.rag_prompt = None
-        return rag_output
+    return dash.no_update
 
+@app.callback(
+    Output('rag-switch-status', 'children'),
+    Input('rag-switch', 'value'),
+    prevent_initial_call=True
+)
+def rag_switch_status(value):
+    if value:
+        return f'RAG is ON.'
     else:
-        return rag_output
-
+        return f'RAG is OFF.'
 
 @app.callback(
     Output({'type': 'llm-media-modal', 'index': MATCH}, 'is_open'),

@@ -154,11 +154,11 @@ class DatasetAgent:
 
     def configure_user_msg_prompt(self):
         user_prompt = PromptTemplate(
-            template=""""The current stage of bias management is {stage}. Please answer the my question: {input}. The 
+            template=""""The current stage of bias management is {stage}. Please answer the my question: {input} given the retrieved context ({context}). The 
             response should be tailored to my background: {background} and align with the {stage}. Ensure that your 
             answer is informative while understandable for me. To make your answer clearer and instructive, 
             you can include examples and step-by-step instructions appropriate for my background. """,
-            input_variables=["input", "stage"],
+            input_variables=["input", "context", "stage"],
             partial_variables={"background": current_user.persona_prompt},
         )
         user_message_prompt = HumanMessagePromptTemplate(prompt=user_prompt)
@@ -218,20 +218,20 @@ class DatasetAgent:
             configurable={"session_id": self.session_id}).invoke({"text": query, "encoded_image_url": image_data})
         return result
 
-    def run(self, text, stage):
+    def run(self, text, stage, context=''):
         self.elem_queue.clear()
         self.execution_error.clear()
         self.list_commands.clear()
 
         if self.model_name == "gpt-4-turbo":
             result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
+                configurable={"llm": "gpt4", "session_id": self.session_id}).invoke({"input": text, "stage": stage, "context": context})
         elif self.model_name == "gpt-4o-2024-08-06":
             result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
+                configurable={"llm": "gpt4o", "session_id": self.session_id}).invoke({"input": text, "stage": stage, "context": context})
         else:
             result = self.agent_with_trimmed_history.with_config(
-                configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text, "stage": stage})
+                configurable={"llm": "gpt4omini", "session_id": self.session_id}).invoke({"input": text, "stage": stage, "context": context})
 
         # Parse response 
         suggestions = []

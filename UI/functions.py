@@ -21,7 +21,7 @@ import re
 #         return []
 
 
-def query_llm(query, stage, user_id):
+def query_llm(query, stage, user_id, context=''):
     print(query, stage)
     response, media, suggestions, stage, op, explanation = global_vars.agent.run(query, stage)
     global_vars.agent.persist_history(user_id=str(user_id))

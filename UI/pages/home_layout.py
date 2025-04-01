@@ -433,11 +433,11 @@ def layout():
                                                                                         className='send-button'),
                                                                    multiple=True),
 
-                                                        html.Div(id='rag-output'),
-
-                                                        daq.ToggleSwitch(id='rag-switch', value=False),
-
-                                                        html.Div(id='rag-switch-output'),
+                                                        # html.Div(id='rag-output'),
+                                                        #
+                                                        # daq.ToggleSwitch(id='rag-switch', value=False),
+                                                        #
+                                                        # html.Div(id='rag-switch-output'),
                                             ])
                                     ],
                                     # dcc.Textarea(id='query-area', className='query-area', readOnly=True)],
@@ -462,7 +462,13 @@ def layout():
                     dbc.Card(id="rag-card", style={'display': 'block'}, children=[
                         html.Div([
                             # RAG display area
-                            html.H4("RAG Documents", className="secondary-title"),
+                            html.Div([
+                                html.H4("RAG View", style={'paddingLeft': 0}, className="secondary-title"),
+                                html.Div([daq.ToggleSwitch(id='rag-switch', value=False),
+                                html.Div(id='rag-switch-status', children="RAG is OFF.")]),
+
+                            ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                                      "width": "100%"}),
                             dcc.Loading(
                                 id="loading-2",
                                 children=[

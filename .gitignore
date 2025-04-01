@@ -1,4 +1,5 @@
 .idea/
+config.yml
 **/__pycache__/
 data/
 pgadmin/
