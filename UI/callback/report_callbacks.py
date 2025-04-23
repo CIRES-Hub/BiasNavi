@@ -125,10 +125,11 @@ def measure_bias(_, target, sensitive_attrs):
                                           sort_action='native',
                                           style_cell={'textAlign': 'center',
                                                       'fontFamiliy': 'Arial', "padding":"0px 10px"},
-                                          style_header={'backgroundColor': '#614385',
-                                                        'color': 'white',
-                                                        'fontWeight': 'bold'
-                                                        }, style_table={'overflowX': 'auto'},
+                                          # style_header={'backgroundColor': '#614385',
+                                          #               'color': 'white',
+                                          #               'fontWeight': 'bold'
+                                          #               },
+                                          style_table={'overflowX': 'auto'},
                                           style_data_conditional=[
                                               {
                                                   'if': {'row_index': 'odd'},

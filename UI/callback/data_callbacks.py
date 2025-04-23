@@ -265,32 +265,47 @@ def download_csv(n_clicks, rows):
 )
 def update_histogram(active_cell):
     if active_cell is None:
-        return []  # Return an empty figure if no cell is selected
+        return []
 
-    # Get the column id from the active cell
     column_id = active_cell['column_id']
-    unique_values = global_vars.df[column_id].nunique()
+    col_data = global_vars.df[column_id]
+    unique_values = col_data.nunique()
 
     if unique_values > 100:
         return []
 
-    # Define a color palette (example using Plotly's built-in palette)
-    color_palette = px.colors.qualitative.Pastel1  # You can choose other palettes like Set1, Pastel, etc.
+    # Generate a large enough color palette
+    unique_categories = sorted(col_data.dropna().unique())
+    colorscale = [
+        "#a6bddb",  # soft blue
+        "#d0d1e6",  # lavender gray
+        "#bdbdbd",  # light gray
+        "#fdd0a2",  # peach
+        "#c7e9c0",  # pale green
+        "#f2b6b6",  # rose
+        "#d9d9d9",  # ash gray
+        "#c6dbef"  # sky blue
+    ]
 
-    # Create a histogram for the selected column with a custom color palette
-    fig = px.histogram(global_vars.df, x=column_id)
-    fig.update_traces(marker=dict(color=color_palette[:global_vars.df[column_id].nunique()]))
-    # Update the layout properly
+    extended_colors = (colorscale * ((len(unique_categories) // len(colorscale)) + 1))[:len(unique_categories)]
+
+    color_map = {category: color for category, color in zip(unique_categories, extended_colors)}
+
+    # Create the histogram using color argument
+    fig = px.histogram(global_vars.df, x=column_id, color=column_id, category_orders={column_id: unique_categories},
+                       color_discrete_map=color_map)
+
     fig.update_layout(
         xaxis={"automargin": True, "tickmode": "auto"},
         yaxis={"automargin": True},
         height=250,
         margin={"t": 10, "l": 10, "r": 10},
         bargap=0.2,
+        showlegend=False  # Optional: Turn off legend if too many values
     )
 
-    # Return the Graph component
     return dcc.Graph(id=column_id, figure=fig)
+
 
 
 @app.callback(
@@ -375,10 +390,10 @@ def evaluate_dataset(_, df_id, sens_attr, label, task, model, past_res_table, pa
             data=frame.to_dict('records'),
             style_cell={'textAlign': 'center',
                         'fontFamily': 'Arial'},
-            style_header={'backgroundColor': '#614385',
-                          'color': 'white',
-                          'fontWeight': 'bold'
-                          },
+            # style_header={'backgroundColor': '#614385',
+            #               'color': 'white',
+            #               'fontWeight': 'bold'
+            #               },
             style_table={'overflowX': 'auto', 'marginTop': '20px', 'marginLeft': '0px'},  # Add margin here
             style_data_conditional=[
                 {
@@ -553,7 +568,7 @@ def display_data_stat(n1, n2, is_open):
             ],
             data=summary.to_dict("records"),  # Ensure serializable
             style_cell={"textAlign": "center", "fontFamily": "Arial"},
-            style_header={"backgroundColor": "#614385", "color": "white", "fontWeight": "bold"},
+            # style_header={"backgroundColor": "#614385", "color": "white", "fontWeight": "bold"},
             style_table={"overflowX": "auto", "marginTop": "20px", "marginLeft": "0px"},
             style_data_conditional=[
                 {"if": {"row_index": "odd"}, "backgroundColor": "#f2f2f2"},

@@ -11,11 +11,38 @@ from constant_prompt import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT,
     DEFAULT_PERSONA_PROMPT
 import ast
 from UI.pages.components.survey_modal import survey_modal
+from dash.exceptions import PreventUpdate
 
 dash.register_page(__name__, path='/home/', title='Home')
 
 pipeline_stages = ["Identify", "Measure", "Surface", "Adapt"]
 
+
+# Callback to dismiss hero section
+@callback(
+    Output("hero-dismissed", "data"),
+    Input("hero-close", "n_clicks"),
+    Input("hero-auto-dismiss", "n_intervals"),
+    State("hero-dismissed", "data"),
+    prevent_initial_call=True
+)
+def dismiss_hero_section(close_clicks, auto_dismiss, dismissed):
+    ctx = callback_context
+    if dismissed:
+        raise PreventUpdate
+    if ctx.triggered:
+        return True
+    raise PreventUpdate
+
+# Callback to toggle hero-section display
+@callback(
+    Output("hero-section", "style"),
+    Input("hero-dismissed", "data"),
+)
+def toggle_hero_section_style(dismissed):
+    if dismissed:
+        return {"display": "none"}
+    return {"position": "relative"}
 
 def layout():
     if not current_user.is_authenticated:
@@ -26,6 +53,19 @@ def layout():
     return html.Div([
         # Home Layout
         dbc.Container(fluid=True, children=[
+            dcc.Store(id="hero-dismissed", data=False),
+            dcc.Interval(id="hero-auto-dismiss", interval=5000, n_intervals=0, max_intervals=1),
+            # ===== Hero Section (ALWAYS PRESENT, STYLE TOGGLE) =====
+            html.Div(
+                id="hero-section",
+                className="hero-section",
+                children=[
+                    html.Button("×", id="hero-close", n_clicks=0, className="hero-close-btn", style={"position": "absolute", "top": "10px", "right": "18px", "background": "transparent", "border": "none", "fontSize": "2rem", "color": "#fff", "cursor": "pointer", "zIndex": 2}),
+                    html.H1("Welcome to BiasNavi"),
+                    html.P("Navigate, analyze, and adapt your datasets with ease. Harness the power of modern AI to identify, measure, and mitigate bias in your data workflows.")
+                ],
+                style={"position": "relative"}
+            ),
             # For user wizard
             dbc.Modal(
                 [
@@ -176,7 +216,7 @@ def layout():
             dbc.Row(justify="center", align="center", children=[
                 html.Div(children=[
                     html.Img(src='../assets/logo.svg', className="logo"),
-                    html.P('BiasNavi', className="title"),
+                    html.P('BiasNavi', className="title mb-1"),
                     dbc.Nav(
                         className='navbar d-flex flex-wrap',
                         children=[
@@ -533,9 +573,9 @@ def layout():
                                 dash_table.DataTable(id='table-overview', page_size=10, page_action='native',
                                                      editable=True, row_deletable=True, column_selectable='single',
                                                      style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial',"padding":"0px 10px"},
-                                                     style_header={'backgroundColor': '#614385', 'color': 'white',
-                                                                   'fontWeight': 'bold'
-                                                                   },
+                                                     # style_header={'backgroundColor': '#614385', 'color': 'white',
+                                                     #               'fontWeight': 'bold'
+                                                     #               },
                                                      style_table={'overflowX': 'auto'},
                                                      style_data_conditional=[
                                                          {
@@ -685,9 +725,9 @@ def layout():
                                         {"name": "Timestamp", "id": "time"}
                                     ],
                                     style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial',"padding":"0px 10px"},
-                                    style_header={'backgroundColor': '#614385', 'color': 'white',
-                                                  'fontWeight': 'bold'
-                                                  }, style_table={'overflowX': 'auto'},
+                                    # style_header={'backgroundColor': '#614385', 'color': 'white',
+                                    #               'fontWeight': 'bold'
+                                    #               }, style_table={'overflowX': 'auto'},
                                     style_data_conditional=[
                                         {
                                             'if': {'row_index': 'odd'},
@@ -791,9 +831,9 @@ def layout():
                                     selected_rows=[],
                                     data=[],
                                     style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial', "padding":"0px 10px"},
-                                    style_header={'backgroundColor': '#614385', 'color': 'white',
-                                                  'fontWeight': 'bold'
-                                                  }, style_table={'overflowX': 'auto'},
+                                    # style_header={'backgroundColor': '#614385', 'color': 'white',
+                                    #               'fontWeight': 'bold'
+                                    #               }, style_table={'overflowX': 'auto'},
                                     style_data_conditional=[
                                         {
                                             'if': {'row_index': 'odd'},
@@ -959,11 +999,11 @@ def update_chat_history(pathname, trigger):
     for idx, conv in enumerate(conversations):
         card_content = [
             dbc.CardHeader([
-                html.H5(f"Dataset: {conv.dataset}", className="mb-0"),
+                html.H5(f"Dataset: {conv.dataset}", className="card-title card-header mb-0"),
                 html.Small(f"Model: {conv.model}", className="text-muted"),
                 html.Small(f"Last updated: {conv.updated_at.strftime('%Y-%m-%d %H:%M:%S')}",
                            className="text-muted d-block")
-            ]),
+            ], className="card-header"),
             dbc.CardBody([
                 dbc.Collapse(
                     dbc.Card(
