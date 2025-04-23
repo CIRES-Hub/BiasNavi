@@ -16,48 +16,74 @@ layout = dbc.Container(fluid=True, children=[
             html.H1("BiasNavi", id="fade-div", className='fade-in', style={'display': 'block',
                     'color': 'white', "fontSize": "3vw", "marginBottom": "-5px",}),
             html.H5("Navigate you through bias in your data with AI", id="fade-div", className='fade-in',
-                    style={'display': 'block', 'color': 'orange', "fontSize": "0.85vw", "marginBottom": "30px",}),
+                    style={'display': 'block', 'color': 'coral', "fontSize": "0.85vw", "marginBottom": "30px",}),
             dbc.Card(
-                dbc.CardBody([
-                    html.H4("Login", className="card-title mb-4 text-center"),
-                    dbc.Input(id="email-input", placeholder="Email",
-                              type="text", className="mb-2"),
-                    dbc.Input(id="password-input", placeholder="Password",
-                              type="password", className="mb-3"),
-                    # html.Div(
-                    #     dcc.RadioItems(
-                    #         id='user-mode',
-                    #         options=[
-                    #             {'label': ' Full Mode', 'value': 'Full Mode'},
-                    #             {'label': ' Chat Mode', 'value': 'Chat Mode'},
-                    #         ],
-                    #         value='Full Mode',  # Set default value
-                    #         inline=True,  # Horizontal layout
-                    #         labelStyle={'marginRight': '20px','marginBottom': '20px'}  # Add space between radio buttons
-                    #     ),
-                    #     style={'text-align': 'center'}
-                    # ),
-                    dbc.Row([
-                        dbc.Col(
-                            dbc.Button(
-                                "Log in", id="login-button", color="primary", n_clicks=0, class_name="w-100"),
-                            width=6
+                [
+
+                    dbc.CardBody([
+                        html.H4([
+                            html.I(className="bi bi-person-circle", style={"marginRight": "10px", "color": "#614385", "fontSize": "1.8rem"}),
+                            "Login"
+                        ], className="card-title mb-4 text-center", style={"fontWeight": "bold", "letterSpacing": "1px", "color": "#232946"}),
+                        dbc.Input(id="email-input", placeholder="Email", type="text", className="mb-3 rounded-pill px-3", style={
+                            "backgroundColor": "rgb(255,255,255)",
+                            "border": "1.5px solid #cfd8dc",
+                            "fontSize": "1.07rem",
+                            "boxShadow": "none"
+                        }),
+                        dbc.Input(id="password-input", placeholder="Password", type="password", className="mb-4 rounded-pill px-3", style={
+                            "backgroundColor": "rgb(255,255,255)",
+                            "border": "1.5px solid #cfd8dc",
+                            "fontSize": "1.07rem",
+                            "boxShadow": "none"
+                        }),
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    dbc.Button(
+                                        "Log in",
+                                        id="login-button",
+                                        color="primary",
+                                        n_clicks=0,
+                                        class_name="primary-button w-100"
+                                    ),
+                                    width=6
+                                ),
+                                dbc.Col(
+                                    dbc.Button(
+                                        "Sign up",
+                                        id="signup-button",
+                                        color="secondary",
+                                        n_clicks=0,
+                                        class_name="primary-button w-100"
+                                    ),
+                                    width=6
+                                )
+                            ],
+                            className="justify-content-center"
                         ),
-                        dbc.Col(
-                            dbc.Button("Sign up", id="signup-button",
-                                       color="secondary", n_clicks=0, class_name="w-100"),
-                            width=6, className="ms-auto"
-                        )
-                    ], className="d-flex justify-content-between"),
-                    html.Div(id="auth-result", className="mt-3", style={'color': 'red'}),
-                    dcc.Location(id='url', refresh=True)
-                ]),
-                style={"width": "450px"},
+                        html.Div(id="auth-result", className="mt-3", style={'color': 'red'}),
+                        dcc.Location(id='url', refresh=True)
+                    ])
+                ],
+                style={
+                    "width": "430px",
+                    "boxShadow": "0 8px 32px 0 rgba(31,38,135,0.18)",
+                    "background": "rgb(255,255,255)",
+                    "border": "1.5px solid rgb(255,255,255)",
+                    "backdropFilter": "blur(16px)",
+                    "WebkitBackdropFilter": "blur(16px)",
+                    "marginTop": "18px",
+                    "overflow": "hidden",
+                    "position": "relative"
+                },
                 className="fade-in"
             )
         ])
     )
-], className="body vh-100 d-flex align-items-center justify-content-center fade-in", style={"background": "linear-gradient(to right, #7474bf, #348ac7)"})
+], className="body vh-100 d-flex align-items-center justify-content-center fade-in login-bg", style={"overflowY": "auto"})
+
+# Add the login background div at the top level
 
 
 @callback(

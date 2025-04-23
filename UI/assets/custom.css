@@ -214,41 +214,14 @@
 }
 
 .card {
-    border-radius: 18px;
-    background: linear-gradient(135deg, #f8fafc 0%, #eef1f7 100%);
-    box-shadow: 0 4px 24px 0 rgba(97,67,133,0.10), 0 1.5px 6px 0 rgba(97,67,133,0.06);
-    border: 1.5px solid #e0e8ef;
-    padding: 24px 28px;
-    margin: 18px 0 28px;
-    transition: box-shadow 0.25s cubic-bezier(.4,0,.2,1), transform 0.18s cubic-bezier(.4,0,.2,1);
+    border-radius: 12px; /* Rounded borders for the card */
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2); /* Horizontal offset, vertical offset, blur radius, spread radius, color */
+    background-color: white; /* Card background color */
+    padding: 10px;
     position: relative;
+    margin: 10px 0 20px;
+    /* Add other styling for the card as needed */
 }
-
-.card:hover, .card:focus-within {
-    box-shadow: 0 8px 32px 0 rgba(97,67,133,0.18), 0 3px 12px 0 rgba(97,67,133,0.10);
-    transform: translateY(-4px) scale(1.015);
-    border-color: #bcb7e7;
-    background: linear-gradient(135deg, #f3f8fd 0%, #e5e9f2 100%);
-}
-
-.card-header, .card-title {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #614385;
-    margin-bottom: 10px;
-    letter-spacing: 0.02em;
-    background: none;
-    border-bottom: 1px solid #e0e8ef;
-    padding-bottom: 8px;
-}
-
-.card-body {
-    font-size: 1.08rem;
-    color: #2d2c38;
-    line-height: 1.7;
-    background: none;
-}
-
 
 .upload{
 
@@ -987,4 +960,9 @@ th.dash-header-cell:first-child,
     border-bottom: 1px solid #e0e0e0 !important;
 }
 
-
+.login-bg {
+  background-image: url('../assets/pattern.png'); /* Replace with actual image path */
+  background-repeat: repeat;               /* Repeat both horizontally and vertically */
+  background-size: auto;                   /* Keep original image size */
+  background-position: top left;           /* Start tiling from top-left corner */
+}
