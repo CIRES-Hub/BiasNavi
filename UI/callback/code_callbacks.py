@@ -34,21 +34,22 @@ def get_docker_client():
 @app.callback(
     [Output("console-area", "children"),
      Output("commands-input", "disabled", allow_duplicate=True),
-     Output("run-commands", "disabled", allow_duplicate=True),
      Output('table-overview', 'data', allow_duplicate=True),
      Output('table-overview', 'columns', allow_duplicate=True),
      Output('column-names-dropdown', 'options', allow_duplicate=True),
      Output('data-alert', 'children', allow_duplicate=True),
      Output('data-alert', 'is_open', allow_duplicate=True),
+     Output("python-code-console","style", allow_duplicate=True),
+    Output({'type': 'spinner-btn', 'index': 9}, 'children', allow_duplicate=True),
      ],
-    Input("run-commands", "n_clicks"),
+    Input({'type': 'spinner-btn', 'index': 9}, "children"),
     State("commands-input", "value"),
     prevent_initial_call=True
 )
 def execute_commands(n_click, commands):
-    if global_vars.df is None and n_click > 0:
-        return ["Have you imported a dataset and entered a query?", False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
-    if n_click > 0 and commands is not None:
+    if global_vars.df is None:
+        return ["Have you imported a dataset and entered a query?", False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update ,"Run"]
+    if commands is not None:
         try:
             print("Running sandbox...")
             user_id = str(current_user.id)
@@ -100,11 +101,13 @@ def execute_commands(n_click, commands):
             output = []
             if os.path.isfile(user_output_file):
                 with open(user_output_file, "r") as f:
-                    output.append(html.P(f.read(), style={"color": "black"}))
+                    for line in f:
+                        output.append(html.P(line, style={"color": "black"}))
 
             if os.path.isfile(user_error_file):
                 with open(user_error_file, "r") as f:
-                    output.append(html.P(f.read(), style={"color": "red"}))
+                    for line in f:
+                        output.append(html.P(line, style={"color": "red"}))
             
             new_df = pd.read_csv(os.path.join(user_data_dir, "df.csv"))
             global_vars.df = new_df
@@ -112,11 +115,10 @@ def execute_commands(n_click, commands):
             global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name, conversation_session=global_vars.conversation_session)
             
             return [output, 
-                    False, 
                     False,
                     global_vars.df.to_dict('records'),
                     [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
-                    [{'label': col, 'value': col} for col in global_vars.df.columns], "The data might have been changed.", True]
+                    [{'label': col, 'value': col} for col in global_vars.df.columns], "The data might have been changed.", True, {"display":"block"},"Run"]
 
         except Exception as e:
             if isinstance(e, docker.errors.NotFound):
@@ -135,11 +137,13 @@ def execute_commands(n_click, commands):
                     output = []
                     if os.path.isfile(user_output_file):
                         with open(user_output_file, "r") as f:
-                            output.append(html.P(f.read(), style={"color": "white"}))
+                            for line in f:
+                                output.append(html.P(line, style={"color": "black"}))
 
                     if os.path.isfile(user_error_file):
                         with open(user_error_file, "r") as f:
-                            output.append(html.P(f.read(), style={"color": "red"}))
+                            for line in f:
+                                output.append(html.P(line, style={"color": "red"}))
                             
                     new_df = pd.read_csv(os.path.join(user_data_dir, "df.csv"))
                     global_vars.df = new_df
@@ -147,15 +151,14 @@ def execute_commands(n_click, commands):
                     global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name, conversation_session=global_vars.conversation_session)
             
                     return [output, 
-                            False, 
-                            False, 
+                            False,
                             global_vars.df.to_dict('records'),
                             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
-                            [{'label': col, 'value': col} for col in global_vars.df.columns],dash.no_update, dash.no_update]
+                            [{'label': col, 'value': col} for col in global_vars.df.columns],dash.no_update, dash.no_update,dash.no_update, "Run"]
 
                 except Exception as e:
                     print("Create container failed: ", e)
-                    return ["Sandbox is not available", False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
+                    return ["Sandbox is not available", False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, "Run"]
             elif isinstance(e, docker.errors.APIError):
                 if e.status_code is not None and e.status_code == 409:
                     user_container = client.containers.get(container_name)
@@ -166,23 +169,24 @@ def execute_commands(n_click, commands):
                     output = []
                     if os.path.isfile(user_output_file):
                         with open(user_output_file, "r") as f:
-                            output.append(html.P(f.read(), style={"color": "white"}))
+                            for line in f:
+                                output.append(html.P(line, style={"color": "black"}))
 
                     if os.path.isfile(user_error_file):
                         with open(user_error_file, "r") as f:
-                            output.append(html.P(f.read(), style={"color": "red"}))
+                            for line in f:
+                                output.append(html.P(line, style={"color": "red"}))
                     return [output, 
-                            False, 
                             False,
                             global_vars.df.to_dict('records'),
                             [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
-                            [{'label': col, 'value': col} for col in global_vars.df.columns], dash.no_update, dash.no_update]
+                            [{'label': col, 'value': col} for col in global_vars.df.columns], dash.no_update, dash.no_update,dash.no_update,"Run"]
 
-                return [str(e), False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
+                return [str(e),  False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update,"Run"]
             else:
                 logger.error(type(e))
                 logger.error(e)
-                return [str(e), False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
-    return [dash.no_update, False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
+                return [str(e),  False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update,"Run"]
+    return [dash.no_update,  False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update,"Run"]
 
 

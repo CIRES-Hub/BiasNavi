@@ -926,19 +926,23 @@ def layout():
                                 target="tooltip-code",
                             ),
                         ]),
-                        html.Div([dash_editor_components.PythonEditor(id='commands-input',
-                                                                      style={'height': '400px'}, value="")],
-                                 className='commands_editor'),
-                        html.Div([dbc.Button("Run", id="run-commands", n_clicks=0, className='primary-button')],
-                                 className='right-align-div'),
                         html.Div([
-                            html.H4("Console", className="secondary-title")
-                        ], className="query-header"),
-                        dcc.Loading(
-                            id="loading-1",
-                            children=[html.P(id='console-area', className='commands_result')],
-                            type="default",
-                        ),
+                            html.Div([dash_editor_components.PythonEditor(id='commands-input',
+                                                                          style={'overflow': "auto"}, value="")],
+                                     className='commands_editor'),
+                            html.Div([dbc.Button("Run", id={'type': 'spinner-btn', 'index': 9}, n_clicks=0, className='primary-button')],
+                                     className='right-align-div'),
+                            ], id="python-code-editor"),
+                        html.Div([
+                            html.Div([
+                                html.H4("Console", className="secondary-title")
+                            ], className="query-header"),
+                            dcc.Loading(
+                                id="loading-1",
+                                children=[html.P(id='console-area', className='commands_result')],
+                                type="default",
+                            ),
+                        ], id="python-code-console",style={"display":"none"}),
                     ], style={'padding': '15px'})
                 ]),
             ], id="home-container"),
