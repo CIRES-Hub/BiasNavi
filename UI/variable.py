@@ -12,6 +12,7 @@ class Variables(object):
         self.suggested_questions = None
         self.data_snapshots = []
         self.conversation_session = None
+        self.label = ""
         self.current_stage = "Identify"
 
 

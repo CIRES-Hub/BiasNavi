@@ -60,11 +60,10 @@ class DatasetAgent:
     def __init__(self, df, conversation_session=None, llm=None, file_name=None, user_id=None):
         self.user_id = user_id
         if llm is None:
-            llm = ChatOpenAI(temperature=0.7, model="gpt-4o-2024-08-06").configurable_alternatives(
+            llm = ChatOpenAI(temperature=0.7, model="gpt-4o").configurable_alternatives(
                 ConfigurableField(id="llm"),
                 default_key="gpt4o",
-                gpt4omini=ChatOpenAI(model="GPT-4o-mini"),
-                gpt4=ChatOpenAI(model="gpt-4-turbo"),
+                gpt4omini=ChatOpenAI(model="gpt-4o-mini"),
             )
         self.llm = llm
         self.model_name = llm.model_name

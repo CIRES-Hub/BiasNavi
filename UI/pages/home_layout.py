@@ -54,7 +54,7 @@ def layout():
         # Home Layout
         dbc.Container(fluid=True, children=[
             dcc.Store(id="hero-dismissed", data=False),
-            dcc.Interval(id="hero-auto-dismiss", interval=5000, n_intervals=0, max_intervals=1),
+            dcc.Interval(id="hero-auto-dismiss", interval=8000, n_intervals=0, max_intervals=1),
             # ===== Hero Section (ALWAYS PRESENT, STYLE TOGGLE) =====
             html.Div(
                 id="hero-section",
@@ -120,7 +120,7 @@ def layout():
                     ),
                     dbc.ModalFooter([
                         html.Div(id="upload-data-error-msg", style={"color": "red"}),
-                        dbc.Button("Close", id="close-upload-modal", className="ml-auto"),
+                        dbc.Button("Close", id="close-upload-modal", className="primary-button"),
                     ],
                         style={
                             'display': 'flex',
@@ -131,6 +131,29 @@ def layout():
                 ],
                 id="upload-modal",
                 is_open=True,
+                centered=True,
+                style={
+                    "boxShadow": "0 2px 4px 0 rgba(0, 0, 0, 0.2);",
+                }
+            ),
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle("Choose the target attribute/label", style={"color": "#614385"})),
+                    dbc.ModalBody(
+                        dcc.Dropdown(id="label-dropdown")
+                    ),
+                    dbc.ModalFooter([
+                        dbc.Button("Confirm", id="confirm-label-button", className="primary-button"),
+                    ],
+                        style={
+                            'display': 'flex',
+                            'justifyContent': 'end',
+                            'alignItems': 'center'
+                        }
+                    ),
+                ],
+                id="label-modal",
+                is_open=False,
                 centered=True,
                 style={
                     "boxShadow": "0 2px 4px 0 rgba(0, 0, 0, 0.2);",
@@ -252,7 +275,6 @@ def layout():
                             # ),
                             dbc.DropdownMenu(
                                 [dbc.DropdownMenuItem("GPT-4o-mini", id="menu-model-gpt4omini"),
-                                 dbc.DropdownMenuItem("GPT-4", id="menu-model-gpt4"),
                                  dbc.DropdownMenuItem("GPT-4o  ✔", id="menu-model-gpt4o")],
                                 label="LLM Models",
                                 nav=True,
@@ -504,8 +526,18 @@ def layout():
                             # RAG display area
                             html.Div([
                                 html.H4("RAG View", style={'paddingLeft': 0}, className="secondary-title"),
-                                html.Div([daq.ToggleSwitch(id='rag-switch', value=False),
-                                html.Div(id='rag-switch-status', children="RAG is OFF.")]),
+                                html.Div(
+                                    [
+                                        daq.ToggleSwitch(
+                                            id='rag-switch',
+                                            value=False,
+                                            color="#67b26f",  # Green gradient for ON (matches your theme)
+                                            size=48,  # Bigger for clarity (default is 36)
+                                        ),
+                                        html.Div(id='rag-switch-status', children="RAG is OFF.")
+                                    ],
+                                    style={"display": "flex", "alignItems": "center", "gap": "12px"}
+                                )
 
                             ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
                                       "width": "100%"}),
@@ -537,6 +569,8 @@ def layout():
                             html.Button('Data Statistics', id='data-stat-button',
                                         n_clicks=0, className='primary-button', style={'margin': '10px 10px 10px 0'}),
                             html.Button('Save Snapshot', id='open-modal-button',
+                                        n_clicks=0, className='primary-button', style={'margin': '10px'}),
+                            html.Button('Reset Label', id='open-label-modal-button',
                                         n_clicks=0, className='primary-button', style={'margin': '10px'}),
                             html.Button('Download', id='download-data-button',
                                         n_clicks=0, className='primary-button', style={'margin': '10px'}),

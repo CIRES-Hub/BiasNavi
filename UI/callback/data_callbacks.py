@@ -18,12 +18,13 @@ from UI.functions import query_llm
 import time
 import random
 import pandas as pd
+import numpy as np
 
 
 @app.callback(
     [Output('table-overview', 'data', allow_duplicate=True),
      Output('table-overview', 'columns'),
-     Output('column-names-dropdown', 'options'),
+     Output('column-names-dropdown', 'options',allow_duplicate=True),
      Output('error-file-format', 'is_open'),
      Output('snapshot-table', 'data'),
      Output('dataset-selection', 'options'),
@@ -37,7 +38,9 @@ import pandas as pd
      Output('query-area', 'children', allow_duplicate=True),
      Output("pipeline-slider", "value", allow_duplicate=True),
      Output("recommended-op", "children", allow_duplicate=True),
-     Output("tooltip-expl", "children", allow_duplicate=True)],
+     Output("tooltip-expl", "children", allow_duplicate=True),
+     Output('label-dropdown', 'options',allow_duplicate=True),
+     Output("label-modal", "is_open", allow_duplicate=True),],
     [Input('upload-data', 'contents'),
      Input('upload-data-modal', 'contents'),
      Input('show-rows-button', 'n_clicks')],
@@ -56,14 +59,14 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
     if triggered_id == 'upload-data' or triggered_id == 'upload-data-modal':
         if triggered_id == 'upload-data':
             if not list_of_contents or not list_of_names:
-                return [], [], [], False, [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents[0]
             filename = list_of_names[0]
         elif triggered_id == 'upload-data-modal':
             if not list_of_contents_modal or not list_of_names_modal:
-                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update, dash.no_update, dash.no_update, dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents_modal[0]
@@ -73,7 +76,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -107,7 +110,9 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             chat_content,
             0,
             "Recommended Operation: Check Data Statistics",
-            "Checking data statistics is essential in the Identify stage as it provides a foundational understanding of the dataset, helping to reveal initial disparities, patterns, or anomalies that might indicate bias."
+            "Checking data statistics is essential in the Identify stage as it provides a foundational understanding of the dataset, helping to reveal initial disparities, patterns, or anomalies that might indicate bias.",
+            [{'label': col, 'value': col} for col in global_vars.df.columns],
+            True
 
         )
 
@@ -132,6 +137,8 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
+                dash.no_update,
+                dash.no_update,
                 dash.no_update
             )
 
@@ -149,10 +156,34 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             dash.no_update,
             dash.no_update,
             dash.no_update,
+            dash.no_update,
+            dash.no_update,
             dash.no_update
         )
 
-    return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
+    return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+@app.callback(
+    Output('label-modal', 'is_open', allow_duplicate=True),
+    Output('column-names-dropdown', 'value', allow_duplicate=True),
+    Output('label-selection', 'value', allow_duplicate=True),
+    Input('confirm-label-button', 'n_clicks'),
+    Input('label-dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def confirm_label(n_click, label):
+    global_vars.label = label
+    global_vars.agent.add_user_action_to_history(
+        f"The user set the target attribute of the dataset as: {label}")
+    return False, label, label
+
+@app.callback(
+    Output('label-modal', 'is_open', allow_duplicate=True),
+    Input('open-label-modal-button', 'n_clicks'),
+    prevent_initial_call=True,
+)
+def open_label_modal(n_click):
+    return True
 
 
 @app.callback(
@@ -271,29 +302,56 @@ def update_histogram(active_cell):
     col_data = global_vars.df[column_id]
     unique_values = col_data.nunique()
 
-    if unique_values > 100:
-        return []
 
-    # Generate a large enough color palette
-    unique_categories = sorted(col_data.dropna().unique())
+
+    # Base color palette
     colorscale = [
-        "#a6bddb",  # soft blue
-        "#d0d1e6",  # lavender gray
-        "#bdbdbd",  # light gray
-        "#fdd0a2",  # peach
-        "#c7e9c0",  # pale green
-        "#f2b6b6",  # rose
-        "#d9d9d9",  # ash gray
-        "#c6dbef"  # sky blue
+        "#a6bddb", "#d0d1e6", "#bdbdbd", "#fdd0a2",
+        "#c7e9c0", "#f2b6b6", "#d9d9d9", "#c6dbef"
     ]
 
-    extended_colors = (colorscale * ((len(unique_categories) // len(colorscale)) + 1))[:len(unique_categories)]
+    fig = None
 
-    color_map = {category: color for category, color in zip(unique_categories, extended_colors)}
 
-    # Create the histogram using color argument
-    fig = px.histogram(global_vars.df, x=column_id, color=column_id, category_orders={column_id: unique_categories},
-                       color_discrete_map=color_map)
+    # Case 2: numeric column (e.g. age)
+    if np.issubdtype(col_data.dtype, np.number):
+        if unique_values <= 20:
+            col_for_plot = f"{column_id}_str"
+            global_vars.df[col_for_plot] = col_data.astype(str)
+            unique_categories = sorted(global_vars.df[col_for_plot].dropna().unique())
+            extended_colors = (colorscale * ((len(unique_categories) // len(colorscale)) + 1))[:len(unique_categories)]
+            color_map = {category: color for category, color in zip(unique_categories, extended_colors)}
+
+            fig = px.histogram(global_vars.df, x=col_for_plot, color=col_for_plot,
+                               category_orders={col_for_plot: unique_categories},
+                               color_discrete_map=color_map)
+        else:
+            # Manual binning and use bin label as both x and color
+            bins = [0, 20, 30, 40, 50, 60, 70, 80]
+            labels = ['<20', '20s', '30s', '40s', '50s', '60s', '70+']
+            bin_col = f"{column_id}_bin"
+            global_vars.df[bin_col] = pd.cut(col_data, bins=bins, labels=labels)
+
+            unique_categories = labels
+            extended_colors = (colorscale * ((len(labels) // len(colorscale)) + 1))[:len(labels)]
+            color_map = {label: color for label, color in zip(labels, extended_colors)}
+
+            fig = px.histogram(global_vars.df, x=bin_col, color=bin_col,
+                               category_orders={bin_col: labels},
+                               color_discrete_map=color_map)
+
+    # Case 3: categorical column
+    else:
+        if unique_values > 100:
+            return []
+        col_for_plot = column_id
+        unique_categories = sorted(col_data.dropna().unique())
+        extended_colors = (colorscale * ((len(unique_categories) // len(colorscale)) + 1))[:len(unique_categories)]
+        color_map = {category: color for category, color in zip(unique_categories, extended_colors)}
+
+        fig = px.histogram(global_vars.df, x=column_id, color=column_id,
+                           category_orders={column_id: unique_categories},
+                           color_discrete_map=color_map)
 
     fig.update_layout(
         xaxis={"automargin": True, "tickmode": "auto"},
@@ -301,10 +359,11 @@ def update_histogram(active_cell):
         height=250,
         margin={"t": 10, "l": 10, "r": 10},
         bargap=0.2,
-        showlegend=False  # Optional: Turn off legend if too many values
+        showlegend=False
     )
 
     return dcc.Graph(id=column_id, figure=fig)
+
 
 
 

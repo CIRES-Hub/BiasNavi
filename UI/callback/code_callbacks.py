@@ -13,9 +13,23 @@ import os
 import shutil
 import time
 import random
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+def get_docker_client():
+    os.environ.pop("DOCKER_HOST", None)
+
+    context_sock = Path.home() / ".docker/run/docker.sock"
+    legacy_mac_sock = Path.home() / "Library/Containers/com.docker.docker/Data/docker-cli.sock"
+    default_linux_sock = Path("/var/run/docker.sock")
+
+    for sock in [context_sock, legacy_mac_sock, default_linux_sock]:
+        if sock.exists():
+            print(f"[Docker] Using socket: {sock}")
+            return docker.DockerClient(base_url=f'unix://{sock}')
+
+    raise RuntimeError("No valid Docker socket found. Is Docker Desktop running?")
 
 @app.callback(
     [Output("console-area", "children"),
@@ -66,9 +80,20 @@ def execute_commands(n_click, commands):
             if os.path.exists(user_error_file):
                 os.remove(user_error_file)
 
-            client = docker.from_env()
+            client = get_docker_client()
             print("Running commands inside container")
-            user_container = client.containers.get(container_name)
+            try:
+                user_container = client.containers.get(container_name)
+            except docker.errors.NotFound:
+                print(f"Container {container_name} not found. Creating...")
+                client.containers.run(
+                    'daisyy512/hello-docker',
+                    name=container_name,
+                    volumes={user_data_dir: {'bind': f'/home/sandbox/{user_id}', 'mode': 'rw'}},
+                    detach=True,
+                    tty=True
+                )
+                user_container = client.containers.get(container_name)
             user_container.exec_run(cmd="python sandbox_main.py " + user_id, workdir='/home/sandbox/' + user_id)
             print("Run commands inside container successfully")
 

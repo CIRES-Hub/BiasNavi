@@ -110,7 +110,7 @@ class RunPythonCode(PythonAstREPLTool):
                     if processed_item is None:
                         return io_buffer.getvalue()
                     else:
-                        return processed_item
+                        return "success"
             except Exception as eval_exception:
                 if not re.search(r"\w\s*=", module_end_str):
                     self.execution_error.append(eval_exception)

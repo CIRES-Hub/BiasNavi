@@ -11,15 +11,20 @@ import time
 dash.register_page(__name__, path='/', title='Login')
 
 layout = dbc.Container(fluid=True, children=[
-    dbc.Row(
+    dbc.Row([
         dbc.Col([
-            html.H1("BiasNavi", id="fade-div", className='fade-in', style={'display': 'block',
-                    'color': 'white', "fontSize": "3vw", "marginBottom": "-5px",}),
-            html.H5("Navigate you through bias in your data with AI", id="fade-div", className='fade-in',
-                    style={'display': 'block', 'color': 'coral', "fontSize": "0.85vw", "marginBottom": "30px",}),
+            html.H1(
+                [
+                    "BiasNavi"
+                ],
+                className="login-hero-title fade-in"
+            ),
+            html.H5(
+                "Navigate you through bias",
+                className="login-hero-subtitle fade-in"
+            ),
             dbc.Card(
                 [
-
                     dbc.CardBody([
                         html.H4([
                             html.I(className="bi bi-person-circle", style={"marginRight": "10px", "color": "#614385", "fontSize": "1.8rem"}),
@@ -75,13 +80,12 @@ layout = dbc.Container(fluid=True, children=[
                     "WebkitBackdropFilter": "blur(16px)",
                     "marginTop": "18px",
                     "overflow": "hidden",
-                    "position": "relative"
                 },
                 className="fade-in"
             )
-        ])
-    )
-], className="body vh-100 d-flex align-items-center justify-content-center fade-in login-bg", style={"overflowY": "auto"})
+        ], width=12, style={"maxWidth": "430px", "padding": "0", "margin": "0 auto", "display": "flex", "flexDirection": "column", "alignItems": "center"}),
+    ], justify="center"),
+], className="vh-100 d-flex align-items-center justify-content-center login-bg", style={"overflowY": "auto"})
 
 # Add the login background div at the top level
 

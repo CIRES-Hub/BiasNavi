@@ -60,14 +60,12 @@ def hide_chartview(n_clicks, label):
 
 @app.callback(
     [Output('menu-model-gpt4omini', 'children', allow_duplicate=True),
-     Output('menu-model-gpt4', 'children', allow_duplicate=True),
      Output('menu-model-gpt4o', 'children', allow_duplicate=True)],
     [Input('menu-model-gpt4omini', 'n_clicks'),
-     Input('menu-model-gpt4', 'n_clicks'),
      Input('menu-model-gpt4o', 'n_clicks')],
     prevent_initial_call=True
 )
-def change_llm_model(n_clicks_gpt3dot5, n_clicks_gpt4, n_clicks_gpt4o):
+def change_llm_model(n_clicks_gpt3dot5, n_clicks_gpt4o):
     ctx = dash.callback_context
 
     if not ctx.triggered:
@@ -81,10 +79,6 @@ def change_llm_model(n_clicks_gpt3dot5, n_clicks_gpt4, n_clicks_gpt4o):
     elif clicked_id == 'menu-model-gpt4':
         global_vars.agent.set_llm_model('gpt-4-turbo')
         return "GPT-4o-mini", "GPT-4 ✔", "GPT-4o"
-    elif clicked_id == 'menu-model-gpt4o':
-        global_vars.agent.set_llm_model('gpt-4o-2024-08-06')
-        return "GPT-4o-mini", "GPT-4", "GPT-4o ✔"
-
     raise dash.exceptions.PreventUpdate
 
 @app.callback(
