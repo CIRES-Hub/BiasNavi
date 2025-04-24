@@ -1,6 +1,8 @@
 from UI.variable import global_vars
 import re
-
+import docker
+import os
+from pathlib import Path
 
 #identify bias
 
@@ -53,3 +55,19 @@ def format_reply_to_markdown(reply):
     # add more if necessary...
 
     return reply
+
+
+
+
+def get_docker_client():
+    context_sock = Path.home() / ".docker/run/docker.sock"
+    legacy_mac_sock = Path.home() / "Library/Containers/com.docker.docker/Data/docker-cli.sock"
+    default_linux_sock = Path("/var/run/docker.sock")
+
+    for sock in [context_sock, legacy_mac_sock, default_linux_sock]:
+        if sock.exists():
+            print(f"[Docker] Using socket: {sock}")
+            return docker.DockerClient(base_url=f'unix://{sock}')
+
+    raise RuntimeError("No valid Docker socket found. Is Docker Desktop running?")
+

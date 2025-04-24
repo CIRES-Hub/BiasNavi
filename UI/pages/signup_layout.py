@@ -4,29 +4,13 @@ import dash
 from dash.exceptions import PreventUpdate
 from db_models.users import User
 from db_models.databases import db
-import docker
 import os
 import shutil
-from pathlib import Path
 from constant_prompt import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
     DEFAULT_PERSONA_PROMPT
+from UI.functions import get_docker_client
 
 dash.register_page(__name__, path='/signup/', title='Signup')
-
-
-def get_docker_client():
-    os.environ.pop("DOCKER_HOST", None)
-
-    context_sock = Path.home() / ".docker/run/docker.sock"
-    legacy_mac_sock = Path.home() / "Library/Containers/com.docker.docker/Data/docker-cli.sock"
-    default_linux_sock = Path("/var/run/docker.sock")
-
-    for sock in [context_sock, legacy_mac_sock, default_linux_sock]:
-        if sock.exists():
-            print(f"[Docker] Using socket: {sock}")
-            return docker.DockerClient(base_url=f'unix://{sock}')
-
-    raise RuntimeError("No valid Docker socket found. Is Docker Desktop running?")
 
 
 custom_style = {

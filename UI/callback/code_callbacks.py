@@ -13,23 +13,11 @@ import os
 import shutil
 import time
 import random
-from pathlib import Path
-
+from UI.functions import get_docker_client
 logger = logging.getLogger(__name__)
 
-def get_docker_client():
-    os.environ.pop("DOCKER_HOST", None)
 
-    context_sock = Path.home() / ".docker/run/docker.sock"
-    legacy_mac_sock = Path.home() / "Library/Containers/com.docker.docker/Data/docker-cli.sock"
-    default_linux_sock = Path("/var/run/docker.sock")
 
-    for sock in [context_sock, legacy_mac_sock, default_linux_sock]:
-        if sock.exists():
-            print(f"[Docker] Using socket: {sock}")
-            return docker.DockerClient(base_url=f'unix://{sock}')
-
-    raise RuntimeError("No valid Docker socket found. Is Docker Desktop running?")
 
 @app.callback(
     [Output("console-area", "children"),
