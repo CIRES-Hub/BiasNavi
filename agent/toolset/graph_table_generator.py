@@ -20,9 +20,9 @@ import re
 matplotlib.use('Agg')
 
 
-class RunPythonCode(PythonAstREPLTool):
-    name: str = "Run_python_code"
-    description: str = "A Python shell. Invoked when the user ask the language model to generate a table or chart"
+class Graph_Table_Generator(PythonAstREPLTool):
+    name: str = "Graph_Table_Generator"
+    description: str = "A Python shell. Use it when asked to draw a plot or generate a table"
     #response_format: str = "content_and_artifact"
 
     elem_queue: list = Field(default_factory=list)

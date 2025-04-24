@@ -24,7 +24,7 @@ from langchain_core.utils.interactive_env import is_interactive_env
 
 from langchain_experimental.agents.agent_toolkits.pandas.base import _get_prompt, _get_functions_prompt
 
-from agent.tools import RunPythonCode
+from agent.toolset.graph_table_generator import RunPythonCode
 
 def create_pandas_dataframe_agent(
     llm: LanguageModelLike,

@@ -75,10 +75,10 @@ def change_llm_model(n_clicks_gpt3dot5, n_clicks_gpt4o):
 
     if clicked_id == 'menu-model-gpt4omini':
         global_vars.agent.set_llm_model('GPT-4o-mini')
-        return "GPT-4o-mini ✔", "GPT-4", "GPT-4o"
+        return "GPT-4o-mini ✔", "GPT-4o"
     elif clicked_id == 'menu-model-gpt4':
         global_vars.agent.set_llm_model('gpt-4-turbo')
-        return "GPT-4o-mini", "GPT-4 ✔", "GPT-4o"
+        return "GPT-4o-mini", "GPT-4o"
     raise dash.exceptions.PreventUpdate
 
 @app.callback(
