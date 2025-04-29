@@ -40,10 +40,11 @@ import numpy as np
      Output("recommended-op", "children", allow_duplicate=True),
      Output("tooltip-expl", "children", allow_duplicate=True),
      Output('label-dropdown', 'options',allow_duplicate=True),
-     Output("label-modal", "is_open", allow_duplicate=True),],
+     Output("label-modal", "is_open", allow_duplicate=True),
+     Output("row-selection-modal", "is_open", allow_duplicate=True),],
     [Input('upload-data', 'contents'),
      Input('upload-data-modal', 'contents'),
-     Input('show-rows-button', 'n_clicks')],
+     Input('confirm-row-button', 'n_clicks')],
     [State('upload-data', 'filename'),
      State('upload-data-modal', 'filename'),
      State('input-start-row', 'value'),
@@ -59,14 +60,14 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
     if triggered_id == 'upload-data' or triggered_id == 'upload-data-modal':
         if triggered_id == 'upload-data':
             if not list_of_contents or not list_of_names:
-                return [], [], [], False, [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents[0]
             filename = list_of_names[0]
         elif triggered_id == 'upload-data-modal':
             if not list_of_contents_modal or not list_of_names_modal:
-                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents_modal[0]
@@ -76,7 +77,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update,dash.no_update
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -112,18 +113,19 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             "Recommended Operation: Check Data Statistics",
             "Checking data statistics is essential in the Identify stage as it provides a foundational understanding of the dataset, helping to reveal initial disparities, patterns, or anomalies that might indicate bias.",
             [{'label': col, 'value': col} for col in global_vars.df.columns],
-            True
+            True,
+            dash.no_update
 
         )
 
-    elif triggered_id == 'show-rows-button':
+    elif triggered_id == 'confirm-row-button':
         if global_vars.df is None:
-            return [], [], [], False, [], [], dash.no_update, dash.no_update, "No data is loaded.", dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "No data is loaded.", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
 
-        if start_row < 0 or end_row > len(global_vars.df) or start_row >= end_row:
+        if start_row < 0 or start_row >= end_row:
             return (
                 [],
                 [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
@@ -139,8 +141,11 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
+                dash.no_update,
                 dash.no_update
             )
+        if end_row > len(global_vars.df):
+            end_row = len(global_vars.df)
 
         xdf = global_vars.df.iloc[start_row:end_row]
         return (
@@ -158,10 +163,11 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             dash.no_update,
             dash.no_update,
             dash.no_update,
-            dash.no_update
+            dash.no_update,
+            False
         )
 
-    return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+    return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 @app.callback(
     Output('label-modal', 'is_open', allow_duplicate=True),
@@ -185,6 +191,13 @@ def confirm_label(n_click, label):
 def open_label_modal(n_click):
     return True
 
+@app.callback(
+    Output('row-selection-modal', 'is_open', allow_duplicate=True),
+    Input('show-rows-button', 'n_clicks'),
+    prevent_initial_call=True,
+)
+def open_row_selection_modal(n_click):
+    return True
 
 @app.callback(
     Output('data-alert', 'children'),

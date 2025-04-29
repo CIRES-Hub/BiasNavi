@@ -161,6 +161,33 @@ def layout():
             ),
             dbc.Modal(
                 [
+                    dbc.ModalHeader(dbc.ModalTitle("Go to Rows", style={"color": "#614385"})),
+                    dbc.ModalBody([
+                        dcc.Input(id='input-start-row', type='number', placeholder='Start row',
+                                  style={'margin': '10px', 'width': '30%'}),
+                        dcc.Input(id='input-end-row', type='number', placeholder='End row',
+                                  style={'margin': '10px', 'width': '30%'}),
+                        ]
+                    ),
+                    dbc.ModalFooter([
+                        dbc.Button("Confirm", id="confirm-row-button", className="primary-button"),
+                    ],
+                        style={
+                            'display': 'flex',
+                            'justifyContent': 'end',
+                            'alignItems': 'center'
+                        }
+                    ),
+                ],
+                id="row-selection-modal",
+                is_open=False,
+                centered=True,
+                style={
+                    "boxShadow": "0 2px 4px 0 rgba(0, 0, 0, 0.2);",
+                }
+            ),
+            dbc.Modal(
+                [
                     dbc.ModalBody(
                         children=html.Div(id="survey-modal-body"),
                     )
@@ -576,10 +603,7 @@ def layout():
                                         n_clicks=0, className='primary-button', style={'margin': '10px'}),
                             html.Button('Go to Rows', id='show-rows-button',
                                         className='primary-button', style={'margin': '10px'}),
-                            dcc.Input(id='input-start-row', type='number', placeholder='Start row',
-                                      style={'margin': '10px', 'width': '10%'}),
-                            dcc.Input(id='input-end-row', type='number', placeholder='End row',
-                                      style={'margin': '10px', 'width': '10%'}),
+
                             dcc.Download(id='download-data-csv'),
                             dbc.Modal(
                                 [
