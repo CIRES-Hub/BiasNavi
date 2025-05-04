@@ -20,10 +20,10 @@ import re
 matplotlib.use('Agg')
 
 
-class Graph_Table_Generator(PythonAstREPLTool):
-    name: str = "Graph_Table_Generator"
-    description: str = "A Python shell. Use this to execute python commands, especially when asked to draw a plot or generate a table"
-    response_format: str = "content_and_artifact"
+class Experiment_Runner(PythonAstREPLTool):
+    name: str = "Experiment_Runner"
+    description: str = "A tool that can conduct experiments. Use it when asked to conduct the experiment."
+    response_format: str = "content"
 
     elem_queue: list = Field(default_factory=list)
     execution_error: list[Exception] = []
@@ -78,7 +78,7 @@ class Graph_Table_Generator(PythonAstREPLTool):
         self,
         query: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
-    ):
+    ) -> str:
         try:
             self.execution_error.clear()
             self.elem_queue.clear()
@@ -110,7 +110,7 @@ class Graph_Table_Generator(PythonAstREPLTool):
                     if processed_item is None:
                         return io_buffer.getvalue()
                     else:
-                        return processed_item
+                        return "success"
             except Exception as eval_exception:
                 if not re.search(r"\w\s*=", module_end_str):
                     self.execution_error.append(eval_exception)

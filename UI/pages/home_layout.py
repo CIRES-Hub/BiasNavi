@@ -1133,14 +1133,14 @@ def toggle_collapse(n, is_open):
     return "fas fa-chevron-down", is_open
 
 
-@callback(
-    Output("commands-input", "disabled"),
-    Output("run-commands", "disabled"),
-    Input("run-commands", "n_clicks"),
-    prevent_initial_call=True
-)
-def toggle_disable(n_clicks):
-    return True, True
+# @callback(
+#     Output("commands-input", "disabled"),
+#     Output("run-commands", "disabled"),
+#     Input("run-commands", "n_clicks"),
+#     prevent_initial_call=True
+# )
+# def toggle_disable(n_clicks):
+#     return True, True
 
 
 @callback(
