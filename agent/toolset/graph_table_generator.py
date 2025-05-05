@@ -21,7 +21,7 @@ matplotlib.use('Agg')
 
 
 class Graph_Table_Generator(PythonAstREPLTool):
-    name: str = "Graph_Table_Generator"
+    name: str = "Run_Python_Code"
     description: str = "A Python shell. Use this to execute python commands, especially when asked to draw a plot or generate a table"
     response_format: str = "content_and_artifact"
 
@@ -78,7 +78,7 @@ class Graph_Table_Generator(PythonAstREPLTool):
         self,
         query: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
-    ):
+    )-> tuple:
         try:
             self.execution_error.clear()
             self.elem_queue.clear()
@@ -108,16 +108,16 @@ class Graph_Table_Generator(PythonAstREPLTool):
                     #     raise NotImplementedError(
                     #         "The LLM returned an unsupported media type.")
                     if processed_item is None:
-                        return io_buffer.getvalue()
+                        return 'None', io_buffer.getvalue()
                     else:
-                        return processed_item
+                        return "The plot has been generated.", processed_item
             except Exception as eval_exception:
                 if not re.search(r"\w\s*=", module_end_str):
                     self.execution_error.append(eval_exception)
                 with redirect_stdout(io_buffer):
                     exec(module_end_str, self.globals, self.locals)
-                return io_buffer.getvalue()
+                return 'Exception',io_buffer.getvalue()
         except Exception as eval_exception:
             if not re.search(r"\w\s*=", module_end_str):
                 self.execution_error.append(eval_exception)
-            return "{}: {}".format(type(eval_exception).__name__, str(eval_exception))
+            return 'Exception',"{}: {}".format(type(eval_exception).__name__, str(eval_exception))
