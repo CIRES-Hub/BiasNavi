@@ -223,6 +223,10 @@
     /* Add other styling for the card as needed */
 }
 
+.card-body {
+    padding: 5px;
+}
+
 .upload{
 
     height: 60px;

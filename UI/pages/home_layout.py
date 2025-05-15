@@ -536,17 +536,6 @@ def layout():
                             ], style={"marginTop":"20px", "marginBottom":"10px"}),
                         ], className='query')
                     ], className='card'),
-
-                    dbc.Card(children=[
-                        html.Div([
-                            # Chat display area
-                            html.Div([
-                                html.H4("Charts", className="secondary-title")
-                            ], className="query-header"),
-                            html.Div([], id='llm-media-area')
-                        ], className='llm-chart', style={'overflowX': 'auto'})
-                    ], className='card'),
-
                     # RAG card
                     dbc.Card(id="rag-card", style={'display': 'block'}, children=[
                         html.Div([
@@ -592,7 +581,21 @@ def layout():
                 # data views
                 dbc.Col(width=6, id="middle-column", children=[
                     dbc.Card(body=True, id='data-view', className='card', children=[
-                        html.Div([
+                        dbc.CardHeader(
+                            html.Div([
+                                html.I(className="bi bi-chevron-down", id={"type": "toggle-icon", "index": 1},
+                                       style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}),
+                                html.H4("Data View", style={"margin": 0}, className="secondary-title")
+                            ],
+                                id={"type": "toggle-btn", "index": 1},
+                                style={"display": "flex", "alignItems": "center"}
+                            ),
+                            style={"backgroundColor": "white", "padding": "0.25rem 0.25rem","borderBottom": "none"}
+                        ),
+
+                        dbc.Collapse(
+                            dbc.CardBody(
+                                [html.Div([
                             html.Button('Data Statistics', id='data-stat-button',
                                         n_clicks=0, className='primary-button', style={'margin': '10px 10px 10px 0'}),
                             html.Button('Save Snapshot', id='open-modal-button',
@@ -670,81 +673,93 @@ def layout():
                             dismissable=True,
                             color="primary",
                             duration=5000,
-                        )
+                        )]
+                            ),
+                            id={"type": "collapse-card", "index": 1},
+                            is_open=True
+                        ),
+
                     ]),
-
                     dbc.Card(body=True, id="report-view", className="card", children=[
-                        html.Div([
+                        dbc.CardHeader(
                             html.Div([
-                                html.H4("Bias Management", className="secondary-title")
-                            ], className="query-header"),
-                            html.Div(children=[
-                                html.Div(style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center'},
-                                        children=[
-                                        html.Button('Identify Bias', id={'type': 'spinner-btn', 'index': 3},
-                                                    n_clicks=0, className='primary-button', style={'margin': '10px 10px 10px 0'},
-                                                    title="Detect potential bias or fairness issues in the dataset or system."),
-                                        html.Button('Measure Bias', id={'type': 'spinner-btn', 'index': 4},
-                                                    n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"},
-                                                    title="Quantify the magnitude of detected biases using appropriate metrics."),
-                                        html.Button('Surface Bias', id={'type': 'spinner-btn', 'index': 5},
-                                                    n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"},
-                                                    title="Present the identified biases clearly and effectively to the user"),
-                                        html.Button('Adapt Bias', id={'type': 'spinner-btn', 'index': 6},
-                                                    n_clicks=0, className='primary-button', style={'margin': '10px', "display": "none"},
-                                                    title="Provide actionable tools or methods for mitigating biases based on user preferences.")
-                                        ]
-                                ),
+                                html.I(className="bi bi-chevron-down", id={"type": "toggle-icon", "index": 2},
+                                       style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}),
+                                html.H4("Bias Management", style={"margin": 0}, className="secondary-title")
+                            ],
+                                id={"type": "toggle-btn", "index": 2},
+                                style={"display": "flex", "alignItems": "center"}
+                            ),
+                            style={"backgroundColor": "white", "padding": "0.25rem 0.25rem","borderBottom": "none"}
+                        ),
 
-                                dcc.Store(id='sensitive-attr-store', data={}),
-                                html.Div(
-                                    [
+                        dbc.Collapse(
+                            dbc.CardBody([
+                                html.Div([
+                                    # Button row
+                                    html.Div([
+                                        html.Button('Identify Bias',
+                                                    id={'type': 'spinner-btn', 'index': 3},
+                                                    n_clicks=0, className='primary-button',
+                                                    style={'margin': '10px 10px 10px 0'},
+                                                    title="Detect potential bias or fairness issues."),
+                                        html.Button('Measure Bias',
+                                                    id={'type': 'spinner-btn', 'index': 4},
+                                                    n_clicks=0, className='primary-button',
+                                                    style={'margin': '10px', "display": "none"},
+                                                    title="Quantify the magnitude of detected biases."),
+                                        html.Button('Surface Bias',
+                                                    id={'type': 'spinner-btn', 'index': 5},
+                                                    n_clicks=0, className='primary-button',
+                                                    style={'margin': '10px', "display": "none"},
+                                                    title="Present the identified biases clearly."),
+                                        html.Button('Adapt Bias',
+                                                    id={'type': 'spinner-btn', 'index': 6},
+                                                    n_clicks=0, className='primary-button',
+                                                    style={'margin': '10px', "display": "none"},
+                                                    title="Provide tools for mitigating biases.")
+                                    ], style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center'}),
+
+                                    # Hidden store
+                                    dcc.Store(id='sensitive-attr-store', data={}),
+
+                                    # Dropdown for target attribute
+                                    html.Div([
                                         html.Label("Target Attribute:",
                                                    style={"marginRight": "10px", "whiteSpace": "nowrap"}),
-                                        # Add margin to the label
                                         dcc.Dropdown(
                                             id='column-names-dropdown',
                                             placeholder="Choose a column as the target attribute",
-                                            style={"flex": "1"}  # Allow the dropdown to expand
+                                            style={"flex": "1"}
                                         )
-                                    ],
-                                    style={
+                                    ], style={
                                         "display": "flex",
                                         "alignItems": "center",
                                         "marginTop": "20px",
                                         "marginBottom": "20px"
-                                    }
-                                ),
-                                dbc.Alert(
-                                    "",
-                                    id="report-alert",
-                                    is_open=False,
-                                    dismissable=True,
-                                    color="warning",
-                                    duration=5000,
-                                )
+                                    }),
+
+                                    # Alert for bias report
+                                    dbc.Alert(
+                                        "",
+                                        id="report-alert",
+                                        is_open=False,
+                                        dismissable=True,
+                                        color="warning",
+                                        duration=5000
+                                    ),
+
+                                    # Output areas
+                                    html.Div(id="bias-identifying-area", className="section"),
+                                    html.Div(id='bias-measuring-area', className="table-container section"),
+                                    html.Div(id='bias-surfacing-area', className="section"),
+                                    html.Div(id='bias-adapting-area', className="section"),
+                                ])
                             ]),
-                            html.Div(id="bias-identifying-area", className="section"),
-
-                            html.Div(id='bias-measuring-area', className="table-container section"),
-
-                            html.Div(id='bias-surfacing-area', className="section"),
-
-                            html.Div(id='bias-adapting-area', className="section"),
-
-                        ])
-                    ]),
-                    # dbc.Card(body=True, children=[
-                    #     # dcc.Tabs(id='tabs-figures', value='single', children=[
-                    #     #     dcc.Tab(label='Tab one', value='single'),
-                    #     #     dcc.Tab(label='Tab two', value='pair'),
-                    #     # ]),
-                    #     # html.Div(id='tabs-output'),
-                    #     "Select the attribute to visualize:\n",
-                    #     dcc.Dropdown(id='column-names-dropdown'),
-                    #     dcc.Graph(id='bar-chart'),
-                    #     dcc.Graph(id='pie-chart')
-                    # ], className='visualization')
+                            id={"type": "collapse-card", "index": 2},
+                            is_open=True
+                        ),
+                    ])
                 ]),
 
                 dbc.Col(width=3, id="right-column", children=[
@@ -928,35 +943,55 @@ def layout():
                     ], className='card'),
 
                     dbc.Card(id="code-view", children=[
-                        html.Div([
-                            html.Div([
-                                html.H4("Python Sandbox", style={'paddingLeft': 0}, className="secondary-title"),
-                                html.Span(
-                                    html.I(className="fas fa-question-circle"),
-                                    id="tooltip-code",
-                                    style={
-                                        "fontSize": "20px",
-                                        "color": "#aaa",
-                                        "cursor": "pointer",
-                                        "marginLeft": "5px",
-                                        "alignSelf": "center"
-                                    }
-                                )
-                            ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
-                                      "width": "100%"}),
-                            dbc.Tooltip(
-                                "The variable df is a reference of the Pandas dataframe of the current dataset. "
-                                "Any Modification on it will be reflected in the data view",
-                                target="tooltip-code",
-                            ),
-                        ]),
-                        html.Div([
-                            html.Div([dash_editor_components.PythonEditor(id='commands-input',
-                                                                          style={'overflow': "auto"}, value="")],
-                                     className='commands_editor'),
-                            html.Div([dbc.Button("Run", id={'type': 'spinner-btn', 'index': 9}, n_clicks=0, className='primary-button')],
-                                     className='right-align-div'),
-                            ], id="python-code-editor"),
+                        dbc.Tabs([
+                            dbc.Tab([
+                                html.Div([
+                                    # Chat display area
+                                    # html.Div([
+                                    #     html.H4("Charts", className="secondary-title")
+                                    # ], className="query-header"),
+                                    html.Div([], id='llm-media-area')
+                                ], className='llm-chart', style={'overflowX': 'auto'})
+                            ], label="Chart"),
+
+                            dbc.Tab([
+                                html.Div([
+                                    html.Div([
+                                        html.Div([dash_editor_components.PythonEditor(id='commands-input', style={'overflow': "auto"}, value="")],
+                                                 className='commands_editor'),
+                                    ], id="python-code-editor", style={"marginTop":"20pt"}),
+                                    # html.Div([
+                                    #     # html.H4("Python Sandbox", style={'paddingLeft': 0}, className="secondary-title"),
+                                    #
+                                    # ], style={"display": "flex", "alignItems": "center",
+                                    #           "justifyContent": "space-between",
+                                    #           "width": "100%"}),
+
+                                ]),
+                                html.Div([
+                                    html.Span(
+                                        html.I(className="fas fa-question-circle"),
+                                        id="tooltip-code",
+                                        style={
+                                            "fontSize": "20px",
+                                            "color": "#aaa",
+                                            "cursor": "pointer",
+                                            "marginLeft": "5px",
+                                            "alignSelf": "center"
+                                        }
+                                    ),
+                                    dbc.Button("Run", id={'type': 'spinner-btn', 'index': 9}, n_clicks=0,
+                                               className='primary-button'),
+                                ], className='right-align-div'),
+                                dbc.Tooltip(
+                                    "The variable df is a reference of the Pandas dataframe of the current dataset. "
+                                    "Any Modification on it will be reflected in the data view",
+                                    target="tooltip-code",
+                                ),
+                            ],label="Python Sandbox"),
+]
+                        ),
+
                         html.Div([
                             html.Div([
                                 html.H4("Console", className="secondary-title")
