@@ -4,14 +4,24 @@ from dash import dcc, html
 
 def chatbox():
     return dbc.Card(id="chat-box", children=[
-                html.Div([
+        dbc.CardHeader(
+            html.Div([
+                html.I(className="bi bi-chevron-down", id={"type": "toggle-icon", "index": 3},
+                       style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}),
+                html.H4("Chat with BiasNavi", style={"margin": 0}, className="secondary-title")
+            ],
+                id={"type": "toggle-btn", "index": 3},
+                style={"display": "flex", "alignItems": "center"}
+            ),
+            style={"backgroundColor": "white", "padding": "0.25rem 0.25rem", "borderBottom": "none"}
+        ),
 
+        dbc.Collapse(
+            dbc.CardBody(
+                [
                     html.Div([
-                        html.H4("Chat with BiasNavi", className="secondary-title"),
-                        html.Button(id="common-question-btn", children="Common Questions",
-                                    style={"backgroundColor": "white", "color": "grey", "border": "none"}, )
-                    ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
-                              "width": "100%"}),
+
+
                     html.Div(id='query-area', className='query-area'),
 
                     dbc.Alert(
@@ -28,6 +38,11 @@ def chatbox():
                             id="loading-1",
                             children=[
                                 html.Div(id='next-suggested-questions', style={"marginBottom":"20px"}),
+                                html.Div([
+                                    html.Button(id="common-question-btn", children="Common Questions",
+                                                style={"backgroundColor": "white", "color": "grey", "border": "none","marginBottom":"5pt"}, )
+                                ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                                          "width": "100%"}),
                                 html.Div(
                                     style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center', "gap":"10px"},
                                     children=[
@@ -50,5 +65,11 @@ def chatbox():
                         ),
 
                     ], style={"marginTop":"20px", "marginBottom":"10px"}),
-                ], className='query')
-            ], className='card')
+                ], className='query')]
+            ),
+            id={"type": "collapse-card", "index": 3},
+            is_open=True
+        )
+
+
+    ], className='card')

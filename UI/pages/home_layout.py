@@ -16,7 +16,7 @@ from UI.pages.components.report_view import report_view
 from UI.pages.components.dataset_snapshot import dataset_snapshot
 from UI.pages.components.experiment_view import experiment_view
 from UI.pages.components.code_view import code_view
-
+from UI.pages.components.chat_history import chat_history
 from UI.functions import format_message
 
 dash.register_page(__name__, path='/home/', title='Home')
@@ -54,19 +54,12 @@ def layout():
                     chatbox(),
                     # RAG card
                     rag(),
-                    #chat history
-                    dbc.Card([
-                        html.H4("Chat History", className="secondary-title"),
+                    # chat history
+                    chat_history(),
 
-                        dbc.CardBody([
-                            html.Div(id="chat-history-content")
-                        ])
-                    ], className="mt-3"),
                     dcc.Store(id='chat-update-trigger', data=0)
                 ]),
-
                 # =======================================================
-
                 dbc.Col(width=6, id="middle-column", children=[
                     # data views
                     data_view(),
