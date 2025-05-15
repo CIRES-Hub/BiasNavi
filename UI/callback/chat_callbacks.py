@@ -13,7 +13,7 @@ import dash_bootstrap_components as dbc
 from flask_login import current_user
 from UI.functions import query_llm
 from agent.rag import RAG
-
+from db_models.conversation import Conversation
 
 @app.callback(
     [Output("query-area", "children"),
@@ -232,3 +232,59 @@ def explain_llm_figure(_, content):
         explanation = global_vars.agent.describe_image('', content)
         return dcc.Markdown(explanation.content,className="llm-text"), {"display": "block", "marginBottom": "20px", "marginTop": "20px"}, "Explain"
 
+@app.callback(
+    Output("chat-history-content", "children"),
+    Input("url", "pathname"),
+    Input("chat-update-trigger", "data")
+)
+def update_chat_history(pathname, trigger):
+    if (pathname == '/'):
+        return dash.no_update
+    user_id = str(current_user.id)
+    conversations = Conversation.get_user_conversations(user_id)
+
+    if not conversations:
+        return [html.P("You don't have any chat history yet.")]
+
+    history_blocks = []
+    for idx, conv in enumerate(conversations):
+        card_content = [
+            dbc.CardHeader([
+                html.H5(f"Dataset: {conv.dataset}", className="card-title card-header mb-0"),
+                html.Small(f"Model: {conv.model}", className="text-muted"),
+                html.Small(f"Last updated: {conv.updated_at.strftime('%Y-%m-%d %H:%M:%S')}",
+                           className="text-muted d-block")
+            ], className="card-header"),
+            dbc.CardBody([
+                dbc.Collapse(
+                    dbc.Card(
+                        dbc.CardBody(
+                            html.Div(
+                                [format_message(msg) for msg in conv.messages],
+                                style={
+                                    'maxHeight': '400px',  # Adjust this value as needed
+                                    'overflowY': 'auto',
+                                },
+                                className="scrollable-conversation-body"
+                            )
+                        )
+                    ),
+                    id={"type": "collapse", "index": idx},
+                    is_open=False,
+                ),
+                dbc.Button(
+                    ["Show Messages ", html.I(
+                        className="fas fa-chevron-down")],
+                    id={"type": "collapse-button", "index": idx},
+                    className="mt-3",
+                    color="primary",
+                    n_clicks=0,
+                ),
+            ])
+        ]
+
+        history_blocks.append(
+            dbc.Card(card_content, className="mb-3 chat-history-card")
+        )
+
+    return history_blocks

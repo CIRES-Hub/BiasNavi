@@ -1,8 +1,10 @@
-import time
 import dash
 from UI.app import app
 from dash.dependencies import Input, Output, State
 from UI.functions import *
+from dash.exceptions import PreventUpdate
+from dash import callback_context
+from UI.pages.components.survey_modal import survey_modal
 
 @app.callback(
     [Output('left-column', 'style'),
@@ -90,3 +92,47 @@ def toggle_modal(n1, n2, is_open):
     if n1 or n2:
         return not is_open
     return is_open
+
+@app.callback(
+    Output("hero-dismissed", "data"),
+    Input("hero-close", "n_clicks"),
+    Input("hero-auto-dismiss", "n_intervals"),
+    State("hero-dismissed", "data"),
+    prevent_initial_call=True
+)
+def dismiss_hero_section(close_clicks, auto_dismiss, dismissed):
+    ctx = callback_context
+    if dismissed:
+        raise PreventUpdate
+    if ctx.triggered:
+        return True
+    raise PreventUpdate
+
+# Callback to toggle hero-section display
+@app.callback(
+    Output("hero-section", "style"),
+    Input("hero-dismissed", "data"),
+)
+def toggle_hero_section_style(dismissed):
+    if dismissed:
+        return {"display": "none"}
+    return {"position": "relative"}
+
+
+
+@app.callback(
+    Output("survey-modal", "is_open"),
+    Input("menu-profile", "n_clicks"),
+    prevent_initial_call=True
+)
+def open_survey_modal(n_clicks):
+    if n_clicks:
+        return True
+
+@app.callback(
+    Output("survey-modal-body", "children"),
+    Input("survey-edit-success", "data"),
+    Input("username-edit-success", "data")
+)
+def update_survey_content(survey_update, username_update):
+    return survey_modal()

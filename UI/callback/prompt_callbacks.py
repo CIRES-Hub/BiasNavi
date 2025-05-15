@@ -4,6 +4,9 @@ from db_models.databases import db
 from dash.dependencies import Input, Output, State
 from flask_login import current_user
 from UI.variable import global_vars
+import dash
+from constant_prompt import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
+    DEFAULT_PERSONA_PROMPT
 
 @app.callback(
     Output({'type': 'spinner-btn', 'index': 2}, 'children', allow_duplicate=True),
@@ -33,6 +36,34 @@ def update_prompt(update_prompt_click, new_next_question_1, new_system_prompt, n
         print("Error when update prompt", e)
     return "Save"
 
+@app.callback(
+    Output('next-question-input-1', "value"),
+    Output('system-prompt-input', "value"),
+    Output('persona-prompt-input', "value"),
+    Output('prefix-prompt-input', "value"),
+    Input("reset-prompt-button", "n_clicks"),
+    prevent_initial_call=True
+)
+def reset_default_prompts(n_clicks):
+    return [
+        DEFAULT_NEXT_QUESTION_PROMPT,
+        DEFAULT_SYSTEM_PROMPT,
+        DEFAULT_PERSONA_PROMPT,
+        DEFAULT_PREFIX_PROMPT
+    ]
+
+@app.callback(
+    Output("setting-container", "style"),
+    Output("home-container", "style"),
+    Input("url", "pathname")
+)
+def show_page_content(pathname):
+    if (pathname == "/home"):
+        return {'display': 'none'}, {'display': 'flex'}
+
+    if (pathname == "/settings/prompts"):
+        return {'display': 'block'}, {'display': 'none'}
+    return dash.no_update, dash.no_update
 
 # @app.callback(
 #     Output('update-prompt-button', 'disabled', allow_duplicate=True),

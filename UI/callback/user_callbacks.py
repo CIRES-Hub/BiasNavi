@@ -2,12 +2,11 @@ import dash
 from UI.app import app
 from db_models.users import User
 from db_models.databases import db
-from flask_login import current_user
 from dash import Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 from constant_prompt import DEFAULT_PERSONA_PROMPT
 from UI.variable import global_vars
-
+from flask_login import logout_user, current_user
 # Update Username
 @app.callback(
     Output("edit-username-modal", "is_open"),
@@ -103,3 +102,24 @@ def update_survey_info(submit_clicks, skip_clicks, user_name, professional_role,
         return '/home', 'Survey skipped.', False, False
 
     raise PreventUpdate
+
+
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    Input('logout-button', 'n_clicks'),
+    Input('menu-help', 'n_clicks'),
+    Input('menu-prompt', 'n_clicks'),
+    prevent_initial_call=True
+)
+def logout_and_redirect(logout_clicks, help_clicks, setting_clicks):
+    ctx = callback_context
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    if (logout_clicks is not None and logout_clicks > 0) or (help_clicks is not None and help_clicks > 0) or (
+            setting_clicks is not None and setting_clicks > 0):
+        if button_id == "logout-button":
+            logout_user()
+            return "/"
+        if button_id == "menu-help":
+            return "/helps/"
+        if button_id == "menu-prompt":
+            return "/settings/prompts"
