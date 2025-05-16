@@ -13,9 +13,7 @@
   animation-fill-mode: forwards;
 }
 
-.table-container > * {
-    margin-bottom: 20px;
-}
+
 
 
 /* Overall layout */
@@ -200,7 +198,7 @@
 
 .section {
 
-    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2); /* Horizontal offset, vertical offset, blur radius, spread radius, color */
+    /*box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2); /* Horizontal offset, vertical offset, blur radius, spread radius, color */
     background-color: white; /* Card background color */
     margin: 50px 0;
     padding: 20px;
@@ -1009,4 +1007,19 @@ th.dash-header-cell:first-child,
 @keyframes fadeInDown {
     0% { opacity: 0; transform: translateY(-24px);}
     100% { opacity: 1; transform: translateY(0);}
+}
+
+.fade-in-arrow {
+  opacity: 0;
+  transform: translateX(-15px);
+  animation: slideInFromLeft 0.6s ease-out forwards;
+  animation-delay: 0.3s;
+  display: inline-block;
+}
+
+@keyframes slideInFromLeft {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }

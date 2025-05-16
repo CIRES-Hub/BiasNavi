@@ -56,7 +56,7 @@ def identify_bias(_, target, styles):
                     sensitive_attrs]
     styles += column_style
     bias_report_content = html.Div([
-        dcc.Markdown(answer, className="llm-text", style={"marginBottom": "30px"}),
+        dcc.Markdown(answer, className="llm-text", style={"marginBottom": "20px"}),
     ])
     global_vars.agent.add_user_action_to_history("I have identified bias in this dataset.")
 
@@ -69,10 +69,42 @@ def identify_bias(_, target, styles):
         clearable=True,
         placeholder="", )
 
-    return [html.H4("Result of Bias Identifying"), bias_report_content,
-            html.B("You can add or remove sensitive attributes here.", style={"marginBottom": "20px"}),
-            sensitive_attrs_dropdown], styles, "", False, "The sensitive attributes are highlighted in the data view.", True, "Identify Bias", {
-        "sensitive_attrs": sensitive_attrs}, op, expl
+    return html.Div([
+    html.Div(
+        [
+            html.I(
+                className="bi bi-chevron-down",
+                id={"type": "toggle-msg-icon", "index": 1},
+                style={
+                    "cursor": "pointer",
+                    "marginRight": "8px",
+                    "fontSize": "1.2rem"
+                }
+            ),
+            html.H4(
+                "Result of Bias Identifying",
+                style={"margin": 0}
+            )
+        ],
+        id={"type": "toggle-msg-btn", "index": 1},
+        style={
+            "display": "flex",
+            "alignItems": "center"
+        }
+    ),
+    dbc.Collapse(
+        [
+            bias_report_content,
+            html.B(
+                "You can add or remove sensitive attributes here.",
+                style={"marginBottom": "20px"}
+            ),
+            sensitive_attrs_dropdown
+        ],
+        id={"type": "collapse-msg", "index": 1},
+        is_open=True
+    )
+]), styles, "", False, "The sensitive attributes are highlighted in the data view.", True, "Identify Bias", {"sensitive_attrs": sensitive_attrs}, op, expl
 
 
 @app.callback(
@@ -129,7 +161,7 @@ def measure_bias(_, target, sensitive_attrs):
                                           #               'color': 'white',
                                           #               'fontWeight': 'bold'
                                           #               },
-                                          style_table={'overflowX': 'auto'},
+                                          style_table={'overflowX': 'auto',"marginTop":"10pt"},
                                           style_data_conditional=[
                                               {
                                                   'if': {'row_index': 'odd'},
@@ -142,16 +174,47 @@ def measure_bias(_, target, sensitive_attrs):
                                           ],
                                           )
         tables.append(data_table)
-        tables.append(html.Button('Explain', id={"type": "report-table-button", "index": str(table_id)}, n_clicks=0,
-                                  className='primary-button'))
         tables.append(
-            html.Div([], id={"type": "report-table-explanation", "index": str(table_id)}, style={"display": "none"}))
+            html.Div([], id={"type": "report-table-explanation", "index": str(table_id)},
+                     style={"display": "none", "marginBottom": "10pt"}))
+        tables.append(html.Button(
+            'Explain',
+            id={"type": "report-table-button", "index": str(table_id)},
+            n_clicks=0,
+            className='primary-button',
+            style={
+                "margin": "10pt 0",
+                "marginLeft": "auto",
+                "marginRight": "0"
+            }
+        ))
+
 
     warning_msg = ""
     if warning:
         warning_msg = f"The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 100 unique values are not presented due to space limit.",
     global_vars.agent.add_user_action_to_history("I have measured the bias in this dataset.")
-    return [html.H4("Result of Bias Measuring")] + tables, warning_msg, warning, "Measure Bias"
+    return html.Div([
+                    html.Div(
+                        [
+                            html.I(
+                                className="bi bi-chevron-down",
+                                id={"type": "toggle-msg-icon", "index": 2},
+                                style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}
+                            ),
+                            html.H4("Result of Bias Measuring",style={"margin": 0})
+                        ],
+                        id={"type": "toggle-msg-btn", "index": 2},
+                        style={"display": "flex", "alignItems": "center"},
+                    ),
+                    dbc.Collapse(
+                        tables,
+                        id={"type": "collapse-msg", "index": 2},
+                        is_open=True
+                    )
+                ]), warning_msg, warning, "Measure Bias"
+
+
 
 
 @app.callback(
@@ -185,15 +248,33 @@ def surface_bias(_, target, sensitive_attrs):
     for i, fig in enumerate(figures):
         # Create a dcc.Graph component with the figure
         graphs.append(dcc.Graph(id={"type": "report-graph", "index": str(i)}, figure=fig))
-        graphs.append(dcc.Loading(
-            html.Div([], id={"type": "report-graph-explanation", "index": str(i)}, style={"display": "none"})))
+        graphs.append(
+            html.Div([], id={"type": "report-graph-explanation", "index": str(i)}, style={"display": "none","marginBottom":"10pt"}))
         graphs.append(html.Button('Explain', id={"type": "report-graph-button", "index": str(i)}, n_clicks=0,
                                   className='primary-button'))
     warning_msg = ""
     if warning:
         warning_msg = f"The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 100 unique values are not presented due to space limit.",
     global_vars.agent.add_user_action_to_history("I have measured the bias in this dataset.")
-    return [html.H4("Result of Bias Surfacing")] + graphs, warning_msg, warning, "Surface Bias"
+    return html.Div([
+                    html.Div(
+                        [
+                            html.I(
+                                className="bi bi-chevron-down",
+                                id={"type": "toggle-msg-icon", "index": 3},
+                                style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}
+                            ),
+                            html.H4("Result of Bias Surfacing",style={"margin": 0})
+                        ],
+                        id={"type": "toggle-msg-btn", "index": 3},
+                        style={"display": "flex", "alignItems": "center"},
+                    ),
+                    dbc.Collapse(
+                        graphs,
+                        id={"type": "collapse-msg", "index": 3},
+                        is_open=True
+                    )
+                ]), warning_msg, warning, "Surface Bias"
 
 
 @app.callback(
@@ -229,10 +310,10 @@ def adapt_bias(_, target, sensitive_attrs):
     answer = format_reply_to_markdown(answer)
 
     suggested_action = html.Div([
-        dcc.Markdown(answer, className="llm-text", style={"marginBottom": "30px"}),
+        dcc.Markdown(answer, className="llm-text", style={"marginBottom": "20px"}),
     ])
 
-    button_area = html.Div(style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center'}, children=[
+    button_area = html.Div(style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center', "marginTop":"20pt"}, children=[
         dcc.Loading(children=[
             html.Div(style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'flex-start', 'gap': '15px'},
                      children=[
@@ -271,8 +352,27 @@ def adapt_bias(_, target, sensitive_attrs):
     ])
 
     global_vars.agent.add_user_action_to_history("I have started to adapt the bias in this dataset.")
-    return [html.H4("Result of Adapting Bias"), button_area,
-            suggested_action], dash.no_update, dash.no_update, "Adapt Bias", op, expl
+    return  html.Div([
+                    html.Div(
+                        [
+                            html.I(
+                                className="bi bi-chevron-down",
+                                id={"type": "toggle-msg-icon", "index": 4},
+                                style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}
+                            ),
+                            html.H4("Result of Adapting Bias",style={"margin": 0})
+                        ],
+                        id={"type": "toggle-msg-btn", "index": 4},
+                        style={"display": "flex", "alignItems": "center"},
+                    ),
+                    dbc.Collapse(
+                        [button_area,
+                        suggested_action],
+                        id={"type": "collapse-msg", "index": 4},
+                        is_open=True
+                    )
+                ]), dash.no_update, dash.no_update, "Adapt Bias", op, expl
+
 
 
 @app.callback(

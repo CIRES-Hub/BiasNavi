@@ -10,13 +10,19 @@ from UI.variable import global_vars
     Output({'type': 'spinner-btn', 'index': 4},"style"),
     Output({'type': 'spinner-btn', 'index': 5},"style"),
     Output({'type': 'spinner-btn', 'index': 6},"style"),
+    Output("right-arrow-icon-1","style"),
+    Output("right-arrow-icon-2", "style"),
+    Output("right-arrow-icon-3", "style"),
     Input("pipeline-slider", "value"),
     State({'type': 'spinner-btn', 'index': 4},"style"),
     State({'type': 'spinner-btn', 'index': 5},"style"),
     State({'type': 'spinner-btn', 'index': 6},"style"),
+    State("right-arrow-icon-1","style"),
+    State("right-arrow-icon-2", "style"),
+    State("right-arrow-icon-3", "style"),
     prevent_initial_call=True
 )
-def change_pipeline_stage(val, m_style, s_style, a_style):
+def change_pipeline_stage(val, m_style, s_style, a_style, ra1_style, ra2_style, ra3_style):
     stages = ["Identify","Measure","Surface","Adapt"]
     if global_vars.agent:
         new_stage = stages[val]
@@ -28,22 +34,34 @@ def change_pipeline_stage(val, m_style, s_style, a_style):
             m_style["display"] = "none"
             s_style["display"] = "none"
             a_style["display"] = "none"
-            return True, m_style, s_style, a_style
+            ra1_style["display"] = "none"
+            ra2_style["display"] = "none"
+            ra3_style["display"] = "none"
+            return True, m_style, s_style, a_style, ra1_style, ra2_style, ra3_style
         elif val == 1:
             m_style["display"] = "block"
             s_style["display"] = "none"
             a_style["display"] = "none"
-            return True, m_style, s_style, a_style
+            ra1_style["display"] = "block"
+            ra2_style["display"] = "none"
+            ra3_style["display"] = "none"
+            return True, m_style, s_style, a_style, ra1_style, ra2_style, ra3_style
         elif val == 2:
             m_style["display"] = "block"
             s_style["display"] = "block"
             a_style["display"] = "none"
-            return True, m_style, s_style, a_style
+            ra1_style["display"] = "block"
+            ra2_style["display"] = "block"
+            ra3_style["display"] = "none"
+            return True, m_style, s_style, a_style, ra1_style, ra2_style, ra3_style
         elif val == 3:
             m_style["display"] = "block"
             s_style["display"] = "block"
             a_style["display"] = "block"
-            return True, m_style, s_style, a_style
+            ra1_style["display"] = "block"
+            ra2_style["display"] = "block"
+            ra3_style["display"] = "block"
+            return True, m_style, s_style, a_style, ra1_style, ra2_style, ra3_style
     else:
         return False, dash.no_update, dash.no_update, dash.no_update
 

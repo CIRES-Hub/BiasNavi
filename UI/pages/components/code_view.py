@@ -7,7 +7,7 @@ def code_view():
             html.Div([
                 html.I(className="bi bi-chevron-down", id={"type": "toggle-icon", "index": 7},
                        style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}),
-                html.H4("Chart and Code", style={"margin": 0}, className="secondary-title")
+                html.H4("Chart & Code", style={"margin": 0}, className="secondary-title")
             ],
                 id={"type": "toggle-btn", "index": 7},
                 style={"display": "flex", "alignItems": "center"}
@@ -63,20 +63,20 @@ def code_view():
                                 "Any Modification on it will be reflected in the data view",
                                 target="tooltip-code",
                             ),
+                            html.Div([
+                                html.Div([
+                                    html.H4("Console", className="secondary-title")
+                                ], className="query-header"),
+                                dcc.Loading(
+                                    id="loading-1",
+                                    children=[html.P(id='console-area', className='commands_result')],
+                                    type="default",
+                                ),
+                            ], id="python-code-console", style={"display": "none"})
                         ],label="Python Sandbox"),
                     ]
-                    ),
-
-                    html.Div([
-                        html.Div([
-                            html.H4("Console", className="secondary-title")
-                        ], className="query-header"),
-                        dcc.Loading(
-                            id="loading-1",
-                            children=[html.P(id='console-area', className='commands_result')],
-                            type="default",
-                        ),
-                    ], id="python-code-console",style={"display":"none"}),]
+                    )
+                    ,]
             ),
             id={"type": "collapse-card", "index": 7},
             is_open=True

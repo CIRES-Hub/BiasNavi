@@ -95,9 +95,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         if chat_content is None:
             chat_content = []
         chat_content.append(dcc.Markdown("The dataset has been successfully uploaded! 🎉 Let's dive into exploring it. You can "
-                            "start by asking some commonly asked questions—just click **the button in the top-right "
-                            "corner** to get started. Feel free to ask anything else you'd like to know about the "
-                            "dataset!", className="llm-msg"))
+                            "ask anything else you'd like to know about the dataset!", className="llm-msg"))
         return (
             global_vars.df.to_dict('records'),
             [{"name": col, "id": col, 'deletable': True} for col in global_vars.df.columns],

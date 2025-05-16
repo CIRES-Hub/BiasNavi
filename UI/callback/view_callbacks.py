@@ -13,6 +13,16 @@ def toggle_card(n_clicks, is_open):
     return not is_open, "bi bi-chevron-down" if not is_open else "bi bi-chevron-right"
 
 @app.callback(
+    Output({"type": "collapse-msg", "index": MATCH}, "is_open"),
+    Output({"type": "toggle-msg-icon", "index": MATCH}, "className"),
+    Input({"type": "toggle-msg-btn", "index": MATCH}, "n_clicks"),
+    State({"type": "collapse-msg", "index": MATCH}, "is_open"),
+    prevent_initial_call=True
+)
+def toggle_card(n_clicks, is_open):
+    return not is_open, "bi bi-chevron-down" if not is_open else "bi bi-chevron-right"
+
+@app.callback(
     Output("more-info-icon", "className"),
     Output("profile-collapse", "is_open"),
     Input("profile-more-info-button", "n_clicks"),

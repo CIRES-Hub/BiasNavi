@@ -56,7 +56,7 @@ def bias_pipeline():
                     ),
                     html.Div(
                         dbc.Alert(
-                            f"The pipeline has proceeded to a new stage.",
+                            f"The pipeline stage has been changed.",
                             id="pipeline-alert",
                             is_open=False,
                             dismissable=True,

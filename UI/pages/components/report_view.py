@@ -25,16 +25,41 @@ def report_view():
                                     n_clicks=0, className='primary-button',
                                     style={'margin': '10px'},
                                     title="Detect potential bias or fairness issues."),
+
+                        html.I(
+                            className="bi bi-arrow-right fade-in-arrow",
+                            id="right-arrow-icon-1",
+                            style={
+                                "fontSize": "1.5rem",
+                                "display": "none"
+                            }
+                        ),
                         html.Button('Measure Bias',
                                     id={'type': 'spinner-btn', 'index': 4},
                                     n_clicks=0, className='primary-button',
                                     style={'margin': '10px', "display": "none"},
                                     title="Quantify the magnitude of detected biases."),
+                        html.I(
+                            className="bi bi-arrow-right fade-in-arrow",
+                            id="right-arrow-icon-2",
+                            style={
+                                "fontSize": "1.5rem",
+                                "display": "none"
+                            }
+                        ),
                         html.Button('Surface Bias',
                                     id={'type': 'spinner-btn', 'index': 5},
                                     n_clicks=0, className='primary-button',
                                     style={'margin': '10px', "display": "none"},
                                     title="Present the identified biases clearly."),
+                        html.I(
+                            className="bi bi-arrow-right fade-in-arrow",
+                            id="right-arrow-icon-3",
+                            style={
+                                "fontSize": "1.5rem",
+                                "display": "none"
+                            }
+                        ),
                         html.Button('Adapt Bias',
                                     id={'type': 'spinner-btn', 'index': 6},
                                     n_clicks=0, className='primary-button',
@@ -73,7 +98,7 @@ def report_view():
 
                     # Output areas
                     html.Div(id="bias-identifying-area", className="section"),
-                    html.Div(id='bias-measuring-area', className="table-container section"),
+                    html.Div(id='bias-measuring-area', className="section"),
                     html.Div(id='bias-surfacing-area', className="section"),
                     html.Div(id='bias-adapting-area', className="section"),
                 ])
