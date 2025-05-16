@@ -406,6 +406,24 @@
 
 }
 
+.button-clicked {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, #43cea2 0%, #185a9d 100%);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3), inset -2px -2px 5px rgba(255,255,255,0.1);
+    transform: translateY(1px);
+}
+
 .save-data-button {
     background-color: #ffb366; /* Blue background */
     color: white;
@@ -501,6 +519,18 @@
     box-shadow: 0 6px 24px 0 rgba(97,67,133,0.18);
 }
 
+.file-msg {
+    text-align: left;
+    padding: 10px;
+
+    color: #999999; /* 浅灰字体 */
+
+    margin: 20pt auto; /* 水平居中 */
+    width: fit-content;
+    max-width: 100%;
+    word-wrap: break-word;
+    display: block;
+}
 
 
 

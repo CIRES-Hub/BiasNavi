@@ -8,7 +8,7 @@ def chatbox():
             html.Div([
                 html.I(className="bi bi-chevron-down", id={"type": "toggle-icon", "index": 3},
                        style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}),
-                html.H4("Chat with BiasNavi", style={"margin": 0}, className="secondary-title")
+                html.H4([html.I(className="bi bi-robot",style={"marginRight": "10pt"}), "Chat with BiasNavi"], style={"margin": 0}, className="secondary-title")
             ],
                 id={"type": "toggle-btn", "index": 3},
                 style={"display": "flex", "alignItems": "center"}
@@ -59,9 +59,10 @@ def chatbox():
                                                                         n_clicks=0,
                                                                         className='send-button'),
                                                    multiple=True),
-                                        html.Button("RAG", id='rag-button',
+                                        html.Button("RAG", id='rag-switch',
                                                     title="Enable/Disable RAG.", n_clicks=0,
                                                     className='send-button'),
+                                        dcc.Store(id="rag-state", data=False)
                                     ])
                             ],
                             type="default",  # Choose from "graph", "cube", "circle", "dot", or "default"

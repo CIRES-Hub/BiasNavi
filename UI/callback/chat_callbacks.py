@@ -16,7 +16,7 @@ from agent.rag import RAG
 from db_models.conversation import Conversation
 
 @app.callback(
-    [Output("query-area", "children"),
+    [Output("query-area", "children",allow_duplicate=True),
      Output("error-alert", "is_open", allow_duplicate=True),
     Output("error-alert", "children", allow_duplicate=True),
      Output('llm-media-area', 'children'),
@@ -129,29 +129,50 @@ def export_conversation(n_clicks, format):
 #         global_vars.use_rag = False
 #         return 'RAG: OFF', {'display': 'none'}, {'display': 'none'}
 
+@app.callback(
+    Output("rag-state", "data"),
+    Input("rag-switch", "n_clicks"),
+    prevent_initial_call=True
+)
+def toggle_rag_state(n):
+    return n % 2 == 1
+
+# Update UI based on state
+@app.callback(
+    Output("rag-switch", "className"),
+    Output("rag-switch", "children"),
+    Input("rag-state", "data")
+)
+def update_rag_ui(active):
+    if active:
+        return "button-clicked", "ON"
+    return "send-button", "RAG"
 
 @app.callback(
     Output('RAG-area', 'children'),
+    Output("query-area", "children",allow_duplicate=True),
+    Output('RAG-button', 'children',allow_duplicate=True),
     Input('upload-rag', 'contents'),
     State('upload-rag', 'filename'),
-    Input('RAG-button', 'n_clicks'),
+    Input('RAG-button', 'children'),
     Input('send-button', 'n_clicks'),
     State('RAG-area', 'children'),
     State('query-input', 'value'),
-    State('rag-switch', 'value'),
+    State('rag-state', 'data'),
+    State('query-area', 'children'),
     prevent_initial_call=True
 )
-def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, rag_output, query, rag_status):
+def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, rag_output, query, rag_status, total_msg):
     ctx = callback_context
     if not ctx.triggered:
-        return dash.no_update
+        return dash.no_update, dash.no_update, html.Span(className="fas fa-file")
 
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
     allowed_extensions = ('pdf', 'txt')
 
     if triggered_id == 'upload-rag':
         if list_of_contents is None:
-            return dash.no_update
+            return dash.no_update, dash.no_update, html.Span(className="fas fa-file")
 
         filename = list_of_names[0]
         contents = list_of_contents[0]
@@ -168,34 +189,41 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
                     global_vars.rag.clean()
 
                 global_vars.rag = RAG(io.BytesIO(decoded), file_type)
-
-                return [html.Div([output])]
+                total_msg.append(html.Div([html.I(className="bi bi-file-earmark-text",
+                       style={"marginRight": "8px", "fontSize": "1.2rem"}),f"The file {filename} has been read." + '\n'], className="file-msg"))
+                return [html.Div([output])], total_msg, html.Span(className="fas fa-file")
             else:
-                return html.Div([
+                error_msg = html.Div([
                     f"This file format ({file_type}) is not supported. Only {', '.join(allowed_extensions)} files are supported."
-                ])
+                ], className="file-msg")
+                total_msg.append(error_msg)
+                return error_msg, total_msg, html.Span(className="fas fa-file")
 
         except Exception as e:
             print(f"Error processing file upload: {e}")
-            return html.Div(['There was an error processing this file.'])
+            error_msg = html.Div(['There was an error processing the file.'],className="file-msg")
+            total_msg.append(error_msg)
+            return error_msg, total_msg, html.Span(className="fas fa-file")
 
     elif triggered_id == 'send-button':
         if not rag_status:
-            return dash.no_update
+            return dash.no_update, dash.no_update, html.Span(className="fas fa-file")
         if not global_vars.rag or not rag_output:
-            return dash.no_update
+            return dash.no_update, dash.no_update, html.Span(className="fas fa-file")
 
         try:
             docs = global_vars.rag.retrieve(query)
             rag_output=html.Div(["Retrieved relevant context: \n" + docs])
 
-            return rag_output
+            return rag_output, dash.no_update, html.Span(className="fas fa-file")
 
         except Exception as e:
-            print(f"Error processing query: {e}")
-            return html.Div(['There was an error processing your request.'])
+            print(f"Error processing file upload: {e}")
+            error_msg = html.Div(['There was an error processing the file.'], className="file-msg")
+            total_msg.append(error_msg)
+            return error_msg, total_msg, html.Span(className="fas fa-file")
 
-    return dash.no_update
+    return dash.no_update, dash.no_update, html.Span(className="fas fa-file")
 
 @app.callback(
     Output('rag-switch-status', 'children'),

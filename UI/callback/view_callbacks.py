@@ -19,7 +19,7 @@ def toggle_card(n_clicks, is_open):
     State({"type": "collapse-msg", "index": MATCH}, "is_open"),
     prevent_initial_call=True
 )
-def toggle_card(n_clicks, is_open):
+def toggle_msg(n_clicks, is_open):
     return not is_open, "bi bi-chevron-down" if not is_open else "bi bi-chevron-right"
 
 @app.callback(

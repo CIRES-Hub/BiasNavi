@@ -26,7 +26,7 @@ def rag():
                             html.Div(
                                 [
                                     daq.ToggleSwitch(
-                                        id='rag-switch',
+                                        id='rag-toggle',
                                         value=False,
                                         color="#67b26f",  # Green gradient for ON (matches your theme)
                                         size=48,  # Bigger for clarity (default is 36)

@@ -41,6 +41,17 @@ app.clientside_callback(
 app.clientside_callback(
     """
     function (click) {
+        return [""" + json.dumps(dbc.Spinner(size='sm').to_plotly_json()) + """]
+    }
+    """,
+    Output("RAG-button", 'children'),
+    Input("RAG-button", 'n_clicks'),
+    prevent_initial_call=True
+)
+
+app.clientside_callback(
+    """
+    function (click) {
         return [""" + json.dumps(dbc.Spinner(size='sm').to_plotly_json()) + """, " Analyzing..."]
     }
     """,
@@ -70,17 +81,4 @@ app.clientside_callback(
     Output({'type': 'report-graph-button', 'index': MATCH}, 'children'),
     Input({'type': 'report-graph-button', 'index': MATCH}, 'n_clicks'),
     prevent_initial_call=True
-)
-
-app.clientside_callback(
-    """
-    function(n_clicks) {
-        if (n_clicks % 2 === 1) {
-            return "button-clicked";
-        }
-        return "button-released";
-    }
-    """,
-    Output("rag-button", "className"),
-    Input("rag-button", "n_clicks")
 )
