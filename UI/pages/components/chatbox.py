@@ -59,6 +59,9 @@ def chatbox():
                                                                         n_clicks=0,
                                                                         className='send-button'),
                                                    multiple=True),
+                                        html.Button("RAG", id='rag-button',
+                                                    title="Enable/Disable RAG.", n_clicks=0,
+                                                    className='send-button'),
                                     ])
                             ],
                             type="default",  # Choose from "graph", "cube", "circle", "dot", or "default"

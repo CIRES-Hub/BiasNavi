@@ -54,7 +54,7 @@ def data_view():
                     ], ),
                     dcc.Loading(id="table-loading", children=[
                         html.Div(children=[
-                            dash_table.DataTable(id='table-overview', page_size=10, page_action='native',
+                            dash_table.DataTable(id='table-overview', page_size=25, page_action='native',
                                                  editable=True, row_deletable=True, column_selectable='single',
                                                  style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial',"padding":"0px 10px"},
                                                  # style_header={'backgroundColor': '#614385', 'color': 'white',

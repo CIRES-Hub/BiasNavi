@@ -72,3 +72,15 @@ app.clientside_callback(
     prevent_initial_call=True
 )
 
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        if (n_clicks % 2 === 1) {
+            return "button-clicked";
+        }
+        return "button-released";
+    }
+    """,
+    Output("rag-button", "className"),
+    Input("rag-button", "n_clicks")
+)

@@ -1,9 +1,10 @@
 import dash_bootstrap_components as dbc
+from click import style
 from dash import dcc, html
 import dash_daq as daq
 
 def rag():
-    return dbc.Card(id="rag-card", style={'display': 'block'}, children=[
+    return dbc.Card(id="rag-card", style={'display': 'none'}, children=[
         dbc.CardHeader(
             html.Div([
                 html.I(className="bi bi-chevron-right", id={"type": "toggle-icon", "index": 5},

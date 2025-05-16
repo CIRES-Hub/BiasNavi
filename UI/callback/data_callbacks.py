@@ -108,7 +108,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             "",
             chat_content,
             0,
-            "Recommended Operation: Check Data Statistics",
+            "Next: Check Data Statistics",
             "Checking data statistics is essential in the Identify stage as it provides a foundational understanding of the dataset, helping to reveal initial disparities, patterns, or anomalies that might indicate bias.",
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             True,

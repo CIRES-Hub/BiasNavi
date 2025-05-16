@@ -64,28 +64,29 @@ def bias_pipeline():
                             duration=5000,
                         ),
                     ),
-                    html.Div([html.P("Recommended Operation:", id="recommended-op", className="op-highlight"),
-                              html.Span(
-                                  html.I(className="fas fa-question-circle"),
-                                  id="tooltip-op",
-                                  style={
-                                      "fontSize": "20px",
-                                      "color": "#aaa",
-                                      "cursor": "pointer",
-                                      "marginLeft": "5px",
-                                      "alignSelf": "center"
-                                  }
-                              )],
-                             style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
-                                    "width": "100%"}),
-                    dbc.Tooltip(
-                        "",
-                        target="tooltip-op",
-                        id="tooltip-expl",
-                    ),]
+                    # html.Div([html.P("Recommended Operation:", id="recommended-op", className="op-highlight"),
+                    #           html.Span(
+                    #               html.I(className="fas fa-question-circle"),
+                    #               id="tooltip-op",
+                    #               style={
+                    #                   "fontSize": "20px",
+                    #                   "color": "#aaa",
+                    #                   "cursor": "pointer",
+                    #                   "marginLeft": "5px",
+                    #                   "alignSelf": "center"
+                    #               }
+                    #           )],
+                    #          style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                    #                 "width": "100%"}),
+                    # dbc.Tooltip(
+                    #     "",
+                    #     target="tooltip-op",
+                    #     id="tooltip-expl",
+                    # ),]
+                ]
             ),
             id={"type": "collapse-card", "index": 4},
             is_open=True
         )
 
-    ], className='card', style={"padding": "10px"})
+    ], className='card', style={"padding": "10px", "display": "none"})

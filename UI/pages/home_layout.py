@@ -17,6 +17,7 @@ from UI.pages.components.dataset_snapshot import dataset_snapshot
 from UI.pages.components.experiment_view import experiment_view
 from UI.pages.components.code_view import code_view
 from UI.pages.components.chat_history import chat_history
+from UI.pages.components.recommender_label import recommender_label
 from UI.functions import format_message
 
 dash.register_page(__name__, path='/home/', title='Home')
@@ -49,11 +50,13 @@ def layout():
                     dcc.Store(id="survey-edit-success", data=False),
 
                     # pipeline widget
-                    bias_pipeline(),
+                    bias_pipeline(), #invisible by default
+                    # recommender_label
+                    recommender_label(),
                     # chat box
                     chatbox(),
                     # RAG card
-                    rag(),
+                    rag(), #invisible by default
                     # chat history
                     chat_history(),
 

@@ -253,7 +253,7 @@
 }
 
 .op-highlight {
-    margin: 15px 10px 10px 15px;
+    margin: 12px 8px 12px 8px;
     color: #856404;
     background: linear-gradient(90deg, #fdf6e3 0%, #f7e9b0 100%);
     border-radius: 18px;
@@ -729,11 +729,6 @@
     justify-content: center;
     flex-shrink: 0;
 }
-
-.send-button:hover {
-    background-color: #4285F4;
-}
-
 
 
 .scrollable-conversation-body::-webkit-scrollbar {
