@@ -18,59 +18,6 @@ def report_view():
         dbc.Collapse(
             dbc.CardBody([
                 html.Div([
-                    # Button row
-                    html.Div([
-                        html.Button('Identify Bias',
-                                    id={'type': 'spinner-btn', 'index': 3},
-                                    n_clicks=0, className='primary-button',
-                                    style={'margin': '10px'},
-                                    title="Detect potential bias or fairness issues."),
-
-                        html.I(
-                            className="bi bi-arrow-right fade-in-arrow",
-                            id="right-arrow-icon-1",
-                            style={
-                                "fontSize": "1.5rem",
-                                "display": "none"
-                            }
-                        ),
-                        html.Button('Measure Bias',
-                                    id={'type': 'spinner-btn', 'index': 4},
-                                    n_clicks=0, className='primary-button',
-                                    style={'margin': '10px', "display": "none"},
-                                    title="Quantify the magnitude of detected biases."),
-                        html.I(
-                            className="bi bi-arrow-right fade-in-arrow",
-                            id="right-arrow-icon-2",
-                            style={
-                                "fontSize": "1.5rem",
-                                "display": "none"
-                            }
-                        ),
-                        html.Button('Surface Bias',
-                                    id={'type': 'spinner-btn', 'index': 5},
-                                    n_clicks=0, className='primary-button',
-                                    style={'margin': '10px', "display": "none"},
-                                    title="Present the identified biases clearly."),
-                        html.I(
-                            className="bi bi-arrow-right fade-in-arrow",
-                            id="right-arrow-icon-3",
-                            style={
-                                "fontSize": "1.5rem",
-                                "display": "none"
-                            }
-                        ),
-                        html.Button('Adapt Bias',
-                                    id={'type': 'spinner-btn', 'index': 6},
-                                    n_clicks=0, className='primary-button',
-                                    style={'margin': '10px', "display": "none"},
-                                    title="Provide tools for mitigating biases.")
-                    ], style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center'}),
-
-                    # Hidden store
-                    dcc.Store(id='sensitive-attr-store', data={}),
-
-                    # Dropdown for target attribute
                     html.Div([
                         html.Label("Target Attribute:",
                                    style={"marginRight": "10px", "whiteSpace": "nowrap"}),
@@ -106,4 +53,4 @@ def report_view():
             id={"type": "collapse-card", "index": 2},
             is_open=True
         ),
-    ])
+    ], style={"display": "none"})

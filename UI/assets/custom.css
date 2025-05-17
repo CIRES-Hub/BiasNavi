@@ -331,10 +331,15 @@
     /*border: 1px solid burlywood;*/
     width: 100%;
     overflow-y: auto;
-    height: 700px;
+    height: 800px;
     margin-top: 10px;
     margin-bottom: 20px;
     padding: 10px;
+}
+
+.scrollable-area{
+    overflow-y: auto;
+    max-height: 800px;
 }
 
 .RAG-area{
@@ -517,6 +522,17 @@
     display: block;
     float: right;
     box-shadow: 0 6px 24px 0 rgba(97,67,133,0.18);
+}
+
+.bias-buttons{
+    padding: 2px;
+    background-color: #eeeeee;
+    border-radius: 15px;
+    margin: 10px 5px 10px 5px;
+    width: fit-content;
+    display: none;
+    flex-direction: row;
+    align-items: center;
 }
 
 .file-msg {

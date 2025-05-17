@@ -29,7 +29,7 @@ def query_llm(query, stage, user_id, context=''):
     response, media, suggestions, stage, op, explanation = global_vars.agent.run(query, stage)
     global_vars.agent.persist_history(user_id=str(user_id))
     global_vars.suggested_questions = suggestions
-    return response, media, suggestions, stage, "Next: "+op, explanation
+    return response, media, suggestions, stage, "Suggestion: "+op, explanation
 
 
 def format_reply_to_markdown(reply):

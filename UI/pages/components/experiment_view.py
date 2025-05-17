@@ -89,7 +89,7 @@ def experiment_view():
                                     ]),
 
                             ], className='llm-chart', style={'overflowX': 'auto'})
-                        ], label="Experiment"),
+                        ], label="Experiment", className="scrollable-area"),
                         dbc.Tab(children=[
                             dcc.Store(id="experiment-result", data=[]),
                             dash_table.DataTable(
@@ -131,7 +131,7 @@ def experiment_view():
                             ),
                             html.Div(id="chosen-experiment-res"),
                             html.Div(id='comparison-res'),
-                        ],label="Comparison")
+                        ],label="Comparison", className="scrollable-area")
                     ]
                 )]
             ),

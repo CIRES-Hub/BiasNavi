@@ -23,4 +23,4 @@ def chat_history():
         is_open = False
         )
 
-    ], className="card")
+    ], className="card", style={"display": "none"})

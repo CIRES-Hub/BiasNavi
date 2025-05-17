@@ -16,7 +16,7 @@ from bias.adapt import adapt_data
 
 
 @app.callback(
-    Output('bias-identifying-area', 'children'),
+    Output('query-area', 'children'),
     Output('table-overview', 'style_data_conditional'),
     Output('report-alert', 'children', allow_duplicate=True),
     Output('report-alert', 'is_open', allow_duplicate=True),
@@ -26,21 +26,26 @@ from bias.adapt import adapt_data
     Output("sensitive-attr-store", 'data', allow_duplicate=True),
     Output("recommended-op", "children", allow_duplicate=True),
     Output("tooltip-expl", "children", allow_duplicate=True),
+    Output('bias-stage-value', 'data'),
+    Output('toggle-msg-value', 'data'),
     Input({'type': 'spinner-btn', 'index': 3}, 'children'),
     State('column-names-dropdown', 'value'),
     State('data-view-table-style', 'data'),
+    State('query-area', 'children'),
+    State('toggle-msg-value', 'data'),
+
     prevent_initial_call=True
 )
-def identify_bias(_, target, styles):
+def identify_bias(_, target, styles, msg, toggle_index):
     if global_vars.df is None:
         return "", dash.no_update, "No dataset is loaded.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
     if target is None:
-        return "", dash.no_update, "Please choose a target before identifying bias.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
+        return "", dash.no_update, "Please choose a target before identifying bias.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
     sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
     if not sensitive_attrs:
-        return [], dash.no_update, "No sensitive attributes are detected.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
+        return [], dash.no_update, "No sensitive attributes are detected.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if target in sensitive_attrs:
-        return [], dash.no_update, "The selected target is identified sensitive. Cannot Proceed!", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
+        return [], dash.no_update, "The selected target is identified sensitive. Cannot Proceed!", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
     attr_text = ','.join(sensitive_attrs)
     query = f"""
@@ -68,43 +73,44 @@ def identify_bias(_, target, styles):
         value=sensitive_attrs,
         clearable=True,
         placeholder="", )
-
-    return html.Div([
-    html.Div(
-        [
-            html.I(
-                className="bi bi-chevron-down",
-                id={"type": "toggle-msg-icon", "index": 1},
-                style={
-                    "cursor": "pointer",
-                    "marginRight": "8px",
-                    "fontSize": "1.2rem"
-                }
-            ),
-            html.H4(
-                "Result of Bias Identifying",
-                style={"margin": 0}
-            )
-        ],
-        id={"type": "toggle-msg-btn", "index": 1},
-        style={
-            "display": "flex",
-            "alignItems": "center"
-        }
-    ),
-    dbc.Collapse(
-        [
-            bias_report_content,
-            html.B(
-                "You can add or remove sensitive attributes here.",
-                style={"marginBottom": "20px"}
-            ),
-            sensitive_attrs_dropdown
-        ],
-        id={"type": "collapse-msg", "index": 1},
-        is_open=True
-    )
-]), styles, "", False, "The sensitive attributes are highlighted in the data view.", True, "Identify Bias", {"sensitive_attrs": sensitive_attrs}, op, expl
+    result = html.Div([
+        html.Div(
+            [
+                html.I(
+                    className="bi bi-chevron-down",
+                    id={"type": "toggle-msg-icon", "index": toggle_index},
+                    style={
+                        "cursor": "pointer",
+                        "marginRight": "8px",
+                        "fontSize": "1.2rem"
+                    }
+                ),
+                html.H4(
+                    "Result of Bias Identifying",
+                    style={"margin": 0}
+                )
+            ],
+            id={"type": "toggle-msg-btn", "index": toggle_index},
+            style={
+                "display": "flex",
+                "alignItems": "center"
+            }
+        ),
+        dbc.Collapse(
+            [
+                bias_report_content,
+                html.B(
+                    "You can add or remove sensitive attributes here.",
+                    style={"marginBottom": "20px"}
+                ),
+                sensitive_attrs_dropdown
+            ],
+            id={"type": "collapse-msg", "index": toggle_index},
+            is_open=True
+        )
+    ],className="section")
+    msg.append(result)
+    return msg, styles, "", False, "The sensitive attributes are highlighted in the data view.", True, "Identify Bias", {"sensitive_attrs": sensitive_attrs}, op, expl, 1, toggle_index+1
 
 
 @app.callback(
@@ -122,22 +128,26 @@ def update_sensitive_attrs(attrs, styles):
 
 
 @app.callback(
-    Output('bias-measuring-area', 'children', allow_duplicate=True),
+    Output('query-area', 'children', allow_duplicate=True),
     Output('report-alert', 'children', allow_duplicate=True),
     Output('report-alert', 'is_open', allow_duplicate=True),
     Output({'type': 'spinner-btn', 'index': 4}, 'children', allow_duplicate=True),
+    Output('bias-stage-value', 'data', allow_duplicate=True),
+    Output('toggle-msg-value', 'data', allow_duplicate=True),
     Input({'type': 'spinner-btn', 'index': 4}, 'children'),
     State('column-names-dropdown', 'value'),
     State('sensitive-attr-store', 'data'),
+    State('query-area', 'children'),
+    State('toggle-msg-value', 'data'),
     prevent_initial_call=True
 )
-def measure_bias(_, target, sensitive_attrs):
+def measure_bias(_, target, sensitive_attrs, msg, toggle_index):
     if global_vars.df is None:
-        return "", "No dataset is loaded.", True, "Measure Bias"
+        return "", "No dataset is loaded.", True, "Measure Bias", dash.no_update, dash.no_update
     if target is None:
-        return "", "Please choose a target before measuring bias.", True, "Measure Bias"
+        return "", "Please choose a target before measuring bias.", True, "Measure Bias", dash.no_update, dash.no_update
     if sensitive_attrs == {}:
-        return "", "No biases are identified. Please identify bias first.", True, "Measure Bias"
+        return "", "No biases are identified. Please identify bias first.", True, "Measure Bias", dash.no_update, dash.no_update
     refined_attrs = []
     filtered_attrs = []
     warning = False
@@ -194,46 +204,52 @@ def measure_bias(_, target, sensitive_attrs):
     if warning:
         warning_msg = f"The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 100 unique values are not presented due to space limit.",
     global_vars.agent.add_user_action_to_history("I have measured the bias in this dataset.")
-    return html.Div([
+    result = html.Div([
                     html.Div(
                         [
                             html.I(
                                 className="bi bi-chevron-down",
-                                id={"type": "toggle-msg-icon", "index": 2},
+                                id={"type": "toggle-msg-icon", "index": toggle_index},
                                 style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}
                             ),
                             html.H4("Result of Bias Measuring",style={"margin": 0})
                         ],
-                        id={"type": "toggle-msg-btn", "index": 2},
+                        id={"type": "toggle-msg-btn", "index": toggle_index},
                         style={"display": "flex", "alignItems": "center"},
                     ),
                     dbc.Collapse(
                         tables,
-                        id={"type": "collapse-msg", "index": 2},
+                        id={"type": "collapse-msg", "index": toggle_index},
                         is_open=True
                     )
-                ]), warning_msg, warning, "Measure Bias"
+                ], className="section")
+    msg.append(result)
+    return msg, warning_msg, warning, "Measure Bias", 2, toggle_index+1
 
 
 
 
 @app.callback(
-    Output('bias-surfacing-area', 'children'),
+    Output('query-area', 'children', allow_duplicate=True),
     Output('report-alert', 'children', allow_duplicate=True),
     Output('report-alert', 'is_open', allow_duplicate=True),
     Output({'type': 'spinner-btn', 'index': 5}, 'children', allow_duplicate=True),
+    Output('bias-stage-value', 'data', allow_duplicate=True),
+    Output('toggle-msg-value', 'data', allow_duplicate=True),
     Input({'type': 'spinner-btn', 'index': 5}, 'children'),
     State('column-names-dropdown', 'value'),
     State('sensitive-attr-store', 'data'),
+    State('query-area', 'children'),
+    State('toggle-msg-value', 'data'),
     prevent_initial_call=True
 )
-def surface_bias(_, target, sensitive_attrs):
+def surface_bias(_, target, sensitive_attrs, msg, toggle_index):
     if global_vars.df is None:
-        return "", dash.no_update, "No dataset is loaded.", True, "Surface Bias"
+        return "", dash.no_update, "No dataset is loaded.", True, "Surface Bias", dash.no_update, dash.no_update,
     if target is None:
-        return "", dash.no_update, "Please choose a target before surfacing bias.", True, "Surface Bias"
+        return "", dash.no_update, "Please choose a target before surfacing bias.", True, "Surface Bias", dash.no_update, dash.no_update,
     if sensitive_attrs == {}:
-        return "", dash.no_update, "No biases are identified. Please Identify bias first.", True, "Surface Bias"
+        return "", dash.no_update, "No biases are identified. Please Identify bias first.", True, "Surface Bias", dash.no_update, dash.no_update,
     refined_attrs = []
     filtered_attrs = []
     warning = False
@@ -256,46 +272,52 @@ def surface_bias(_, target, sensitive_attrs):
     if warning:
         warning_msg = f"The sensitive attribute(s): {', '.join(filtered_attrs)} with more than 100 unique values are not presented due to space limit.",
     global_vars.agent.add_user_action_to_history("I have measured the bias in this dataset.")
-    return html.Div([
+    result = html.Div([
                     html.Div(
                         [
                             html.I(
                                 className="bi bi-chevron-down",
-                                id={"type": "toggle-msg-icon", "index": 3},
+                                id={"type": "toggle-msg-icon", "index": toggle_index},
                                 style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}
                             ),
                             html.H4("Result of Bias Surfacing",style={"margin": 0})
                         ],
-                        id={"type": "toggle-msg-btn", "index": 3},
+                        id={"type": "toggle-msg-btn", "index": toggle_index},
                         style={"display": "flex", "alignItems": "center"},
                     ),
                     dbc.Collapse(
                         graphs,
-                        id={"type": "collapse-msg", "index": 3},
+                        id={"type": "collapse-msg", "index": toggle_index},
                         is_open=True
                     )
-                ]), warning_msg, warning, "Surface Bias"
+                ],className="section")
+    msg.append(result)
+    return msg, warning_msg, warning, "Surface Bias",3, toggle_index+1
 
 
 @app.callback(
-    Output('bias-adapting-area', 'children'),
+    Output('query-area', 'children', allow_duplicate=True),
     Output('report-alert', 'children', allow_duplicate=True),
     Output('report-alert', 'is_open', allow_duplicate=True),
     Output({'type': 'spinner-btn', 'index': 6}, 'children', allow_duplicate=True),
     Output("recommended-op", "children", allow_duplicate=True),
     Output("tooltip-expl", "children", allow_duplicate=True),
+    Output('bias-stage-value', 'data', allow_duplicate=True),
+    Output('toggle-msg-value', 'data', allow_duplicate=True),
     Input({'type': 'spinner-btn', 'index': 6}, 'children'),
     State('column-names-dropdown', 'value'),
     State('sensitive-attr-store', 'data'),
+    State('query-area', 'children'),
+    State('toggle-msg-value', 'data'),
     prevent_initial_call=True
 )
-def adapt_bias(_, target, sensitive_attrs):
+def adapt_bias(_, target, sensitive_attrs, msg, toggle_index):
     if global_vars.df is None:
-        return "", "No dataset is loaded.", True, "Adapt Bias", dash.no_update, dash.no_update
+        return "", "No dataset is loaded.", True, "Adapt Bias", dash.no_update, dash.no_update, dash.no_update
     if target is None:
-        return "", "Please choose a target before adapting bias.", True, "Adapt Bias", dash.no_update, dash.no_update
+        return "", "Please choose a target before adapting bias.", True, "Adapt Bias", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if sensitive_attrs == {}:
-        return "", "No biases are identified. Please Identify bias first.", True, "Adapt Bias", dash.no_update, dash.no_update
+        return "", "No biases are identified. Please Identify bias first.", True, "Adapt Bias", dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
     query = f""" Adapting bias will provide the user with a set of tools which allows them to interact with existing 
     biased results and to adapt them for bias in their preferred ways. Given these sensitive attributes 
@@ -352,26 +374,28 @@ def adapt_bias(_, target, sensitive_attrs):
     ])
 
     global_vars.agent.add_user_action_to_history("I have started to adapt the bias in this dataset.")
-    return  html.Div([
+    result = html.Div([
                     html.Div(
                         [
                             html.I(
                                 className="bi bi-chevron-down",
-                                id={"type": "toggle-msg-icon", "index": 4},
+                                id={"type": "toggle-msg-icon", "index": toggle_index},
                                 style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}
                             ),
                             html.H4("Result of Adapting Bias",style={"margin": 0})
                         ],
-                        id={"type": "toggle-msg-btn", "index": 4},
+                        id={"type": "toggle-msg-btn", "index": toggle_index},
                         style={"display": "flex", "alignItems": "center"},
                     ),
                     dbc.Collapse(
                         [button_area,
                         suggested_action],
-                        id={"type": "collapse-msg", "index": 4},
+                        id={"type": "collapse-msg", "index": toggle_index},
                         is_open=True
                     )
-                ]), dash.no_update, dash.no_update, "Adapt Bias", op, expl
+                ], className="section")
+    msg.append(result)
+    return  msg, dash.no_update, dash.no_update, "Adapt Bias", op, expl, 4, toggle_index+1
 
 
 

@@ -135,7 +135,8 @@ class FairnessScorer:
                 df_dists.append(df_dist)
 
         df_dist = pd.concat(df_dists, ignore_index=True)
-
+        df_dist = df_dist.round(5)
+        df_dist = df_dist.sort_values(by='Group')
         return df_dist.reset_index(drop=True)
 
     def plot_distributions(

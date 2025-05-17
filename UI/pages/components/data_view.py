@@ -28,7 +28,7 @@ def data_view():
                         html.Button('Download', id='download-data-button',
                                     n_clicks=0, className='primary-button', style={'margin': '10px'}),
                         html.Button('Go to Rows', id='show-rows-button',
-                                    className='primary-button', style={'margin': '10px'}),
+                                    className='primary-button', style={'margin': '10px', 'display': 'none'}),
 
                         dcc.Download(id='download-data-csv'),
                         dbc.Modal(
@@ -51,10 +51,10 @@ def data_view():
                             is_open=False,
                         ),
 
-                    ], ),
+                    ], id='data-view-buttons', style={"display":"none"}),
                     dcc.Loading(id="table-loading", children=[
                         html.Div(children=[
-                            dash_table.DataTable(id='table-overview', page_size=25, page_action='native',
+                            dash_table.DataTable(id='table-overview', page_size=20, page_action='native',
                                                  editable=True, row_deletable=True, column_selectable='single',
                                                  style_cell={'textAlign': 'center', 'fontFamiliy': 'Arial',"padding":"0px 10px"},
                                                  # style_header={'backgroundColor': '#614385', 'color': 'white',

@@ -252,7 +252,7 @@ class DatasetAgent:
             # cannot be parsed in the above format, directly return the answer
             self.execution_error.append(e)
             result = result['output']
-            return result, self.elem_queue, suggestions, stage, operation, explanation
+            return "The BiasNavi agent encounters an issue. Please try again. If the issue persists, please restart the toolkit.", [], [], "", "", ""
 
         # Improve table removal logic
         table_pattern = r'(?s)\|.*?\|\n\|[-:]+\|\n(.*?)\n\n'

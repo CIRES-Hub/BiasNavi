@@ -17,7 +17,6 @@ from UI.pages.components.dataset_snapshot import dataset_snapshot
 from UI.pages.components.experiment_view import experiment_view
 from UI.pages.components.code_view import code_view
 from UI.pages.components.chat_history import chat_history
-from UI.pages.components.recommender_label import recommender_label
 from UI.functions import format_message
 
 dash.register_page(__name__, path='/home/', title='Home')
@@ -43,7 +42,7 @@ def layout():
             # =======================================================
             # chatbox layout
             dbc.Row([
-                dbc.Col(width=3, id="left-column", children=[
+                dbc.Col(width=5, id="left-column", children=[
                     # data upload
                     data_upload(),
                     dcc.Store(id="username-edit-success", data=False),
@@ -51,33 +50,31 @@ def layout():
 
                     # pipeline widget
                     bias_pipeline(), #invisible by default
-                    # recommender_label
-                    recommender_label(),
                     # chat box
                     chatbox(),
                     # RAG card
                     rag(), #invisible by default
                     # chat history
-                    chat_history(),
+                    chat_history(), #invisible by default
 
                     dcc.Store(id='chat-update-trigger', data=0)
                 ]),
                 # =======================================================
-                dbc.Col(width=6, id="middle-column", children=[
+                dbc.Col(width=7, id="middle-column", children=[
                     # data views
                     data_view(),
                     # report view
-                    report_view()
+                    report_view() #invisible by default
                 ]),
 
-                dbc.Col(width=3, id="right-column", children=[
+                dbc.Col(width=0, id="right-column", children=[
                     # data snapshot
                     dataset_snapshot(),
                     #experiment view
                     experiment_view(),
                     #chart and code
                     code_view(),
-                ]),
+                ], style={"display": "none"}),
             ], id="home-container"),
         ], className="body fade-in")
     ])
