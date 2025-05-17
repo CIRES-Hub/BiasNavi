@@ -3,6 +3,7 @@ from sklearn.utils import resample
 import pandas as pd
 from sklearn.impute import SimpleImputer
 import numpy as np
+
 class Sampler:
     def __init__(self, df, target_col):
         """
@@ -70,6 +71,9 @@ class Sampler:
         balanced_dfs = []
         for class_label in self.df[self.target_col].unique():
             class_data = self.df[self.df[self.target_col] == class_label]
+            if class_data.empty:
+                print(f"Warning: No samples found for class '{class_label}'. Skipping.")
+                continue
             oversampled_data = resample(
                 class_data,
                 replace=True,
@@ -78,7 +82,7 @@ class Sampler:
             )
             balanced_dfs.append(oversampled_data)
 
-        balanced_df = pd.concat(balanced_dfs)
+        balanced_df = pd.concat(balanced_dfs).reset_index(drop=True)
         return balanced_df
 
     def smote(self, random_state=42):
@@ -94,6 +98,8 @@ class Sampler:
         """
         # Split data into features and target
         X = self.df.drop(columns=[self.target_col])
+        if X.empty:
+            raise ValueError("Input features are empty. Cannot perform SMOTE.")
         y = self.df[self.target_col]
 
         # Identify columns with all NaN values
@@ -121,6 +127,9 @@ class Sampler:
             balanced_dfs = []
             for class_label in y.unique():
                 class_data = self.df[self.df[self.target_col] == class_label]
+                if class_data.empty:
+                    print(f"Warning: No samples found for class '{class_label}'. Skipping.")
+                    continue
                 oversampled_data = resample(
                     class_data,
                     replace=True,

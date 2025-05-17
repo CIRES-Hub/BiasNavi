@@ -26,10 +26,10 @@ from dash import dcc, html
 
 def query_llm(query, stage, user_id, context=''):
     print(query, stage)
-    response, media, suggestions, stage, op, explanation = global_vars.agent.run(query, stage)
+    response, media, sensi_attrs, suggestions, stage, op, explanation = global_vars.agent.run(query, stage)
     global_vars.agent.persist_history(user_id=str(user_id))
     global_vars.suggested_questions = suggestions
-    return response, media, suggestions, stage, "Suggestion: "+op, explanation
+    return response, media, sensi_attrs, suggestions, stage, "Suggestion: "+op, explanation
 
 
 def format_reply_to_markdown(reply):

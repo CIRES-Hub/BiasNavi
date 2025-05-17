@@ -42,8 +42,7 @@ def identify_bias(_, target, styles, msg, toggle_index):
     if target is None:
         return "", dash.no_update, "Please choose a target before identifying bias.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
     sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
-    if not sensitive_attrs:
-        return [], dash.no_update, "No sensitive attributes are detected.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
     if target in sensitive_attrs:
         return [], dash.no_update, "The selected target is identified sensitive. Cannot Proceed!", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
@@ -55,7 +54,14 @@ def identify_bias(_, target, styles, msg, toggle_index):
                 reason whether other attributes could be included or if any of the identified sensitive attributes 
                 have been misclassified. Please format your output as follows: First, highlight the sensitive 
                 attributes. Then, provide an explanation of why these attributes are considered sensitive."""
-    answer, media, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
+    answer, media, sensi_attrs, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
+
+    sensitive_attrs += sensi_attrs
+    sensitive_attrs = list(set(sensitive_attrs))
+
+    if not sensitive_attrs:
+        return [], dash.no_update, "No sensitive attributes are detected.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
     answer = format_reply_to_markdown(answer)
     column_style = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in
                     sensitive_attrs]
@@ -328,7 +334,7 @@ def adapt_bias(_, target, sensitive_attrs, msg, toggle_index):
     or other actions to adapt bias? In your answer, you should highlight the recommended action. If the recommended 
     action is integrated in BiasNavi, you do not need to tell how to do it and just explain why I should take that 
     action."""
-    answer, media, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
+    answer, media, sensi_attrs, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
     answer = format_reply_to_markdown(answer)
 
     suggested_action = html.Div([
@@ -629,7 +635,7 @@ def explain_report_table(_, tb):
             [f"Row {i + 1}: {row}" for i, row in enumerate(tb)]
         )
         query = f"Explain this table data {data_string} given the distance metric in the table header. The distance figure is calculated by comparing the distribution of the subgraph with the distribution of all."
-        answer, media, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
+        answer, media, sensi_attrs, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
         answer = format_reply_to_markdown(answer)
         global_vars.agent.add_user_action_to_history("I have analyzed the result of bias measuring.")
         return dcc.Markdown(answer, className="llm-text"), {"display": "block"}, "Explain"

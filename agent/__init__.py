@@ -234,11 +234,13 @@ class DatasetAgent:
 
         # Parse response 
         suggestions = []
+        sensi_attrs = []
         stage = ""
         try:
             result = self.parser.parse(result['output'])
             suggestions.append(result.question1)
             suggestions.append(result.question2)
+            sensi_attrs = result.sensitive_attributes
             stage = result.stage
             operation = result.operation
             explanation = result.explanation
@@ -251,8 +253,7 @@ class DatasetAgent:
         except Exception as e:
             # cannot be parsed in the above format, directly return the answer
             self.execution_error.append(e)
-            result = result['output']
-            return "The BiasNavi agent encounters an issue. Please try again. If the issue persists, please restart the toolkit.", [], [], "", "", ""
+            return "The BiasNavi agent encounters an issue. Please try again. If the issue persists, please restart the toolkit.", [], [], [], "", "", ""
 
         # Improve table removal logic
         table_pattern = r'(?s)\|.*?\|\n\|[-:]+\|\n(.*?)\n\n'
@@ -266,9 +267,9 @@ class DatasetAgent:
             result = f"""There was an error processing your request. Please provide a clearer query and try again.
                     (Error message: {str(self.execution_error[0])})"""
         if len(self.elem_queue) > 0:
-            return result, self.elem_queue, suggestions, stage, operation, explanation
+            return result, self.elem_queue, sensi_attrs, suggestions,  stage, operation, explanation
         else:
-            return result, None, suggestions, stage, operation, explanation
+            return result, None, sensi_attrs, suggestions, stage,  operation, explanation
 
     def set_llm_model(self, model):
         self.model_name = model

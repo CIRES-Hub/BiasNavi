@@ -62,7 +62,7 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
     context=''
     if global_vars.rag and rag_status:
         context = global_vars.rag.retrieve(query)
-    answer, media, new_suggested_questions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id, context)
+    answer, media, sensi_attrs, new_suggested_questions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id, context)
     print(stage)
     change_stage = False
     stages = ["Identify","Measure","Surface","Adapt"]

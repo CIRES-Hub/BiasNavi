@@ -8,6 +8,7 @@ class ResponseFormat(BaseModel):
     answer: str = Field(description="The answer to the user's question")
     question1: str = Field(description="The first generated follow-up question based on the context.")
     question2: str = Field(description="The second generated follow-up question based on the context.")
+    sensitive_attributes: list[str] = Field(description="The identfied sensitive attributes that may cause biased outcome.")
     stage: str = Field(description="The current stage of the bias management pipeline.")
     operation: str = Field(description="The next operation in the current bias management pipeline.")
     explanation: str = Field(description="Explain why this operation is recommended.")
