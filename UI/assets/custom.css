@@ -218,7 +218,7 @@
     padding: 10px;
     position: relative;
     margin: 10px 0 20px;
-    /* Add other styling for the card as needed */
+    overflow-y: auto;
 }
 
 .card-body {
@@ -331,7 +331,8 @@
     /*border: 1px solid burlywood;*/
     width: 100%;
     overflow-y: auto;
-    height: 800px;
+    height: 700px;
+    max-height: 60vh;
     margin-top: 10px;
     margin-bottom: 20px;
     padding: 10px;
