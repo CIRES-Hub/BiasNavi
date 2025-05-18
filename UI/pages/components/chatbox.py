@@ -53,7 +53,14 @@ def chatbox():
                         color="danger",
                         duration=5000,
                     ),
-
+                    dbc.Alert(
+                        "",
+                        id="report-alert",
+                        is_open=False,
+                        dismissable=True,
+                        color="warning",
+                        duration=5000
+                    ),
                     html.Div([
                         dcc.Loading(
                             id="loading-1",

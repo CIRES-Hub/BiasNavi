@@ -10,7 +10,6 @@ from UI.callback.client_callbacks import *
 from UI.callback.user_callbacks import *
 from UI.callback.bias_callbacks import *
 from UI.callback.wizard_callbacks import *
-from UI.callback.chat_mode_callbacks import *
 from UI.callback.prompt_callbacks import *
 from UI.callback.widget_callbacks import *
 from UI.callback.view_callbacks import *

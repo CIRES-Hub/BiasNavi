@@ -34,14 +34,7 @@ def report_view():
                     }),
 
                     # Alert for bias report
-                    dbc.Alert(
-                        "",
-                        id="report-alert",
-                        is_open=False,
-                        dismissable=True,
-                        color="warning",
-                        duration=5000
-                    ),
+
 
                     # Output areas
                     html.Div(id="bias-identifying-area", className="section"),

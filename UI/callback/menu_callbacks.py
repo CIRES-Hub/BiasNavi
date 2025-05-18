@@ -53,9 +53,6 @@ def display_expert_view(n_clicks, label, style):
         return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
-
-
-
 # @app.callback(
 #     [Output('right-column', 'style'),
 #      Output('menu-hide-chartview', 'children'),

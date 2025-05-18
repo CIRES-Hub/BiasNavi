@@ -22,7 +22,7 @@ import numpy as np
 
 
 @app.callback(
-    [Output('table-overview', 'data', allow_duplicate=True),
+     Output('table-overview', 'data', allow_duplicate=True),
      Output('table-overview', 'columns'),
      Output('column-names-dropdown', 'options',allow_duplicate=True),
      Output('error-file-format', 'is_open'),
@@ -41,18 +41,17 @@ import numpy as np
      Output("tooltip-expl", "children", allow_duplicate=True),
      Output('label-dropdown', 'options',allow_duplicate=True),
      Output("label-modal", "is_open", allow_duplicate=True),
-     Output("row-selection-modal", "is_open", allow_duplicate=True),],
-    [Input('upload-data', 'contents'),
+     Output("row-selection-modal", "is_open", allow_duplicate=True),
+     Input('upload-data', 'contents'),
      Input('upload-data-modal', 'contents'),
-     Input('confirm-row-button', 'n_clicks')],
-    [State('upload-data', 'filename'),
+     Input('confirm-row-button', 'n_clicks'),
+     State('upload-data', 'filename'),
      State('upload-data-modal', 'filename'),
      State('input-start-row', 'value'),
      State('input-end-row', 'value'),
      State('snapshot-table', 'data'),
      State('query-area', 'children'),
-     ],
-    prevent_initial_call=True,
+     prevent_initial_call=True,
 )
 def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_clicks, list_of_names, list_of_names_modal,
                                  start_row, end_row, snapshot_data, chat_content):
@@ -92,10 +91,9 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name,
                                          conversation_session=global_vars.conversation_session)
         global_vars.current_stage = "Identify"
-        if chat_content is None:
-            chat_content = []
-        chat_content.append(dcc.Markdown("The dataset has been successfully uploaded! 🎉 Let's dive into exploring it. You can "
-                            "ask anything else you'd like to know about the dataset!", className="llm-msg"))
+        chat_content = [
+            dcc.Markdown("The dataset has been successfully uploaded! 🎉 Let's dive into exploring it. You can "
+                         "ask anything else you'd like to know about the dataset!", className="llm-msg")]
         return (
             global_vars.df.to_dict('records'),
             [{"name": col, "id": col, 'deletable': True} for col in global_vars.df.columns],
@@ -112,8 +110,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             "Checking data statistics is essential in the Identify stage as it provides a foundational understanding of the dataset, helping to reveal initial disparities, patterns, or anomalies that might indicate bias.",
             [{'label': col, 'value': col} for col in global_vars.df.columns],
             True,
-            dash.no_update
-
+            dash.no_update,
         )
 
     elif triggered_id == 'confirm-row-button':
@@ -172,7 +169,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
     Output('column-names-dropdown', 'value', allow_duplicate=True),
     Output('label-selection', 'value', allow_duplicate=True),
     Input('confirm-label-button', 'n_clicks'),
-    Input('label-dropdown', 'value'),
+    State('label-dropdown', 'value'),
     prevent_initial_call=True,
 )
 def confirm_label(n_click, label):

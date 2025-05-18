@@ -40,7 +40,7 @@ def identify_bias(_, target, styles, msg, toggle_index):
     if global_vars.df is None:
         return "", dash.no_update, "No dataset is loaded.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
     if target is None:
-        return "", dash.no_update, "Please choose a target before identifying bias.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return "", dash.no_update, "Please assign a target before identifying bias.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
     sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
 
     if target in sensitive_attrs:
@@ -115,6 +115,8 @@ def identify_bias(_, target, styles, msg, toggle_index):
             is_open=True
         )
     ],className="section")
+    if msg=="" or msg is None:
+        msg = []
     msg.append(result)
     return msg, styles, "", False, "The sensitive attributes are highlighted in the data view.", True, "Identify Bias", {"sensitive_attrs": sensitive_attrs}, op, expl, 1, toggle_index+1
 
