@@ -1,5 +1,3 @@
-from db_models.users import User
-from flask_login import current_user
 import dash_bootstrap_components as dbc
 from db_models.users import User
 from flask_login import current_user

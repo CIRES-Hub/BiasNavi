@@ -1,5 +1,5 @@
 import dash_bootstrap_components as dbc
-from dash import dcc, html,dash_table
+from dash import dcc, html
 
 def report_view():
     return dbc.Card(body=True, id="report-view", className="card", children=[
