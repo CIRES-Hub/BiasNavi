@@ -1,123 +1,35 @@
-import ast
-from contextlib import redirect_stdout
-from pydantic import BaseModel, Field
-from io import StringIO
-from typing import Optional, Type
-from langchain_experimental.tools.python.tool import PythonAstREPLTool, sanitize_input
-from langchain_core.callbacks.manager import CallbackManagerForToolRun
-from typing import Any, Dict, List, Union
-from types import ModuleType
-from dash import dash_table, dcc, html
-from plotly.tools import mpl_to_plotly
-from pandas import DataFrame
-from matplotlib.figure import Figure
-import traceback
-import io
-import base64
-import dash_bootstrap_components as dbc
-import matplotlib
-import re
-matplotlib.use('Agg')
 
+from utils.dataset_eval import DatasetEval
+from langchain_core.tools import tool
+from typing import Annotated, List
 
-class Experiment_Runner(PythonAstREPLTool):
-    name: str = "Experiment_Runner"
-    description: str = "A tool that can conduct experiments. Use it when asked to conduct the experiment."
-    response_format: str = "content"
+@tool
+def evaluate_dataset(sens_attr:Annotated[list[str], "sensitive attributes"],
+                     label:Annotated[str, "the target attribute or label"],
+                     task:Annotated[str, "the experiment task: classification or regression"]="classification",
+                     model:Annotated[str, "model used for the experiment: SVM, MLP, or Logistic"]="SVM") \
+        -> str:
+    """Evaluate dataset with experiments given the sensitive attribute and target attribute."""
+    from UI.variable import global_vars
+    if task not in ["Classification","classification"] and task not in ["regression","Regression"]:
+        return "Task can only be classification or regression."
+    if global_vars.df is None or not global_vars.data_snapshots:
+        return 'No dataset is loaded!'
+    if sens_attr is None or label is None or task is None or model is None:
+        return 'The experimental setting is incomplete!'
+    data = global_vars.df
+    if label in sens_attr:
+        return 'The label cannot be in the sensitive attributes!'
+    if data[label].dtype in ['float64', 'float32'] and task == 'classification':
+        return ('The target attribute is continuous (float) but the default task is classification. Do you want to do regression?')
+    if data[label].dtype == 'object' or data[label].dtype.name == 'bool' or data[label].dtype.name == 'category':
+        if task == 'regression':
+            return 'The target attribute is categorical and cannot be used for regression task. Do you want to do classification?'
+    de = DatasetEval(data, label, ratio=0.2, task_type=task, sensitive_attribute=sens_attr, model_type=model)
+    res, scores = de.train_and_test()
+    report = []
+    for score in scores:
+        report.append(score.to_string())
+    report = '\n'.join(report)
+    return f"The accuracy of the model is {res} and the experiment result report is {report}. Please explain the result in detail."
 
-    elem_queue: list = Field(default_factory=list)
-    execution_error: list[Exception] = []
-    list_commands: list[str] = []
-
-    def __init__(self, elem_queue, execution_error, list_commands, **kwargs):
-        super(PythonAstREPLTool, self).__init__(**kwargs)
-        self.elem_queue = elem_queue
-        self.execution_error = execution_error
-        self.list_commands = list_commands
-
-    def add_figure(self, processed_item: Figure):
-
-        buf = io.BytesIO()
-        processed_item.subplots_adjust(bottom=0.25)
-        processed_item.savefig(buf, format="png")
-        processed_item.close()
-        data = base64.b64encode(buf.getbuffer()).decode("utf8")
-        buf.close()
-
-        current_id = len(self.elem_queue)
-        self.elem_queue.append(html.Div([
-            html.Img(src=f"data:image/png;base64,{data}",
-                     style={'maxWidth': '100%', 'cursor': 'pointer'}, id={"type": "llm-generated-chart", "index": current_id})
-        ], id={"type": "llm-media-figure", "index": current_id}, className="llm-media-figure"))
-
-        self.elem_queue.append(dbc.Modal([
-            dbc.ModalHeader("LLM Chart"),
-            dbc.ModalBody(html.Div([
-                html.Img(src=f"data:image/png;base64,{data}",
-                         style={'maxWidth': '100%'})
-            ], style={'display': 'flex', 'align-items': 'center', 'justify-content': 'center'})),
-            dbc.ModalFooter()
-        ], id={"type": "llm-media-modal", "index": current_id}, centered=True, className="figure-modal", size="lg"))
-        self.elem_queue.append(
-            dbc.Button("Explain", id={"type": "llm-media-button", "index": current_id}, className="primary-button", n_clicks=0), )
-        self.elem_queue.append(
-            html.Div([
-            ], id={"type": "llm-media-explanation", "index": current_id}, style={"display":"none"}))
-
-
-
-    def add_table(self, processed_item: DataFrame):
-        self.elem_queue.append(dash_table.DataTable(page_size=25, page_action='native',
-                                                    style_cell={
-                                                        'textAlign': 'center', 'fontFamiliy': 'Arial'},
-                                                    style_header={'backgroundColor': '#614385', 'color': 'white',
-                                                                  'fontWeight': 'bold'
-                                                                  }, style_table={'overflowX': 'auto'}, data=processed_item.to_dict('records')))
-
-    def _run(
-        self,
-        query: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
-        try:
-            self.execution_error.clear()
-            self.elem_queue.clear()
-            self.list_commands.clear()
-
-            if self.sanitize_input:
-                query = sanitize_input(query)
-            module_end_str=""
-            tree = ast.parse(query)
-            module = ast.Module(tree.body[:-1], type_ignores=[])
-            exec(ast.unparse(module), self.globals, self.locals)  # type: ignore
-            print(ast.unparse(ast.Module(tree.body, type_ignores=[])))
-            self.list_commands.append(ast.unparse(ast.Module(tree.body, type_ignores=[])))
-            module_end = ast.Module(tree.body[-1:], type_ignores=[])
-            module_end_str = ast.unparse(module_end)  # type: ignore
-            io_buffer = StringIO()
-            try:
-                with redirect_stdout(io_buffer):
-                    processed_item = eval(module_end_str.replace(
-                        '.show()', ''), self.globals, self.locals)
-                    if (isinstance(processed_item, DataFrame)):
-                        self.add_table(processed_item)
-                    elif ((isinstance(processed_item, ModuleType) and processed_item.__name__ == 'matplotlib.pyplot')
-                            or isinstance(processed_item, Figure)):
-                        self.add_figure(processed_item)
-                    # else:
-                    #     raise NotImplementedError(
-                    #         "The LLM returned an unsupported media type.")
-                    if processed_item is None:
-                        return io_buffer.getvalue()
-                    else:
-                        return "success"
-            except Exception as eval_exception:
-                if not re.search(r"\w\s*=", module_end_str):
-                    self.execution_error.append(eval_exception)
-                with redirect_stdout(io_buffer):
-                    exec(module_end_str, self.globals, self.locals)
-                return io_buffer.getvalue()
-        except Exception as eval_exception:
-            if not re.search(r"\w\s*=", module_end_str):
-                self.execution_error.append(eval_exception)
-            return "{}: {}".format(type(eval_exception).__name__, str(eval_exception))

@@ -30,6 +30,10 @@ class DatasetEval:
         self.y_train = None
         self.X_test = None
         self.X_train = None
+        if task_type == "classification":
+            task_type = "Classification"
+        if task_type == "regression":
+            task_type = "Regression"
         self.task_type = task_type
         self.sensitive_attribute = sensitive_attribute
 

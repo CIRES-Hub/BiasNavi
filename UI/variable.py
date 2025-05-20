@@ -16,5 +16,4 @@ class Variables(object):
         self.current_stage = "Identify"
 
 
-
 global_vars = Variables()
