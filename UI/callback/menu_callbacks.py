@@ -17,6 +17,7 @@ from flask_login import logout_user, current_user
      Output('to-do-div', 'style', allow_duplicate=True),
      Output('data-view-buttons', 'style', allow_duplicate=True),
      Output('bias-management-buttons', 'style', allow_duplicate=True),
+     Output("chat_history", 'style', allow_duplicate=True),
      Input('menu-nex-view', 'n_clicks'),
      State('menu-nex-view', 'children'),
      State('right-column', 'style'),
@@ -25,9 +26,9 @@ from flask_login import logout_user, current_user
 def display_non_expert_view(n_clicks, label, style):
     if label == 'Non-Expert Mode':
         style['display'] = 'none'
-        return style, "Non-Expert Mode ✔", "Expert Mode", 5, 7, 0, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
+        return style, "Non-Expert Mode ✔", "Expert Mode", 5, 7, 0, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
     else:
-        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 @app.callback(
@@ -40,6 +41,7 @@ def display_non_expert_view(n_clicks, label, style):
      Output('to-do-div', 'style', allow_duplicate=True),
      Output('data-view-buttons', 'style', allow_duplicate=True),
      Output('bias-management-buttons', 'style', allow_duplicate=True),
+     Output("chat_history", 'style', allow_duplicate=True),
      Input('menu-ex-view', 'n_clicks'),
      State('menu-ex-view', 'children'),
      State('right-column', 'style'),
@@ -48,9 +50,9 @@ def display_non_expert_view(n_clicks, label, style):
 def display_expert_view(n_clicks, label, style):
     if label == 'Expert Mode':
         style['display'] = 'block'
-        return style, "Expert Mode ✔", "Non-Expert Mode", 4, 5, 3, {'display': 'block'}, {'display': 'block'}, {'display': 'flex'}
+        return style, "Expert Mode ✔", "Non-Expert Mode", 4, 5, 3, {'display': 'block'}, {'display': 'block'}, {'display': 'flex'}, {'display': 'block'}
     else:
-        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 # @app.callback(

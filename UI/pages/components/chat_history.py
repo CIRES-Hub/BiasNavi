@@ -2,7 +2,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 
 def chat_history():
-    return  dbc.Card([
+    return  dbc.Card(id = "chat_history", children = [
         dbc.CardHeader(
             html.Div([
                 html.I(className="bi bi-chevron-right", id={"type": "toggle-icon", "index": 6},

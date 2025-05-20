@@ -19,6 +19,8 @@ import time
 import random
 import pandas as pd
 import numpy as np
+import math
+import plotly.graph_objects as go
 
 
 @app.callback(
@@ -297,7 +299,6 @@ def download_csv(n_clicks, rows):
         return dcc.send_data_frame(df.to_csv, f'{formatted_date_time}_edited_{global_vars.file_name}')
     return None
 
-
 @app.callback(
     Output('datatable-interactivity-container', 'children'),
     Input('table-overview', 'active_cell')
@@ -307,12 +308,9 @@ def update_histogram(active_cell):
         return []
 
     column_id = active_cell['column_id']
-    col_data = global_vars.df[column_id]
-    unique_values = col_data.nunique()
+    data = global_vars.df[column_id].dropna()
 
-
-
-    # Base color palette
+    # Your color palette
     colorscale = [
         "#a6bddb", "#d0d1e6", "#bdbdbd", "#fdd0a2",
         "#c7e9c0", "#f2b6b6", "#d9d9d9", "#c6dbef"
@@ -320,49 +318,94 @@ def update_histogram(active_cell):
 
     fig = None
 
-
-    # Case 2: numeric column (e.g. age)
-    if np.issubdtype(col_data.dtype, np.number):
-        if unique_values <= 20:
-            col_for_plot = f"{column_id}_str"
-            global_vars.df[col_for_plot] = col_data.astype(str)
-            unique_categories = sorted(global_vars.df[col_for_plot].dropna().unique())
-            extended_colors = (colorscale * ((len(unique_categories) // len(colorscale)) + 1))[:len(unique_categories)]
-            color_map = {category: color for category, color in zip(unique_categories, extended_colors)}
-
-            fig = px.histogram(global_vars.df, x=col_for_plot, color=col_for_plot,
-                               category_orders={col_for_plot: unique_categories},
-                               color_discrete_map=color_map)
-        else:
-            # Manual binning and use bin label as both x and color
-            bins = [0, 20, 30, 40, 50, 60, 70, 80]
-            labels = ['<20', '20s', '30s', '40s', '50s', '60s', '70+']
-            bin_col = f"{column_id}_bin"
-            global_vars.df[bin_col] = pd.cut(col_data, bins=bins, labels=labels)
-
-            unique_categories = labels
-            extended_colors = (colorscale * ((len(labels) // len(colorscale)) + 1))[:len(labels)]
-            color_map = {label: color for label, color in zip(labels, extended_colors)}
-
-            fig = px.histogram(global_vars.df, x=bin_col, color=bin_col,
-                               category_orders={bin_col: labels},
-                               color_discrete_map=color_map)
-
-    # Case 3: categorical column
-    else:
-        if unique_values > 100:
+    # Attempt to parse datetime if dtype is object and looks like a date
+    if data.dtype == object:
+        sample = data.iloc[0]
+        # Rough test for datetime-like string
+        if isinstance(sample, str) and re.match(r'\d{4}-\d{2}-\d{2}', sample):
+            try:
+                data = pd.to_datetime(data, format="%Y-%m-%d", errors='raise')
+            except Exception:
+                try:
+                    data = pd.to_datetime(data, errors='coerce')
+                    if data.notna().sum() == 0:
+                        # Not really datetime
+                        if data.nunique() > 100:
+                            return []
+                        data = raw_data.dropna()  # back to original
+                except Exception:
+                    if data.nunique() > 100:
+                        return []
+                    data = raw_data.dropna()
+        elif data.nunique() > 100:
             return []
-        col_for_plot = column_id
-        unique_categories = sorted(col_data.dropna().unique())
-        extended_colors = (colorscale * ((len(unique_categories) // len(colorscale)) + 1))[:len(unique_categories)]
-        color_map = {category: color for category, color in zip(unique_categories, extended_colors)}
 
-        fig = px.histogram(global_vars.df, x=column_id, color=column_id,
-                           category_orders={column_id: unique_categories},
-                           color_discrete_map=color_map)
+    # Case 1: Datetime
+    if np.issubdtype(data.dtype, np.datetime64):
+        date_range_days = (data.max() - data.min()).days
+        if date_range_days > 60:
+            binned = data.dt.to_period('M').astype(str)
+        else:
+            binned = data.dt.date.astype(str)
+
+        value_counts = binned.value_counts().sort_index()
+        fig = go.Figure(go.Bar(
+            x=value_counts.index.tolist(),
+            y=value_counts.values.tolist(),
+            marker_color="#636EFA",
+            hovertemplate='Date: %{x}<br>Count: %{y}<extra></extra>'
+        ))
+
+    # Case 2: Numeric with many unique values
+    elif np.issubdtype(data.dtype, np.number) and data.nunique() > 20:
+        data_min, data_max = data.min(), data.max()
+        data_range = data_max - data_min
+
+        rough_bin_width = data_range / 10
+        magnitude = 10 ** int(np.floor(np.log10(rough_bin_width)))
+        bin_width = int(np.ceil(rough_bin_width / magnitude) * magnitude)
+
+        start = int(np.floor(data_min / bin_width) * bin_width)
+        end = int(np.ceil(data_max / bin_width) * bin_width)
+        bin_edges = np.arange(start, end + bin_width, bin_width)
+        bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+
+        fig = go.Figure(go.Histogram(
+            x=data,
+            xbins=dict(
+                start=start,
+                end=end,
+                size=bin_width
+            ),
+            marker_color="#636EFA",
+            hovertemplate='Bin: %{x}<br>Count: %{y}<extra></extra>',
+        ))
+
+        fig.update_xaxes(
+            tickmode='array',
+            tickvals=bin_centers,
+            ticktext=[str(int(x)) for x in bin_centers]
+        )
+
+    # Case 3: Categorical or low-unique numeric
+    else:
+        value_counts = data.astype(str).value_counts()
+        categories = value_counts.index.tolist()
+        values = value_counts.values.tolist()
+
+        extended_colors = (colorscale * ((len(categories) // len(colorscale)) + 1))[:len(categories)]
+        color_map = {cat: col for cat, col in zip(categories, extended_colors)}
+        bar_colors = [color_map[c] for c in categories]
+
+        fig = go.Figure(go.Bar(
+            x=categories,
+            y=values,
+            marker_color=bar_colors,
+            hovertemplate='Category: %{x}<br>Count: %{y}<extra></extra>'
+        ))
 
     fig.update_layout(
-        xaxis={"automargin": True, "tickmode": "auto"},
+        xaxis={"automargin": True},
         yaxis={"automargin": True},
         height=250,
         margin={"t": 10, "l": 10, "r": 10},
@@ -371,9 +414,6 @@ def update_histogram(active_cell):
     )
 
     return dcc.Graph(id=column_id, figure=fig)
-
-
-
 
 @app.callback(
     [Output('label-selection', 'options'),
