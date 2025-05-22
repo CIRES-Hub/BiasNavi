@@ -14,7 +14,7 @@ import shutil
 import time
 import random
 from UI.functions import get_docker_client
-logger = logging.getLogger(__name__)
+code_logger = logging.getLogger(__name__)
 
 
 
@@ -172,8 +172,8 @@ def execute_commands(n_click, commands):
 
                 return [str(e),  False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update,"Run"]
             else:
-                logger.error(type(e))
-                logger.error(e)
+                code_logger.error(type(e))
+                code_logger.error(e)
                 return [str(e),  False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update,"Run"]
     return [dash.no_update,  False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update,"Run"]
 

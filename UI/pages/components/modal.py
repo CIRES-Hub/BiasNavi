@@ -73,7 +73,7 @@ def homepage_modal():
             ),
             dbc.Modal(
                 [
-                    dbc.ModalHeader(dbc.ModalTitle("Choose the target attribute/label", style={"color": "#614385"})),
+                    dbc.ModalHeader(dbc.ModalTitle("Choose a target attribute that you want to know if it is impacted by bias", style={"color": "#614385"})),
                     dbc.ModalBody(
                         dcc.Dropdown(id="label-dropdown")
                     ),

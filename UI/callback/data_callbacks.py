@@ -42,8 +42,9 @@ import plotly.graph_objects as go
      Output("recommended-op", "children", allow_duplicate=True),
      Output("tooltip-expl", "children", allow_duplicate=True),
      Output('label-dropdown', 'options',allow_duplicate=True),
-     Output("label-modal", "is_open", allow_duplicate=True),
      Output("row-selection-modal", "is_open", allow_duplicate=True),
+     Output('datatable-interactivity-container', 'children', allow_duplicate=True),
+     Output("label-modal", "is_open", allow_duplicate=True),
      Input('upload-data', 'contents'),
      Input('upload-data-modal', 'contents'),
      Input('confirm-row-button', 'n_clicks'),
@@ -61,14 +62,14 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
     if triggered_id == 'upload-data' or triggered_id == 'upload-data-modal':
         if triggered_id == 'upload-data':
             if not list_of_contents or not list_of_names:
-                return [], [], [], False, [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update, dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents[0]
             filename = list_of_names[0]
         elif triggered_id == 'upload-data-modal':
             if not list_of_contents_modal or not list_of_names_modal:
-                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update, dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update, dash.no_update,  dash.no_update,dash.no_update,  dash.no_update,dash.no_update, dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents_modal[0]
@@ -78,7 +79,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update,dash.no_update
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         global_vars.file_name = filename
@@ -94,8 +95,8 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
                                          conversation_session=global_vars.conversation_session)
         global_vars.current_stage = "Identify"
         chat_content = [
-            dcc.Markdown("The dataset has been successfully uploaded! 🎉 Let's dive into exploring it. You can "
-                         "ask anything else you'd like to know about the dataset!", className="llm-msg")]
+            dcc.Markdown(["The dataset has been successfully uploaded! 🎉 Let's dive into exploring it. You can "
+                         "ask anything else you'd like to know about the dataset!"          ], className="llm-msg")]
         return (
             global_vars.df.to_dict('records'),
             [{"name": col, "id": col, 'deletable': True} for col in global_vars.df.columns],
@@ -111,13 +112,14 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             "Suggestion: Check Data Statistics",
             "Checking data statistics is essential in the Identify stage as it provides a foundational understanding of the dataset, helping to reveal initial disparities, patterns, or anomalies that might indicate bias.",
             [{'label': col, 'value': col} for col in global_vars.df.columns],
-            True,
             dash.no_update,
+            [],
+            True
         )
 
     elif triggered_id == 'confirm-row-button':
         if global_vars.df is None:
-            return [], [], [], False, [], [], dash.no_update, dash.no_update, "No data is loaded.", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "No data is loaded.", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         start_row = int(start_row) - 1 if start_row else 0
         end_row = int(end_row) if end_row else len(global_vars.df)
@@ -133,6 +135,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
                 dash.no_update,
                 dash.no_update,
                 "",
+                dash.no_update,
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
@@ -161,32 +164,38 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             dash.no_update,
             dash.no_update,
             dash.no_update,
-            False
+            dash.no_update,
+            dash.no_update
+
         )
 
-    return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+    return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 @app.callback(
     Output('label-modal', 'is_open', allow_duplicate=True),
     Output('column-names-dropdown', 'value', allow_duplicate=True),
     Output('label-selection', 'value', allow_duplicate=True),
+    Output("query-area","children", allow_duplicate=True),
     Input('confirm-label-button', 'n_clicks'),
     State('label-dropdown', 'value'),
+    State("query-area", "children"),
     prevent_initial_call=True,
 )
-def confirm_label(n_click, label):
+def confirm_label(n_click, label, records):
     global_vars.label = label
     global_vars.agent.add_user_action_to_history(
         f"The user set the target attribute of the dataset as: {label}")
-    return False, label, label
+    records.append(html.Div([f"{label} has been assigned as the label." + '\n'], className="file-msg"))
+    return False, label, label, records
 
 @app.callback(
     Output('label-modal', 'is_open', allow_duplicate=True),
     Input('open-label-modal-button', 'n_clicks'),
     prevent_initial_call=True,
 )
-def open_label_modal(n_click):
+def open_label_modal(n_click1):
     return True
+
 
 @app.callback(
     Output('row-selection-modal', 'is_open', allow_duplicate=True),

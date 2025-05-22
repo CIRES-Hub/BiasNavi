@@ -38,13 +38,13 @@ from bias.adapt import adapt_data
 )
 def identify_bias(_, target, styles, msg, toggle_index):
     if global_vars.df is None:
-        return "", dash.no_update, "No dataset is loaded.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, "No dataset is loaded.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
     if target is None:
-        return "", dash.no_update, "Please assign a target before identifying bias.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, "Please assign a target before identifying bias.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
     sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
 
     if target in sensitive_attrs:
-        return [], dash.no_update, "The selected target is identified sensitive. Cannot Proceed!", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, "The selected target is identified sensitive. Cannot Proceed!", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
     attr_text = ','.join(sensitive_attrs)
     query = f"""
@@ -151,11 +151,11 @@ def update_sensitive_attrs(attrs, styles):
 )
 def measure_bias(_, target, sensitive_attrs, msg, toggle_index):
     if global_vars.df is None:
-        return "", "No dataset is loaded.", True, "Measure Bias", dash.no_update, dash.no_update
+        return dash.no_update, "No dataset is loaded.", True, "Measure Bias", dash.no_update, dash.no_update
     if target is None:
-        return "", "Please choose a target before measuring bias.", True, "Measure Bias", dash.no_update, dash.no_update
+        return dash.no_update, "Please choose a target before measuring bias.", True, "Measure Bias", dash.no_update, dash.no_update
     if sensitive_attrs == {}:
-        return "", "No biases are identified. Please identify bias first.", True, "Measure Bias", dash.no_update, dash.no_update
+        return dash.no_update, "No biases are identified. Please identify bias first.", True, "Measure Bias", dash.no_update, dash.no_update
     refined_attrs = []
     filtered_attrs = []
     warning = False
@@ -253,11 +253,11 @@ def measure_bias(_, target, sensitive_attrs, msg, toggle_index):
 )
 def surface_bias(_, target, sensitive_attrs, msg, toggle_index):
     if global_vars.df is None:
-        return "", dash.no_update, "No dataset is loaded.", True, "Surface Bias", dash.no_update, dash.no_update,
+        return dash.no_update, dash.no_update, "No dataset is loaded.", True, "Surface Bias", dash.no_update, dash.no_update,
     if target is None:
-        return "", dash.no_update, "Please choose a target before surfacing bias.", True, "Surface Bias", dash.no_update, dash.no_update,
+        return dash.no_update, dash.no_update, "Please choose a target before surfacing bias.", True, "Surface Bias", dash.no_update, dash.no_update,
     if sensitive_attrs == {}:
-        return "", dash.no_update, "No biases are identified. Please Identify bias first.", True, "Surface Bias", dash.no_update, dash.no_update,
+        return dash.no_update, dash.no_update, "No biases are identified. Please Identify bias first.", True, "Surface Bias", dash.no_update, dash.no_update,
     refined_attrs = []
     filtered_attrs = []
     warning = False
@@ -321,11 +321,11 @@ def surface_bias(_, target, sensitive_attrs, msg, toggle_index):
 )
 def adapt_bias(_, target, sensitive_attrs, msg, toggle_index):
     if global_vars.df is None:
-        return "", "No dataset is loaded.", True, "Adapt Bias", dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, "No dataset is loaded.", True, "Adapt Bias", dash.no_update, dash.no_update, dash.no_update
     if target is None:
-        return "", "Please choose a target before adapting bias.", True, "Adapt Bias", dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, "Please choose a target before adapting bias.", True, "Adapt Bias", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if sensitive_attrs == {}:
-        return "", "No biases are identified. Please Identify bias first.", True, "Adapt Bias", dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, "No biases are identified. Please Identify bias first.", True, "Adapt Bias", dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
     query = f""" Adapting bias will provide the user with a set of tools which allows them to interact with existing 
     biased results and to adapt them for bias in their preferred ways. Given these sensitive attributes 
