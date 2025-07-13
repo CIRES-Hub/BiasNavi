@@ -27,6 +27,7 @@ def toggle_msg(n_clicks, is_open):
     Output("profile-collapse", "is_open"),
     Input("profile-more-info-button", "n_clicks"),
     State("profile-collapse", "is_open"),
+    prevent_initial_call=True
 )
 def toggle_history(n, is_open):
     if n:
@@ -38,6 +39,7 @@ def toggle_history(n, is_open):
     Output({"type": "collapse-button", "index": MATCH}, "children"),
     Input({"type": "collapse-button", "index": MATCH}, "n_clicks"),
     State({"type": "collapse", "index": MATCH}, "is_open"),
+    prevent_initial_call=True
 )
 def toggle_collapse(n_clicks, is_open):
     text = "Show Messages"

@@ -19,7 +19,7 @@ def chatbox():
                                 "marginLeft": "5px",
                                 "alignSelf": "center"
                             }
-                          )], id="to-do-div",style={"display": "none"}),
+                          )], id="to-do-div",style={"display": "block"}),
                          ],style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
                                 "width": "100%", "padding": "0pt 10pt 0pt 0pt"}),
 

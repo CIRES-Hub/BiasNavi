@@ -217,6 +217,7 @@ def table_updated(data, columns):
         return dash.no_update, dash.no_update
     new_df = pd.DataFrame(data)
     global_vars.df = new_df
+    global_vars.agent = global_vars.agent.update_dataframe(new_df)
     return dash.no_update,dash.no_update
 
 @app.callback(
@@ -289,6 +290,7 @@ def restore_data_snapshot(n_clicks, selected_rows):
         row_id = selected_rows[0]
         chosen_snapshot = global_vars.data_snapshots[row_id]
         global_vars.df = chosen_snapshot
+        global_vars.agent = global_vars.agent.update_dataframe(chosen_snapshot)
         return [{"name": i, "id": i, 'deletable': True, 'renamable': True} for i in
                 chosen_snapshot.columns], chosen_snapshot.to_dict('records'), f"The data snapshot with ID {row_id+1} has been restored", True
     return dash.no_update, dash.no_update, dash.no_update, dash.no_update

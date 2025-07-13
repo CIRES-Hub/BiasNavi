@@ -57,7 +57,7 @@ def local_image_to_data_url(image_path):
 
 class DatasetAgent:
 
-    def __init__(self, df, conversation_session=None, llm=None, file_name=None, user_id=None):
+    def __init__(self, df, conversation_session=None, llm=None, file_name=None, user_id=None, history=None):
         self.user_id = user_id
         if llm is None:
             llm = ChatOpenAI(temperature=0.7, model="gpt-4o").configurable_alternatives(
@@ -92,8 +92,10 @@ class DatasetAgent:
 
         self.chain = self.prompt | self.agent
         self.multimodal_chain = multimodal_prompt | self.llm
-
-        self.chat_history = ChatMessageHistory(session_id=self.session_id)
+        if history is None:
+            self.chat_history = ChatMessageHistory(session_id=self.session_id)
+        else:
+            self.chat_history = history
 
         self.agent_with_chat_history = RunnableWithMessageHistory(
             self.chain,
@@ -111,6 +113,10 @@ class DatasetAgent:
                 RunnablePassthrough.assign(messages_trimmed=self.trim_messages)
                 | self.agent_with_chat_history
         )
+
+    def update_dataframe(self, df):
+        agent = DatasetAgent(df=df, conversation_session=self.session_id, llm=self.llm, file_name=self.file_name, user_id=self.user_id, history=self.chat_history)
+        return agent
 
     def update_agent_prompt(self):
         # invoked when the user changed their prompts or user profile.
@@ -253,7 +259,7 @@ class DatasetAgent:
         except Exception as e:
             # cannot be parsed in the above format, directly return the answer
             self.execution_error.append(e)
-            return "The BiasNavi agent encounters an issue. Please try again. If the issue persists, please restart the toolkit.", [], [], [], "", "", ""
+            return "The BiasNavi agent encountered an issue when executing your query/order. Please try again. If the issue persists, please restart the toolkit.", [], [], [], "", "", ""
 
         # Improve table removal logic
         table_pattern = r'(?s)\|.*?\|\n\|[-:]+\|\n(.*?)\n\n'

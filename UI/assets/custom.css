@@ -200,6 +200,8 @@
 
     /*box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2); /* Horizontal offset, vertical offset, blur radius, spread radius, color */
     background-color: white; /* Card background color */
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
     margin: 50px 0;
     padding: 20px;
     position: relative;
