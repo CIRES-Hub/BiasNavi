@@ -38,16 +38,16 @@ app.clientside_callback(
     prevent_initial_call=True
 )
 
-app.clientside_callback(
-    """
-    function (click) {
-        return [""" + json.dumps(dbc.Spinner(size='sm').to_plotly_json()) + """]
-    }
-    """,
-    Output("RAG-button", 'children'),
-    Input("RAG-button", 'n_clicks'),
-    prevent_initial_call=True
-)
+# app.clientside_callback(
+#     """
+#     function (click) {
+#         return [""" + json.dumps(dbc.Spinner(size='sm').to_plotly_json()) + """]
+#     }
+#     """,
+#     Output("RAG-button", 'children'),
+#     Input("RAG-button", 'n_clicks'),
+#     prevent_initial_call=True
+# )
 
 app.clientside_callback(
     """

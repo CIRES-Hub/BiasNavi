@@ -69,26 +69,77 @@ def chatbox():
                             ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
                                       "width": "100%"}),
                             html.Div(
-                                style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center', "gap":"10px"},
+                                style={'position': 'relative', 'width': '100%'},
                                 children=[
-                                    dcc.Input(id='query-input', type='text', className='query-input',
-                                              placeholder='Type your message here'),
-                                    html.Button(html.Span(className="fas fa-paper-plane"), id='send-button',
-                                                title="Send your message.", n_clicks=0,
-                                                className='send-button'),
-
-                                    dcc.Upload(id="upload-rag",
-                                               children=html.Button(html.Span(className="fas fa-file"),
-                                                                    id='RAG-button',
-                                                                    title="Upload supplementary document to enhance bias management.",
-                                                                    n_clicks=0,
-                                                                    className='send-button'),
-                                               multiple=True),
-                                    html.Button("RAG", id='rag-switch',
-                                                title="Enable/Disable information retrieval in the supplementary document.", n_clicks=0,
-                                                className='send-button'),
+                                    html.Div(
+                                        style={
+                                            'position': 'relative',
+                                            'width': '100%',
+                                            'height': '120px',
+                                            'borderRadius': '20px',
+                                            'backgroundColor': '#f5f5f5',
+                                            'padding': '10px 15px 40px 15px',
+                                            'boxSizing': 'border-box',
+                                            'overflow': 'hidden'
+                                        },
+                                        children=[
+                                            dcc.Textarea(
+                                                id='query-input',
+                                                placeholder='Type your message here',
+                                                className='query-input',
+                                                style={
+                                                    'width': '100%',
+                                                    'height': '100%',
+                                                    'resize': 'none',
+                                                    'border': 'none',
+                                                    'background': 'transparent',
+                                                    'fontSize': '16px',
+                                                    'overflowY': 'auto',
+                                                    'outline': 'none',
+                                                    'paddingRight': '5px'
+                                                }
+                                            ),
+                                            html.Div(
+                                                style={
+                                                    'position': 'absolute',
+                                                    'bottom': '5px',
+                                                    'left': '15px',
+                                                    'display': 'flex',
+                                                    'gap': '8px',
+                                                },
+                                                children=[
+                                                    html.Button(
+                                                        children=[html.Span(className="fas fa-paper-plane"), "Send"],
+                                                        id='send-button',
+                                                        title="Send your message.",
+                                                        n_clicks=0,
+                                                        className='send-button'
+                                                    ),
+                                                    dcc.Upload(
+                                                        id="upload-rag",
+                                                        children=html.Button(
+                                                            children=["Doc"],
+                                                            id='RAG-button',
+                                                            title="Upload a txt/pdf document as the description of the dataset.",
+                                                            n_clicks=0,
+                                                            className='send-button'
+                                                        ),
+                                                        multiple=False
+                                                    ),
+                                                    html.Button(
+                                                        "RAG",
+                                                        id='rag-switch',
+                                                        title="Toggle RAG mode.",
+                                                        n_clicks=0,
+                                                        className='send-button'
+                                                    )
+                                                ]
+                                            )
+                                        ]
+                                    ),
                                     dcc.Store(id="rag-state", data=False)
-                                ]),
+                                ]
+                            )
 
                         ],
                         type="default",  # Choose from "graph", "cube", "circle", "dot", or "default"

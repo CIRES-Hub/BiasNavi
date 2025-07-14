@@ -391,7 +391,7 @@
     outline: none;
 }
 
-.send-button:hover, .send-button:focus {
+.send-button:hover{
     background: linear-gradient(90deg, #7b4397 0%, #614385 100%);
     color: #fff;
     transform: translateY(-2px) scale(1.03);
@@ -415,22 +415,26 @@
 }
 
 .button-clicked {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: linear-gradient(90deg, #43cea2 0%, #185a9d 100%);
+    width: 80px;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 999px; /* fully rounded pill shape */
+    background: #185a9d;
     color: white;
     border: none;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
+        font-weight: 500;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;  /* space between icon and text */
     flex-shrink: 0;
     transition: all 0.2s ease;
     box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3), inset -2px -2px 5px rgba(255,255,255,0.1);
     transform: translateY(1px);
 }
+
 
 .save-data-button {
     background-color: #ffb366; /* Blue background */
@@ -765,17 +769,21 @@
 }
 
 .send-button {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: linear-gradient(90deg, #614385 0%, #516395 100%);
-    color: white;
+    width: 80px;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 999px; /* fully rounded pill shape */
+    background: white;
+    color: dimgray;
     border: none;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
+    font-weight: 500;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;  /* space between icon and text */
+    white-space: nowrap;
     flex-shrink: 0;
 }
 

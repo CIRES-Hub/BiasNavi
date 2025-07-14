@@ -19,7 +19,6 @@ from db_models.conversation import Conversation
     [Output("query-area", "children",allow_duplicate=True),
      Output("error-alert", "is_open", allow_duplicate=True),
     Output("error-alert", "children", allow_duplicate=True),
-     Output('llm-media-area', 'children'),
      Output("chat-update-trigger", "data"),
      Output("next-suggested-questions", "children"),
      Output("commands-input", "value"),
@@ -41,13 +40,13 @@ from db_models.conversation import Conversation
 def update_messages(n_clicks, n_submit, question_clicked, input_text, query_records, suggested_questions, rag_status):
     if not input_text and not question_clicked:
         #no input information provided
-        return query_records, True, "Please enter a query.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update,  dash.no_update
+        return query_records, True, "Please enter a query.",  dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update,  dash.no_update
     if n_clicks is None and question_clicked is None:
         # no controls clicked
-        return query_records, True, "Please enter a query.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return query_records, True, "Please enter a query.",  dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if global_vars.df is None:
         # no dataset loaded
-        return query_records, True, "Please upload a dataset first.", None, dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return query_records, True, "Please upload a dataset first.", dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     trigger = ctx.triggered_id
 
     if not isinstance(trigger, str) and 'next-suggested-question' in trigger.type:
@@ -87,11 +86,10 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
     new_response_message = dcc.Markdown(response, className="llm-msg")
     query_records.append(new_user_message)
     query_records.append(new_response_message)
+    if media:
+        query_records.append(media[-1])
     list_commands = global_vars.agent.list_commands
-    if not media:
-        return query_records, False, "", dash.no_update, time.time(), suggested_questions, ('\n').join(list_commands) if len(
-            list_commands) > 0 else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update, op, expl
-    return query_records, False, "", media, time.time(), suggested_questions, ('\n').join(list_commands) if len(
+    return query_records, False, "", time.time(), suggested_questions, ('\n').join(list_commands) if len(
         list_commands) > 0 else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update, op, expl
 
 
@@ -140,13 +138,12 @@ def toggle_rag_state(n):
 # Update UI based on state
 @app.callback(
     Output("rag-switch", "className"),
-    Output("rag-switch", "children"),
     Input("rag-state", "data")
 )
 def update_rag_ui(active):
     if active:
-        return "button-clicked", "ON"
-    return "send-button", "RAG"
+        return "button-clicked"
+    return "send-button"
 
 @app.callback(
     Output('RAG-area', 'children'),
@@ -250,7 +247,7 @@ def show_figure_modal(n_clicks, id):
 @app.callback(
     Output({'type': 'llm-media-explanation', 'index': MATCH}, 'children'),
     Output({'type': 'llm-media-explanation', 'index': MATCH}, 'style'),
-    Output({'type': 'llm-media-button', 'index': MATCH}, 'children', allow_duplicate=True),
+    Output({'type': 'llm-media-button', 'index': MATCH}, 'style', allow_duplicate=True),
     Input({'type': 'llm-media-button', 'index': MATCH}, 'children'),
     State({'type': 'llm-generated-chart', 'index': MATCH}, 'src'),
     prevent_initial_call=True
@@ -258,7 +255,7 @@ def show_figure_modal(n_clicks, id):
 def explain_llm_figure(_, content):
     if content is not None:
         explanation = global_vars.agent.describe_image('', content)
-        return dcc.Markdown(explanation.content,className="llm-text"), {"display": "block", "marginBottom": "20px", "marginTop": "20px"}, "Explain"
+        return dcc.Markdown(explanation.content,className="llm-text"), {"display": "block", "marginBottom": "20px", "marginTop": "20px"}, {"display":"none"}
 
 @app.callback(
     Output("chat-history-content", "children"),

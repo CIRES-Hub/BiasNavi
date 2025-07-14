@@ -18,6 +18,8 @@ import dash_bootstrap_components as dbc
 import matplotlib
 import re
 matplotlib.use('Agg')
+import time
+
 
 
 class Graph_Table_Generator(PythonAstREPLTool):
@@ -38,31 +40,72 @@ class Graph_Table_Generator(PythonAstREPLTool):
     def add_figure(self, processed_item: Figure):
 
         buf = io.BytesIO()
-        processed_item.subplots_adjust(bottom=0.25)
-        processed_item.savefig(buf, format="png")
-        processed_item.close()
+        # Automatically adjust layout
+        processed_item.tight_layout()
+        processed_item.subplots_adjust(bottom=0.1)
+        processed_item.savefig(buf, format="png", bbox_inches="tight")
         data = base64.b64encode(buf.getbuffer()).decode("utf8")
         buf.close()
 
-        current_id = len(self.elem_queue)
-        self.elem_queue.append(html.Div([
-            html.Img(src=f"data:image/png;base64,{data}",
-                     style={'maxWidth': '100%', 'cursor': 'pointer'}, id={"type": "llm-generated-chart", "index": current_id})
-        ], id={"type": "llm-media-figure", "index": current_id}, className="llm-media-figure"))
-
-        self.elem_queue.append(dbc.Modal([
-            dbc.ModalHeader("LLM Chart"),
-            dbc.ModalBody(html.Div([
-                html.Img(src=f"data:image/png;base64,{data}",
-                         style={'maxWidth': '100%'})
-            ], style={'display': 'flex', 'align-items': 'center', 'justify-content': 'center'})),
-            dbc.ModalFooter()
-        ], id={"type": "llm-media-modal", "index": current_id}, centered=True, className="figure-modal", size="lg"))
-        self.elem_queue.append(
-            dbc.Button("Explain", id={"type": "llm-media-button", "index": current_id}, className="primary-button", n_clicks=0), )
-        self.elem_queue.append(
-            html.Div([
-            ], id={"type": "llm-media-explanation", "index": current_id}, style={"display":"none"}))
+        current_id = int(time.time())
+        figure = html.Div([
+            html.Div(
+                [
+                    html.I(
+                        className="bi bi-chevron-down",
+                        id={"type": "toggle-msg-icon", "index": current_id},
+                        style={
+                            "cursor": "pointer",
+                            "marginRight": "8px",
+                            "fontSize": "1.2rem"
+                        }
+                    ),
+                    html.H5(
+                        "Figure",
+                        style={"margin": 0}
+                    )
+                ],
+                id={"type": "toggle-msg-btn", "index": current_id},
+                style={
+                    "display": "flex",
+                    "alignItems": "center"
+                }
+            ),
+            dbc.Collapse(
+                [
+                    html.Div([
+                        html.Img(
+                            src=f"data:image/png;base64,{data}",
+                            style={
+                                'maxWidth': '100%',
+                                'cursor': 'pointer',
+                                'display': 'block'
+                            },
+                            id={"type": "llm-generated-chart", "index": current_id}
+                        ),
+                        html.Div(
+                            dbc.Button(
+                                "Explain",
+                                id={"type": "llm-media-button", "index": current_id},
+                                className="primary-button",
+                                n_clicks=0
+                            ),
+                            style={
+                                'display': 'flex',
+                                'justifyContent': 'flex-end',
+                                'marginTop': '10px'
+                            }
+                        )
+                    ]),
+                    html.Div([
+                    ], id={"type": "llm-media-explanation", "index": current_id}, style={"display": "none"})
+                ],
+                id={"type": "collapse-msg", "index": current_id},
+                is_open=True
+            )
+        ], className="section")
+        self.elem_queue.append(figure)
+        return self.elem_queue
 
 
 

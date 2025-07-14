@@ -7,7 +7,7 @@ def code_view():
             html.Div([
                 html.I(className="bi bi-chevron-down", id={"type": "toggle-icon", "index": 7},
                        style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}),
-                html.H4("Chart & Code", style={"margin": 0}, className="secondary-title")
+                html.H4("Code Editor", style={"margin": 0}, className="secondary-title")
             ],
                 id={"type": "toggle-btn", "index": 7},
                 style={"display": "flex", "alignItems": "center"}
@@ -19,16 +19,6 @@ def code_view():
             dbc.CardBody(
                 [
                     dbc.Tabs([
-                        dbc.Tab([
-                            html.Div([
-                                # Chat display area
-                                # html.Div([
-                                #     html.H4("Charts", className="secondary-title")
-                                # ], className="query-header"),
-                                html.Div([], id='llm-media-area')
-                            ], className='llm-chart', style={'overflowX': 'auto'})
-                        ], label="Chart"),
-
                         dbc.Tab([
                             html.Div([
                                 html.Div([

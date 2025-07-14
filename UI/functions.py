@@ -76,17 +76,18 @@ def get_docker_client():
 def format_message(msg):
     role_class = "user-message" if msg['role'] == 'user' else "assistant-message"
     content = msg.get("content")
+    text = content  # default fallback
+
     try:
         parsed_content = ast.literal_eval(content)
         if isinstance(parsed_content, dict) and "answer" in parsed_content:
             text = parsed_content["answer"]
     except (ValueError, SyntaxError):
-        # If it isn't a dictionary-like string, return the string as is
-        text = content
+        pass  # keep default
+
     return html.Div([
         html.Div([
             html.Span(msg['role'].capitalize(), className="message-role"),
         ], className="message-header"),
         dcc.Markdown(text, className="message-content")
     ], className=f"chat-message {role_class}")
-
