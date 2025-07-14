@@ -90,7 +90,7 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
         query_records.append(media[-1])
     list_commands = global_vars.agent.list_commands
     return query_records, False, "", time.time(), suggested_questions, ('\n').join(list_commands) if len(
-        list_commands) > 0 else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update, op, expl
+        list_commands) > 0 and not media else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update, op, expl
 
 
 @app.callback(

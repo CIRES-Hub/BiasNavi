@@ -118,7 +118,7 @@ def chatbox():
                                                     dcc.Upload(
                                                         id="upload-rag",
                                                         children=html.Button(
-                                                            children=["Doc"],
+                                                            "Doc",
                                                             id='RAG-button',
                                                             title="Upload a txt/pdf document as the description of the dataset.",
                                                             n_clicks=0,
