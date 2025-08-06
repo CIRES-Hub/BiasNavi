@@ -30,6 +30,10 @@ def layout():
     return html.Div([
         # Home Layout
         dbc.Container(fluid=True, children=[
+            #placeholder invisible
+            dcc.Dropdown(
+                id='identified-attrs-dropdown', style={"display":"none"}
+                ),
             hero_section(),
             # ==========================================
             # banner and menu bar layout

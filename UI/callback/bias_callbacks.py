@@ -8,7 +8,7 @@ import plotly.io as pio
 import base64
 from flask_login import current_user
 import dash_bootstrap_components as dbc
-
+import time
 from bias.identify import identify_sensitive_attributes
 from bias.surface import draw_multi_dist_plot
 from bias.measure import calculate_demographic_report
@@ -29,22 +29,22 @@ from bias.adapt import adapt_data
     Output('bias-stage-value', 'data'),
     Output('toggle-msg-value', 'data'),
     Input({'type': 'spinner-btn', 'index': 3}, 'children'),
-    State('column-names-dropdown', 'value'),
     State('data-view-table-style', 'data'),
     State('query-area', 'children'),
     State('toggle-msg-value', 'data'),
 
     prevent_initial_call=True
 )
-def identify_bias(_, target, styles, msg, toggle_index):
+def identify_bias(_, styles, msg, toggle_index):
     if global_vars.df is None:
-        return dash.no_update, dash.no_update, "No dataset is loaded.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, "No dataset is loaded.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update,dash.no_update, dash.no_update
+    target = global_vars.target_attr
     if target is None:
-        return dash.no_update, dash.no_update, "Please assign a target before identifying bias.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, "Please assign a target attribute before identifying bias.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
     sensitive_attrs = identify_sensitive_attributes(global_vars.df, target)
 
-    if target in sensitive_attrs:
-        return dash.no_update, dash.no_update, "The selected target is identified sensitive. Cannot Proceed!", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+    # if target in sensitive_attrs:
+    #     return dash.no_update, dash.no_update, "The selected target is identified sensitive. Cannot Proceed!", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
     attr_text = ','.join(sensitive_attrs)
     query = f"""
@@ -58,6 +58,8 @@ def identify_bias(_, target, styles, msg, toggle_index):
 
     sensitive_attrs += sensi_attrs
     sensitive_attrs = list(set(sensitive_attrs))
+    if target in sensitive_attrs:
+        sensitive_attrs.remove(target)
 
     if not sensitive_attrs:
         return [], dash.no_update, "No sensitive attributes are detected.", True, dash.no_update, dash.no_update, "Identify Bias", {}, dash.no_update, dash.no_update, dash.no_update, dash.no_update
@@ -124,15 +126,21 @@ def identify_bias(_, target, styles, msg, toggle_index):
 @app.callback(
     Output('sensitive-attr-store', 'data', allow_duplicate=True),
     Output('table-overview', 'style_data_conditional',allow_duplicate=True),
+    Output('error-alert', 'children', allow_duplicate=True),
+    Output('error-alert', 'is_open', allow_duplicate=True),
+    Output('identified-attrs-dropdown', 'value', allow_duplicate=True),
     Input('identified-attrs-dropdown', 'value'),
     State('data-view-table-style', 'data'),
     prevent_initial_call=True,
 )
 def update_sensitive_attrs(attrs, styles):
+    if global_vars.target_attr in attrs:
+        attrs.remove(global_vars.target_attr)
+        return {"sensitive_attrs": attrs}, styles, f"{global_vars.target_attr} is the target attributed. It cannot be used as a sensitive attributed.", True, attrs
     column_style = [{'if': {'column_id': attr}, 'backgroundColor': 'tomato', 'color': 'white'} for attr in
                     attrs]
     styles += column_style
-    return {"sensitive_attrs": attrs}, styles
+    return {"sensitive_attrs": attrs}, styles, dash.no_update, dash.no_update, dash.no_update
 
 
 @app.callback(
@@ -168,8 +176,9 @@ def measure_bias(_, target, sensitive_attrs, msg, toggle_index):
     bias_stats = [calculate_demographic_report(global_vars.df, target, [refined_attr]) for refined_attr in
                   refined_attrs]
     tables = []
+    tmp_id = int(time.time())
     for table_id, stat in enumerate(bias_stats):
-        data_table = dash_table.DataTable(id={"type": "report-table", "index": str(table_id)}, page_size=25,
+        data_table = dash_table.DataTable(id={"type": "report-table", "index": str(tmp_id)+"-"+str(table_id)}, page_size=25,
                                           page_action='native',
                                           data=stat.to_dict('records'),
                                           sort_action='native',
@@ -193,11 +202,11 @@ def measure_bias(_, target, sensitive_attrs, msg, toggle_index):
                                           )
         tables.append(data_table)
         tables.append(
-            html.Div([], id={"type": "report-table-explanation", "index": str(table_id)},
+            html.Div([], id={"type": "report-table-explanation", "index": str(tmp_id)+"-"+str(table_id)},
                      style={"display": "none", "marginBottom": "10pt"}))
         tables.append(html.Button(
             'Explain',
-            id={"type": "report-table-button", "index": str(table_id)},
+            id={"type": "report-table-button", "index": str(tmp_id)+"-"+str(table_id)},
             n_clicks=0,
             className='primary-button',
             style={
@@ -269,12 +278,13 @@ def surface_bias(_, target, sensitive_attrs, msg, toggle_index):
             filtered_attrs.append(attr)
     figures = draw_multi_dist_plot(global_vars.df, target, refined_attrs)
     graphs = []
-    for i, fig in enumerate(figures):
+    tmp_id = int(time.time())
+    for fig_id, fig in enumerate(figures):
         # Create a dcc.Graph component with the figure
-        graphs.append(dcc.Graph(id={"type": "report-graph", "index": str(i)}, figure=fig))
+        graphs.append(dcc.Graph(id={"type": "report-graph", "index": str(tmp_id)+"-"+str(fig_id)}, figure=fig))
         graphs.append(
-            html.Div([], id={"type": "report-graph-explanation", "index": str(i)}, style={"display": "none","marginBottom":"10pt"}))
-        graphs.append(html.Button('Explain', id={"type": "report-graph-button", "index": str(i)}, n_clicks=0,
+            html.Div([], id={"type": "report-graph-explanation", "index": str(tmp_id)+"-"+str(fig_id)}, style={"display": "none","marginBottom":"10pt"}))
+        graphs.append(html.Button('Explain', id={"type": "report-graph-button", "index": str(tmp_id)+"-"+str(fig_id)}, n_clicks=0,
                                   className='primary-button'))
     warning_msg = ""
     if warning:
@@ -606,7 +616,7 @@ def handle_sampling(smote_clicks, oversample_clicks, undersample_clicks, attr):
 @app.callback(
     Output({'type': 'report-graph-explanation', 'index': MATCH}, 'children'),
     Output({'type': 'report-graph-explanation', 'index': MATCH}, 'style'),
-    Output({'type': 'report-graph-button', 'index': MATCH}, 'children', allow_duplicate=True),
+    Output({'type': 'report-graph-button', 'index': MATCH}, 'style', allow_duplicate=True),
     Input({'type': 'report-graph-button', 'index': MATCH}, 'children'),
     State({'type': 'report-graph', 'index': MATCH}, 'figure'),
     prevent_initial_call=True
@@ -620,13 +630,13 @@ def explain_report_figure(n_clicks, fig):
         explanation = format_reply_to_markdown(explanation.content)
         global_vars.agent.add_user_action_to_history("I have analyzed the result of bias surfacing and get the "
                                                      "following analysis." + explanation)
-        return dcc.Markdown(explanation, className="llm-text"), {"display": "block"}, "Explain"
+        return dcc.Markdown(explanation, className="llm-text"), {"display": "block"}, {"display": "none"}
 
 
 @app.callback(
     Output({'type': 'report-table-explanation', 'index': MATCH}, 'children'),
     Output({'type': 'report-table-explanation', 'index': MATCH}, 'style'),
-    Output({'type': 'report-table-button', 'index': MATCH}, 'children', allow_duplicate=True),
+    Output({'type': 'report-table-button', 'index': MATCH}, 'style', allow_duplicate=True),
     Input({'type': 'report-table-button', 'index': MATCH}, 'children'),
     State({'type': 'report-table', 'index': MATCH}, 'data'),
     prevent_initial_call=True
@@ -640,4 +650,4 @@ def explain_report_table(_, tb):
         answer, media, sensi_attrs, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
         answer = format_reply_to_markdown(answer)
         global_vars.agent.add_user_action_to_history("I have analyzed the result of bias measuring.")
-        return dcc.Markdown(answer, className="llm-text"), {"display": "block"}, "Explain"
+        return dcc.Markdown(answer, className="llm-text"), {"display": "block"}, {"display": "none"}

@@ -21,7 +21,7 @@ import pandas as pd
 import numpy as np
 import math
 import plotly.graph_objects as go
-
+from dash import ctx
 
 @app.callback(
      Output('table-overview', 'data', allow_duplicate=True),
@@ -182,7 +182,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
     prevent_initial_call=True,
 )
 def confirm_label(n_click, label, records):
-    global_vars.label = label
+    global_vars.target_attr = label
     global_vars.agent.add_user_action_to_history(
         f"The user set the target attribute of the dataset as: {label}")
     records.append(html.Div([f"{label} has been assigned as the label." + '\n'], className="file-msg"))
@@ -208,17 +208,22 @@ def open_row_selection_modal(n_click):
 @app.callback(
     Output('data-alert', 'children'),
     Output('data-alert', 'is_open'),
+    Output('identified-attrs-dropdown','options', allow_duplicate=True),
     Input('table-overview', 'data'),
     Input('table-overview', 'columns'),
     prevent_initial_call=True,
 )
 def table_updated(data, columns):
     if not data:
-        return dash.no_update, dash.no_update
-    new_df = pd.DataFrame(data)
-    global_vars.df = new_df
-    global_vars.agent = global_vars.agent.update_dataframe(new_df)
-    return dash.no_update,dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update
+
+    df = pd.DataFrame(data)
+    global_vars.df = df
+    global_vars.agent = global_vars.agent.update_dataframe(df)
+    dropdown_options = [{'label': col, 'value': col} for col in df.columns]
+
+    return None, True, dropdown_options
+
 
 @app.callback(
     Output("snapshot-modal", "is_open"),
