@@ -222,7 +222,7 @@ def table_updated(data, columns):
     global_vars.agent = global_vars.agent.update_dataframe(df)
     dropdown_options = [{'label': col, 'value': col} for col in df.columns]
 
-    return None, True, dropdown_options
+    return "Data table has been changed.", True, dropdown_options
 
 
 @app.callback(

@@ -13,6 +13,7 @@ import os
 import shutil
 import time
 import random
+from dash import MATCH,ALL
 from UI.functions import get_docker_client
 code_logger = logging.getLogger(__name__)
 
@@ -119,3 +120,99 @@ def execute_commands(n_click, commands):
     except Exception as e:
         code_logger.error(e)
         return [f"Error: {str(e)}", False] + [dash.no_update] * 6 + ["Run"]
+
+@app.callback(
+    Output({'type': "console-area", 'index': MATCH}, "children"),
+    Output({'type': "commands-input", 'index': MATCH}, "disabled"),
+    Output({'type': "python-code-console", 'index': MATCH}, "style"),
+    Output({'type': 'execute-code-btn', 'index': MATCH}, "style"),
+    Output({'type': 'is-code-executed', 'index': MATCH}, "data"),
+    Input({'type': 'execute-code-btn', 'index': MATCH}, "n_clicks"),
+    State({'type': "commands-input", 'index': MATCH}, "value"),
+    prevent_initial_call=True
+)
+def execute_generated_code(n_click, commands):
+    if global_vars.df is None:
+        return ["Have you imported a dataset and entered a query?", False, dash.no_update, dash.no_update, dash.no_update]
+
+    if not commands:
+        return [dash.no_update] * 5
+
+    try:
+        print("Running sandbox...")
+        user_id = str(current_user.id)
+        current_path = os.path.dirname(os.path.realpath(__file__))
+        parent_path = os.path.dirname(current_path)
+        user_data_dir = prepare_user_dir(user_id, parent_path)
+
+        # File paths
+        user_output_file = os.path.join(user_data_dir, f"_output_{user_id}.out")
+        user_error_file = os.path.join(user_data_dir, f"_error_{user_id}.err")
+        container_name = 'biasnavi-' + user_id
+
+        # Save code
+        with open(os.path.join(user_data_dir, 'sandbox_commands.py'), "w") as f:
+            f.write(commands)
+
+        # Save input dataframe
+        global_vars.df.to_csv(os.path.join(user_data_dir, "df.csv"), index=False)
+
+        # Clean up old outputs
+        for file in [user_output_file, user_error_file]:
+            if os.path.exists(file):
+                os.remove(file)
+
+        # Docker execution
+        client = get_docker_client()
+        try:
+            run_in_container(client, container_name, user_id, user_data_dir)
+        except docker.errors.APIError as e:
+            if e.status_code == 409:
+                container = client.containers.get(container_name)
+                container.start()
+                container.exec_run(cmd=f"python sandbox_main.py {user_id}", workdir=f"/home/sandbox/{user_id}")
+            else:
+                raise
+
+        # Collect results
+        output = collect_output(user_output_file, user_error_file)
+
+        # Reload updated df
+        new_df = pd.read_csv(os.path.join(user_data_dir, "df.csv"))
+        global_vars.df = new_df
+
+        # Reset agent session
+        global_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
+        global_vars.agent = DatasetAgent(
+            global_vars.df,
+            file_name=global_vars.file_name,
+            conversation_session=global_vars.conversation_session
+        )
+
+        return [output, False, {"display": "block"}, {"display": "none"}, "1"]
+
+    except Exception as e:
+        code_logger.error(e)
+        return [f"Error: {str(e)}", False, dash.no_update, dash.no_update, dash.no_update]
+
+
+@app.callback(
+     Output('table-overview', 'data', allow_duplicate=True),
+     Output('table-overview', 'columns', allow_duplicate=True),
+     Input({'type': 'is-code-executed', 'index': ALL}, "data"),
+     prevent_initial_call=True
+)
+def update_table_after_executing_code(data):
+    if not data or any(d != "1" for d in data):
+        raise dash.exceptions.PreventUpdate
+
+    columns = [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns]
+    return global_vars.df.to_dict('records'), columns,
+
+@app.callback(
+    Output({'type': 'execute-code-btn', 'index': MATCH}, "style",allow_duplicate=True),
+    Input({'type': "commands-input", 'index': MATCH}, "value"),
+    prevent_initial_call=True
+)
+def reactive_run_button(commands):
+    return {"display":"block"}

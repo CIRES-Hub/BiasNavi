@@ -1,10 +1,12 @@
 from UI.variable import global_vars
 import re
 import docker
-import os
 from pathlib import Path
 import ast
+import dash_bootstrap_components as dbc
 from dash import dcc, html
+import dash_editor_components
+import time
 #identify bias
 
 
@@ -91,3 +93,81 @@ def format_message(msg):
         ], className="message-header"),
         dcc.Markdown(text, className="message-content")
     ], className=f"chat-message {role_class}")
+
+
+def contains_python_code_block(text):
+    pattern = r"```python\s+.*?```"
+    return bool(re.search(pattern, text, re.DOTALL))
+def extract_text_and_code_blocks(text):
+    pattern = r"```python\s*(.*?)\s*```"
+    text_blocks = []
+    code_blocks = []
+    last_end = 0
+
+    for match in re.finditer(pattern, text, re.DOTALL):
+        start, end = match.span()
+
+
+        if start > last_end:
+            non_code = text[last_end:start].strip()
+            if non_code:
+                text_blocks.append(non_code)
+
+
+        code = match.group(1).strip()
+        if code:
+            code_blocks.append(code)
+
+        last_end = end
+
+
+    if last_end < len(text):
+        remaining = text[last_end:].strip()
+        if remaining:
+            text_blocks.append(remaining)
+
+    return text_blocks, code_blocks
+
+def create_python_editors(code):
+    cid = global_vars.editor_id_counter
+    global_vars.editor_id_counter += 1
+    return html.Div([
+        html.Div([
+            dcc.Store(data="0",id={'type': "is-code-executed", 'index': cid}),
+            html.Div([
+                html.Div([
+                    dash_editor_components.PythonEditor(
+                        id={'type': 'commands-input', 'index': cid},
+                        style={'overflow': "auto"},
+                        value=code
+                    )
+                ], className='commands_editor'),
+            ], id={'type': "python-code-editor", 'index': cid}, style={"marginTop": "20pt"}),
+            dcc.Loading(
+                id={'type': 'loading-', 'index': cid},
+                children=[
+                    dbc.Button(
+                        "Run",
+                        id={'type': 'execute-code-btn', 'index': cid},
+                        n_clicks=0,
+                        className='primary-button'
+                    ),
+                ],
+                type="default",
+            ),
+
+        ]),
+
+        html.Div([
+            html.Div([
+                html.H4("Result", className="secondary-title")
+            ], className="query-header"),
+            html.P(
+                id={'type': 'console-area', 'index': cid},
+                className='commands_result'
+            ),
+        ],
+        id={'type': 'python-code-console', 'index': cid},
+        style={"display": "none"})
+    ],
+    className="card", style={"paddingLeft": "20pt", "paddingRight": "20pt"})

@@ -14,7 +14,7 @@ from flask_login import current_user
 from UI.functions import query_llm
 from agent.rag import RAG
 from db_models.conversation import Conversation
-
+from itertools import zip_longest
 @app.callback(
     [Output("query-area", "children",allow_duplicate=True),
      Output("error-alert", "is_open", allow_duplicate=True),
@@ -79,13 +79,30 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
                     id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)
                 suggested_questions.append(new_suggested_question)
 
-    answer = format_reply_to_markdown(answer)
-    response = answer + '\n'
-    global_vars.dialog.append("\n" + response)
-    # Simulate a response from the system
-    new_response_message = dcc.Markdown(response, className="llm-msg")
     query_records.append(new_user_message)
-    query_records.append(new_response_message)
+    if contains_python_code_block(answer):
+        text_blocks, code_blocks = extract_text_and_code_blocks(answer)
+        for text, code in zip_longest(text_blocks, code_blocks):
+            if text is not None:
+                answer = format_reply_to_markdown(text)
+                response = answer + '\n'
+                global_vars.dialog.append("\n" + response)
+                # Simulate a response from the system
+                new_response_message = dcc.Markdown(response, className="llm-msg")
+                query_records.append(new_response_message)
+            if code is not None:
+                answer = format_reply_to_markdown(code)
+                response = answer + '\n'
+                global_vars.dialog.append("\n" + response)
+                query_records.append(create_python_editors(code))
+
+    else:
+        answer = format_reply_to_markdown(answer)
+        response = answer + '\n'
+        global_vars.dialog.append("\n" + response)
+        # Simulate a response from the system
+        new_response_message = dcc.Markdown(response, className="llm-msg")
+        query_records.append(new_response_message)
     if media:
         query_records.append(media[-1])
     list_commands = global_vars.agent.list_commands
