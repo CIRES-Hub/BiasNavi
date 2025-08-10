@@ -13,10 +13,10 @@ import os
 import shutil
 import time
 import random
-from dash import MATCH,ALL
+from dash import MATCH, ALL
 from UI.functions import get_docker_client
-code_logger = logging.getLogger(__name__)
 
+code_logger = logging.getLogger(__name__)
 
 
 def prepare_user_dir(user_id, parent_path):
@@ -27,6 +27,7 @@ def prepare_user_dir(user_id, parent_path):
     if not os.path.exists(target_main_path):
         shutil.copyfile(sandbox_main_path, target_main_path)
     return user_data_dir
+
 
 def collect_output(output_path, error_path):
     output = []
@@ -39,6 +40,7 @@ def collect_output(output_path, error_path):
     else:
         output.extend([html.P("The code was executed successfully.", style={"color": "green"})])
     return output
+
 
 def run_in_container(client, container_name, user_id, user_data_dir):
     try:
@@ -54,6 +56,7 @@ def run_in_container(client, container_name, user_id, user_data_dir):
     container.exec_run(cmd=f"python sandbox_main.py {user_id}", workdir=f'/home/sandbox/{user_id}')
     return container
 
+
 @app.callback(
     [Output("console-area", "children"),
      Output("commands-input", "disabled", allow_duplicate=True),
@@ -62,18 +65,19 @@ def run_in_container(client, container_name, user_id, user_data_dir):
      Output('column-names-dropdown', 'options', allow_duplicate=True),
      Output('data-alert', 'children', allow_duplicate=True),
      Output('data-alert', 'is_open', allow_duplicate=True),
-     Output("python-code-console","style", allow_duplicate=True),
+     Output("python-code-console", "style", allow_duplicate=True),
      Output({'type': 'spinner-btn', 'index': 9}, 'children', allow_duplicate=True)],
     Input({'type': 'spinner-btn', 'index': 9}, "children"),
     State("commands-input", "value"),
     prevent_initial_call=True
 )
 def execute_commands(n_click, commands):
-    if global_vars.df is None:
-        return ["Have you imported a dataset and entered a query?", False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, "Run"]
+    if app_vars.df is None:
+        return ["Have you imported a dataset and entered a query?", False, dash.no_update, dash.no_update,
+                dash.no_update, dash.no_update, dash.no_update, dash.no_update, "Run"]
 
     if not commands:
-        return [dash.no_update] * 9 + ["Run"]
+        return [dash.no_update] * 8 + ["Run"]
 
     try:
         print("Running sandbox...")
@@ -89,7 +93,7 @@ def execute_commands(n_click, commands):
         with open(os.path.join(user_data_dir, 'sandbox_commands.py'), "w") as f:
             f.write(commands)
 
-        global_vars.df.to_csv(os.path.join(user_data_dir, "df.csv"), index=False)
+        app_vars.df.to_csv(os.path.join(user_data_dir, "df.csv"), index=False)
         for file in [user_output_file, user_error_file]:
             if os.path.exists(file):
                 os.remove(file)
@@ -107,19 +111,25 @@ def execute_commands(n_click, commands):
 
         output = collect_output(user_output_file, user_error_file)
         new_df = pd.read_csv(os.path.join(user_data_dir, "df.csv"))
-        global_vars.df = new_df
-        global_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
-        global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name, conversation_session=global_vars.conversation_session)
+        app_vars.df = new_df
+        app_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
+        app_vars.agent = DatasetAgent(app_vars.df, file_name=app_vars.file_name,
+                                      conversation_session=app_vars.conversation_session)
 
-        columns = [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns]
-        options = [{'label': col, 'value': col} for col in global_vars.df.columns]
+        columns = [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in app_vars.df.columns]
+        options = [{'label': col, 'value': col} for col in app_vars.df.columns]
 
-        return [output, False, global_vars.df.to_dict('records'), columns, options,
-                "The data might have been changed.", True, {"display": "block"}, "Run"]
+        if ("df =" in commands or "df=" in commands) and "successfully" in output[-1].children:
+            return [output, False, app_vars.df.to_dict('records'), columns, options,
+                    "The data might have been changed.", True, {"display": "block"}, "Run"]
+        else:
+            return [output, False, dash.no_update, dash.no_update, dash.no_update,
+                    dash.no_update, False, {"display": "block"}, "Run"]
 
     except Exception as e:
         code_logger.error(e)
         return [f"Error: {str(e)}", False] + [dash.no_update] * 6 + ["Run"]
+
 
 @app.callback(
     Output({'type': "console-area", 'index': MATCH}, "children"),
@@ -132,8 +142,9 @@ def execute_commands(n_click, commands):
     prevent_initial_call=True
 )
 def execute_generated_code(n_click, commands):
-    if global_vars.df is None:
-        return ["Have you imported a dataset and entered a query?", False, dash.no_update, dash.no_update, dash.no_update]
+    if app_vars.df is None:
+        return ["Have you imported a dataset and entered a query?", False, dash.no_update, dash.no_update,
+                dash.no_update]
 
     if not commands:
         return [dash.no_update] * 5
@@ -155,7 +166,7 @@ def execute_generated_code(n_click, commands):
             f.write(commands)
 
         # Save input dataframe
-        global_vars.df.to_csv(os.path.join(user_data_dir, "df.csv"), index=False)
+        app_vars.df.to_csv(os.path.join(user_data_dir, "df.csv"), index=False)
 
         # Clean up old outputs
         for file in [user_output_file, user_error_file]:
@@ -179,17 +190,19 @@ def execute_generated_code(n_click, commands):
 
         # Reload updated df
         new_df = pd.read_csv(os.path.join(user_data_dir, "df.csv"))
-        global_vars.df = new_df
+        app_vars.df = new_df
 
         # Reset agent session
-        global_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
-        global_vars.agent = DatasetAgent(
-            global_vars.df,
-            file_name=global_vars.file_name,
-            conversation_session=global_vars.conversation_session
+        app_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
+        app_vars.agent = DatasetAgent(
+            app_vars.df,
+            file_name=app_vars.file_name,
+            conversation_session=app_vars.conversation_session
         )
-
-        return [output, False, {"display": "block"}, {"display": "none"}, "1"]
+        if ("df =" in commands or "df=" in commands) and "successfully" in output[-1].children:
+            return [output, False, {"display": "block"}, {"display": "none"}, "1"]
+        else:
+            return [output, False, {"display": "block"}, {"display": "none"}, "0"]
 
     except Exception as e:
         code_logger.error(e)
@@ -197,22 +210,23 @@ def execute_generated_code(n_click, commands):
 
 
 @app.callback(
-     Output('table-overview', 'data', allow_duplicate=True),
-     Output('table-overview', 'columns', allow_duplicate=True),
-     Input({'type': 'is-code-executed', 'index': ALL}, "data"),
-     prevent_initial_call=True
+    Output('table-overview', 'data', allow_duplicate=True),
+    Output('table-overview', 'columns', allow_duplicate=True),
+    Input({'type': 'is-code-executed', 'index': ALL}, "data"),
+    prevent_initial_call=True
 )
 def update_table_after_executing_code(data):
     if not data or any(d != "1" for d in data):
-        raise dash.exceptions.PreventUpdate
+        return dash.no_update, dash.no_update
 
-    columns = [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns]
-    return global_vars.df.to_dict('records'), columns,
+    columns = [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in app_vars.df.columns]
+    return app_vars.df.to_dict('records'), columns,
+
 
 @app.callback(
-    Output({'type': 'execute-code-btn', 'index': MATCH}, "style",allow_duplicate=True),
+    Output({'type': 'execute-code-btn', 'index': MATCH}, "style", allow_duplicate=True),
     Input({'type': "commands-input", 'index': MATCH}, "value"),
     prevent_initial_call=True
 )
 def reactive_run_button(commands):
-    return {"display":"block"}
+    return {"display": "block"}

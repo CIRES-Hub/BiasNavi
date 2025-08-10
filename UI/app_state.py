@@ -1,11 +1,7 @@
-from agent import DatasetAgent
-import time
-
-
-class Variables(object):
+class APP_State(object):
     def __init__(self):
         self.df = None
-        self.agent: DatasetAgent = None
+        self.agent = None
         self.rag = None
         self.dialog = []
         self.file_name = None
@@ -14,6 +10,8 @@ class Variables(object):
         self.conversation_session = None
         self.target_attr = ""
         self.current_stage = "Identify"
+        self.editor_id_counter = 0
+        self.bias_identifier_counter = 0
 
 
-global_vars = Variables()
+app_vars = APP_State()

@@ -1,4 +1,4 @@
-from UI.variable import global_vars
+from UI.app_state import app_vars
 import re
 import docker
 from pathlib import Path
@@ -6,7 +6,8 @@ import ast
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 import dash_editor_components
-import time
+
+
 #identify bias
 
 
@@ -28,9 +29,9 @@ import time
 
 def query_llm(query, stage, user_id, context=''):
     print(query, stage)
-    response, media, sensi_attrs, suggestions, stage, op, explanation = global_vars.agent.run(query, stage)
-    global_vars.agent.persist_history(user_id=str(user_id))
-    global_vars.suggested_questions = suggestions
+    response, media, sensi_attrs, suggestions, stage, op, explanation = app_vars.agent.run(query, stage)
+    app_vars.agent.persist_history(user_id=str(user_id))
+    app_vars.suggested_questions = suggestions
     return response, media, sensi_attrs, suggestions, stage, "Suggestion: "+op, explanation
 
 
@@ -129,8 +130,8 @@ def extract_text_and_code_blocks(text):
     return text_blocks, code_blocks
 
 def create_python_editors(code):
-    cid = global_vars.editor_id_counter
-    global_vars.editor_id_counter += 1
+    cid = app_vars.editor_id_counter
+    app_vars.editor_id_counter += 1
     return html.Div([
         html.Div([
             dcc.Store(data="0",id={'type': "is-code-executed", 'index': cid}),

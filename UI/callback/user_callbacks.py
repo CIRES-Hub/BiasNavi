@@ -2,11 +2,12 @@ import dash
 from UI.app import app
 from db_models.users import User
 from db_models.databases import db
-from dash import Input, Output, State, callback_context
+from dash import Input, Output, State, ctx
 from dash.exceptions import PreventUpdate
 from constant_prompt import DEFAULT_PERSONA_PROMPT
-from UI.variable import global_vars
-from flask_login import logout_user, current_user
+from UI.app_state import app_vars
+from flask_login import current_user
+
 # Update Username
 @app.callback(
     Output("edit-username-modal", "is_open"),
@@ -61,47 +62,50 @@ def save_new_username(n_clicks, new_username):
     State("areas-of-interest-checklist", "value"),
     prevent_initial_call=True
 )
-def update_survey_info(submit_clicks, skip_clicks, user_name, professional_role, industry_sector, expertise_level, technical_level, bias_awareness, areas_of_interest):
-    ctx = callback_context
-    if not ctx.triggered:
+def update_survey_info(submit_clicks, skip_clicks, user_name, professional_role, industry_sector,
+                       expertise_level, technical_level, bias_awareness, areas_of_interest):
+    if ctx.triggered_id is None:
         raise PreventUpdate
 
-    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-
-    if submit_clicks is not None and button_id == "submit-button":
-        if not all([professional_role, industry_sector, expertise_level, areas_of_interest, technical_level, bias_awareness]):
+    if ctx.triggered_id == "submit-button":
+        # 必填校验（包含 user_name）
+        if not all([user_name, professional_role, industry_sector, expertise_level,
+                    technical_level, bias_awareness, areas_of_interest]):
             return dash.no_update, "Please fill in all.", dash.no_update, False
 
         try:
-            # Fetch
+            if not current_user.is_authenticated:
+                return dash.no_update, "Please sign in.", dash.no_update, False
+
             user = User.query.get(current_user.id)
 
-            # Update and commit
             user.username = user_name
             user.professional_role = professional_role
             user.industry_sector = industry_sector
             user.expertise_level = expertise_level
             user.technical_level = technical_level
             user.bias_awareness = bias_awareness
-            user.areas_of_interest = areas_of_interest
-            user.persona_prompt = DEFAULT_PERSONA_PROMPT.format(professional_role=user.professional_role,
-                                                                industry_sector=user.industry_sector,
-                                                                expertise_level=user.expertise_level,
-                                                                technical_level=user.technical_level,
-                                                                bias_level=user.bias_awareness
-                                                                ),
+            user.areas_of_interest = areas_of_interest  # 若为字符串列，改成 json.dumps(areas_of_interest)
+
+            user.persona_prompt = DEFAULT_PERSONA_PROMPT.format(
+                professional_role=user.professional_role,
+                industry_sector=user.industry_sector,
+                expertise_level=user.expertise_level,
+                technical_level=user.technical_level,
+                bias_level=user.bias_awareness
+            )
 
             db.session.commit()
-            global_vars.agent.update_agent_prompt()
-            return '/home', 'Survey information updated!', False, True
+            app_vars.agent.update_agent_prompt()
+            return "/home", "Survey information updated!", False, True
+
         except Exception as e:
             db.session.rollback()
             return dash.no_update, f"An error occurred: {str(e)}", dash.no_update, dash.no_update
 
-    elif button_id == "skip-button":
-        return '/home', 'Survey skipped.', False, False
+    elif ctx.triggered_id == "skip-button":
+        return "/home", "Survey skipped.", False, False
 
     raise PreventUpdate
-
 
 

@@ -538,9 +538,9 @@
     padding: 2px;
     background-color: #eeeeee;
     border-radius: 15px;
-    margin: 10px 5px 10px 5px;
+    margin: 20px 5px 10px 5px;
     width: fit-content;
-    display: none;
+    display: flex;
     flex-direction: row;
     align-items: center;
 }

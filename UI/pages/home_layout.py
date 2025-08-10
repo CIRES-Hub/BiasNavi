@@ -32,7 +32,7 @@ def layout():
         dbc.Container(fluid=True, children=[
             #placeholder invisible
             dcc.Dropdown(
-                id='identified-attrs-dropdown', style={"display":"none"}
+                id={"type":'identified-attrs-dropdown', "index": "999"}, style={"display":"none"}
                 ),
             hero_section(),
             # ==========================================

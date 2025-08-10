@@ -15,7 +15,6 @@ from flask_login import logout_user, current_user
      Output('middle-column', 'width', allow_duplicate=True),
      Output('right-column', 'width', allow_duplicate=True),
      Output('data-view-buttons', 'style', allow_duplicate=True),
-     Output('bias-management-buttons', 'style', allow_duplicate=True),
      Output("chat_history", 'style', allow_duplicate=True),
      Input('menu-nex-view', 'n_clicks'),
      State('menu-nex-view', 'children'),
@@ -25,9 +24,9 @@ from flask_login import logout_user, current_user
 def display_non_expert_view(n_clicks, label, style):
     if label == 'Non-Expert Mode':
         style['display'] = 'none'
-        return style, "Non-Expert Mode ✔", "Expert Mode", 5, 7, 0, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
+        return style, "Non-Expert Mode ✔", "Expert Mode", 5, 7, 0, {'display': 'none'}, {'display': 'none'}
     else:
-        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 @app.callback(
@@ -38,7 +37,6 @@ def display_non_expert_view(n_clicks, label, style):
      Output('middle-column', 'width', allow_duplicate=True),
      Output('right-column', 'width', allow_duplicate=True),
      Output('data-view-buttons', 'style', allow_duplicate=True),
-     Output('bias-management-buttons', 'style', allow_duplicate=True),
      Output("chat_history", 'style', allow_duplicate=True),
      Input('menu-ex-view', 'n_clicks'),
      State('menu-ex-view', 'children'),
@@ -48,9 +46,9 @@ def display_non_expert_view(n_clicks, label, style):
 def display_expert_view(n_clicks, label, style):
     if label == 'Expert Mode':
         style['display'] = 'block'
-        return style, "Expert Mode ✔", "Non-Expert Mode", 4, 5, 3, {'display': 'block'}, {'display': 'flex'}, {'display': 'block'}
+        return style, "Expert Mode ✔", "Non-Expert Mode", 4, 5, 3, {'display': 'block'},  {'display': 'block'}
     else:
-        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,  dash.no_update, dash.no_update
 
 
 # @app.callback(
@@ -87,10 +85,10 @@ def change_llm_model(n_clicks_gpt3dot5, n_clicks_gpt4o):
     clicked_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
     if clicked_id == 'menu-model-gpt4omini':
-        global_vars.agent.set_llm_model('GPT-4o-mini')
+        app_vars.agent.set_llm_model('GPT-4o-mini')
         return "GPT-4o-mini ✔", "GPT-4o"
     elif clicked_id == 'menu-model-gpt4':
-        global_vars.agent.set_llm_model('gpt-4-turbo')
+        app_vars.agent.set_llm_model('gpt-4-turbo')
         return "GPT-4o-mini", "GPT-4o"
     raise dash.exceptions.PreventUpdate
 

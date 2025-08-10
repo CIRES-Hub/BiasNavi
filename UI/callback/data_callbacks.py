@@ -1,14 +1,12 @@
 import dash
 from UI.app import app
 from dash.dependencies import Input, Output, State
-import plotly.express as px
 import base64
 from agent import DatasetAgent
 import datetime
 from dash import callback_context
 import io
 from dash import dcc, html, dash_table
-import pandas as pd
 from UI.functions import *
 import dash_bootstrap_components as dbc
 from flask_login import current_user
@@ -19,42 +17,42 @@ import time
 import random
 import pandas as pd
 import numpy as np
-import math
 import plotly.graph_objects as go
-from dash import ctx
+from dash import MATCH, ALL
+
 
 @app.callback(
-     Output('table-overview', 'data', allow_duplicate=True),
-     Output('table-overview', 'columns'),
-     Output('column-names-dropdown', 'options',allow_duplicate=True),
-     Output('error-file-format', 'is_open'),
-     Output('snapshot-table', 'data'),
-     Output('dataset-selection', 'options'),
+    Output('table-overview', 'data', allow_duplicate=True),
+    Output('table-overview', 'columns'),
+    Output('column-names-dropdown', 'options', allow_duplicate=True),
+    Output('error-file-format', 'is_open'),
+    Output('snapshot-table', 'data'),
+    Output('dataset-selection', 'options'),
 
-     # Output('console-area', 'children', allow_duplicate=True),
-     # Output("commands-input", "disabled", allow_duplicate=True),
-     # Output("run-commands", "disabled", allow_duplicate=True),
-     Output("upload-modal", "is_open"),
-     Output("upload-data-modal", "style"),
-     Output("upload-data-error-msg", "children"),
-     Output('query-area', 'children', allow_duplicate=True),
-     Output("pipeline-slider", "value", allow_duplicate=True),
-     Output("recommended-op", "children", allow_duplicate=True),
-     Output("tooltip-expl", "children", allow_duplicate=True),
-     Output('label-dropdown', 'options',allow_duplicate=True),
-     Output("row-selection-modal", "is_open", allow_duplicate=True),
-     Output('datatable-interactivity-container', 'children', allow_duplicate=True),
-     Output("label-modal", "is_open", allow_duplicate=True),
-     Input('upload-data', 'contents'),
-     Input('upload-data-modal', 'contents'),
-     Input('confirm-row-button', 'n_clicks'),
-     State('upload-data', 'filename'),
-     State('upload-data-modal', 'filename'),
-     State('input-start-row', 'value'),
-     State('input-end-row', 'value'),
-     State('snapshot-table', 'data'),
-     State('query-area', 'children'),
-     prevent_initial_call=True,
+    # Output('console-area', 'children', allow_duplicate=True),
+    # Output("commands-input", "disabled", allow_duplicate=True),
+    # Output("run-commands", "disabled", allow_duplicate=True),
+    Output("upload-modal", "is_open"),
+    Output("upload-data-modal", "style"),
+    Output("upload-data-error-msg", "children"),
+    Output('query-area', 'children', allow_duplicate=True),
+    Output("pipeline-slider", "value", allow_duplicate=True),
+    Output("recommended-op", "children", allow_duplicate=True),
+    Output("tooltip-expl", "children", allow_duplicate=True),
+    Output('label-dropdown', 'options', allow_duplicate=True),
+    Output("row-selection-modal", "is_open", allow_duplicate=True),
+    Output('datatable-interactivity-container', 'children', allow_duplicate=True),
+    Output("label-modal", "is_open", allow_duplicate=True),
+    Input('upload-data', 'contents'),
+    Input('upload-data-modal', 'contents'),
+    Input('confirm-row-button', 'n_clicks'),
+    State('upload-data', 'filename'),
+    State('upload-data-modal', 'filename'),
+    State('input-start-row', 'value'),
+    State('input-end-row', 'value'),
+    State('snapshot-table', 'data'),
+    State('query-area', 'children'),
+    prevent_initial_call=True,
 )
 def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_clicks, list_of_names, list_of_names_modal,
                                  start_row, end_row, snapshot_data, chat_content):
@@ -69,7 +67,7 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             filename = list_of_names[0]
         elif triggered_id == 'upload-data-modal':
             if not list_of_contents_modal or not list_of_names_modal:
-                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update, dash.no_update,  dash.no_update,dash.no_update,  dash.no_update,dash.no_update, dash.no_update, dash.no_update
+                return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Cannot find the dataset.", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
             # Process the first file only
             contents = list_of_contents_modal[0]
@@ -79,28 +77,30 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
         decoded = base64.b64decode(content_string)
 
         if 'csv' not in filename:
-            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,dash.no_update, dash.no_update
+            return [], [], [], False, [], [], dash.no_update, dash.no_update, "Error: Not a CSV file.", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         raw_data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
-        global_vars.file_name = filename
-        global_vars.dialog.append("DATASET: " + filename + '\n')
-        global_vars.dialog.append("=" * 100 + '\n')
+        app_vars.editor_id_counter = 0
+        app_vars.bias_identifier_counter = 0
+        app_vars.file_name = filename
+        app_vars.dialog.append("DATASET: " + filename + '\n')
+        app_vars.dialog.append("=" * 100 + '\n')
         curtime = datetime.datetime.now()
         formatted_date_time = curtime.strftime("%Y-%m-%d %H:%M:%S")
-        global_vars.data_snapshots = [raw_data]
-        # global_vars.df = DataWrangler.fill_missing_values(raw_data)
-        global_vars.df = raw_data  # DataWrangler.fill_missing_values(raw_data)
-        global_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
-        global_vars.agent = DatasetAgent(global_vars.df, file_name=global_vars.file_name,
-                                         conversation_session=global_vars.conversation_session)
-        global_vars.current_stage = "Identify"
+        app_vars.data_snapshots = [raw_data]
+        # app_vars.df = DataWrangler.fill_missing_values(raw_data)
+        app_vars.df = raw_data  # DataWrangler.fill_missing_values(raw_data)
+        app_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
+        app_vars.agent = DatasetAgent(app_vars.df, file_name=app_vars.file_name,
+                                      conversation_session=app_vars.conversation_session)
+        app_vars.current_stage = "Identify"
         chat_content = [
             dcc.Markdown(["The dataset has been successfully uploaded! 🎉 Let's dive into exploring it. You can "
-                         "ask anything else you'd like to know about the dataset!"          ], className="llm-msg")]
+                          "ask anything else you'd like to know about the dataset!"], className="llm-msg")]
         return (
-            global_vars.df.to_dict('records'),
-            [{"name": col, "id": col, 'deletable': True} for col in global_vars.df.columns],
-            [{'label': col, 'value': col} for col in global_vars.df.columns],
+            app_vars.df.to_dict('records'),
+            [{"name": col, "id": col, 'deletable': True} for col in app_vars.df.columns],
+            [{'label': col, 'value': col} for col in app_vars.df.columns],
             False,
             [{'ver': '1', 'desc': 'Original', 'time': formatted_date_time}],
             ['1'],
@@ -111,24 +111,24 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
             0,
             "Suggestion: Check Data Statistics",
             "Checking data statistics is essential in the Identify stage as it provides a foundational understanding of the dataset, helping to reveal initial disparities, patterns, or anomalies that might indicate bias.",
-            [{'label': col, 'value': col} for col in global_vars.df.columns],
+            [{'label': col, 'value': col} for col in app_vars.df.columns],
             dash.no_update,
             [],
             True
         )
 
     elif triggered_id == 'confirm-row-button':
-        if global_vars.df is None:
+        if app_vars.df is None:
             return [], [], [], False, [], [], dash.no_update, dash.no_update, "No data is loaded.", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         start_row = int(start_row) - 1 if start_row else 0
-        end_row = int(end_row) if end_row else len(global_vars.df)
+        end_row = int(end_row) if end_row else len(app_vars.df)
 
         if start_row < 0 or start_row >= end_row:
             return (
                 [],
-                [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
-                [{'label': col, 'value': col} for col in global_vars.df.columns],
+                [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in app_vars.df.columns],
+                [{'label': col, 'value': col} for col in app_vars.df.columns],
                 False,
                 dash.no_update,
                 dash.no_update,
@@ -144,14 +144,14 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
                 dash.no_update,
                 dash.no_update
             )
-        if end_row > len(global_vars.df):
-            end_row = len(global_vars.df)
+        if end_row > len(app_vars.df):
+            end_row = len(app_vars.df)
 
-        xdf = global_vars.df.iloc[start_row:end_row]
+        xdf = app_vars.df.iloc[start_row:end_row]
         return (
             xdf.to_dict('records'),
-            [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in global_vars.df.columns],
-            [{'label': col, 'value': col} for col in global_vars.df.columns],
+            [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in app_vars.df.columns],
+            [{'label': col, 'value': col} for col in app_vars.df.columns],
             False,
             dash.no_update,
             dash.no_update,
@@ -171,22 +171,24 @@ def import_data_and_update_table(list_of_contents, list_of_contents_modal, n_cli
 
     return [], [], [], False, [], [], dash.no_update, dash.no_update, "", dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
+
 @app.callback(
     Output('label-modal', 'is_open', allow_duplicate=True),
     Output('column-names-dropdown', 'value', allow_duplicate=True),
     Output('label-selection', 'value', allow_duplicate=True),
-    Output("query-area","children", allow_duplicate=True),
+    Output("query-area", "children", allow_duplicate=True),
     Input('confirm-label-button', 'n_clicks'),
     State('label-dropdown', 'value'),
     State("query-area", "children"),
     prevent_initial_call=True,
 )
 def confirm_label(n_click, label, records):
-    global_vars.target_attr = label
-    global_vars.agent.add_user_action_to_history(
+    app_vars.target_attr = label
+    app_vars.agent.add_user_action_to_history(
         f"The user set the target attribute of the dataset as: {label}")
     records.append(html.Div([f"{label} has been assigned as the label." + '\n'], className="file-msg"))
     return False, label, label, records
+
 
 @app.callback(
     Output('label-modal', 'is_open', allow_duplicate=True),
@@ -205,24 +207,26 @@ def open_label_modal(n_click1):
 def open_row_selection_modal(n_click):
     return True
 
+
 @app.callback(
     Output('data-alert', 'children'),
     Output('data-alert', 'is_open'),
-    Output('identified-attrs-dropdown','options', allow_duplicate=True),
+    Output({'type': 'identified-attrs-dropdown', "index": ALL}, 'options', allow_duplicate=True),
     Input('table-overview', 'data'),
     Input('table-overview', 'columns'),
+    State({'type': 'identified-attrs-dropdown', "index": ALL}, 'options'),
     prevent_initial_call=True,
 )
-def table_updated(data, columns):
+def table_updated(data, columns, nc):
     if not data:
         return dash.no_update, dash.no_update, dash.no_update
 
     df = pd.DataFrame(data)
-    global_vars.df = df
-    global_vars.agent = global_vars.agent.update_dataframe(df)
+    app_vars.df = df
+    app_vars.agent = app_vars.agent.update_dataframe(df)
     dropdown_options = [{'label': col, 'value': col} for col in df.columns]
 
-    return "Data table has been changed.", True, dropdown_options
+    return "Data table has been changed.", True, [dropdown_options]*len(nc)
 
 
 @app.callback(
@@ -251,7 +255,7 @@ def toggle_snapshot_modal(open_click, close_click, save_click, is_open):
 def save_data_snapshot(n_clicks, new_name, rows, snapshots, dataset_version):
     if n_clicks > 0 and new_name:
         df = pd.DataFrame(rows)
-        global_vars.data_snapshots.append(df)
+        app_vars.data_snapshots.append(df)
         now = datetime.datetime.now()
         formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
         snapshots.append(
@@ -274,7 +278,7 @@ def delete_snapshot(n_clicks, selected_rows, snapshots):
         # Find the index of the selected row and delete it from the data
         row_to_delete = selected_rows[0]
         del snapshots[row_to_delete]
-        del global_vars.data_snapshots[row_to_delete]
+        del app_vars.data_snapshots[row_to_delete]
         snapshots = [{'ver': f'{i + 1}', 'desc': item['desc'], 'time': item['time']} for i, item in
                      enumerate(snapshots)]
         return snapshots, [f'{i + 1}' for i in range(len(snapshots))]
@@ -293,11 +297,12 @@ def delete_snapshot(n_clicks, selected_rows, snapshots):
 def restore_data_snapshot(n_clicks, selected_rows):
     if n_clicks > 0 and selected_rows:
         row_id = selected_rows[0]
-        chosen_snapshot = global_vars.data_snapshots[row_id]
-        global_vars.df = chosen_snapshot
-        global_vars.agent = global_vars.agent.update_dataframe(chosen_snapshot)
+        chosen_snapshot = app_vars.data_snapshots[row_id]
+        app_vars.df = chosen_snapshot
+        app_vars.agent = app_vars.agent.update_dataframe(chosen_snapshot)
         return [{"name": i, "id": i, 'deletable': True, 'renamable': True} for i in
-                chosen_snapshot.columns], chosen_snapshot.to_dict('records'), f"The data snapshot with ID {row_id+1} has been restored", True
+                chosen_snapshot.columns], chosen_snapshot.to_dict(
+            'records'), f"The data snapshot with ID {row_id + 1} has been restored", True
     return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
@@ -312,114 +317,133 @@ def download_csv(n_clicks, rows):
         df = pd.DataFrame(rows)
         now = datetime.datetime.now()
         formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
-        return dcc.send_data_frame(df.to_csv, f'{formatted_date_time}_edited_{global_vars.file_name}')
+        return dcc.send_data_frame(df.to_csv, f'{formatted_date_time}_edited_{app_vars.file_name}')
     return None
+
+
+from pandas.api.types import (
+    is_numeric_dtype,
+    is_datetime64_any_dtype,
+    is_object_dtype,
+)
+
 
 @app.callback(
     Output('datatable-interactivity-container', 'children'),
     Input('table-overview', 'active_cell')
 )
 def update_histogram(active_cell):
-    if active_cell is None:
+    # 基本校验
+    if not active_cell or 'column_id' not in active_cell:
         return []
 
     column_id = active_cell['column_id']
-    data = global_vars.df[column_id].dropna()
+    if column_id not in app_vars.df.columns:
+        return []
 
-    # Your color palette
+    s = app_vars.df[column_id].dropna()
+    if s.empty:
+        return []
+
+    original = s.copy()
+
+    # 颜色
     colorscale = [
         "#a6bddb", "#d0d1e6", "#bdbdbd", "#fdd0a2",
         "#c7e9c0", "#f2b6b6", "#d9d9d9", "#c6dbef"
     ]
 
-    fig = None
-
-    # Attempt to parse datetime if dtype is object and looks like a date
-    if data.dtype == object:
-        sample = data.iloc[0]
-        # Rough test for datetime-like string
-        if isinstance(sample, str) and re.match(r'\d{4}-\d{2}-\d{2}', sample):
-            try:
-                data = pd.to_datetime(data, format="%Y-%m-%d", errors='raise')
-            except Exception:
-                try:
-                    data = pd.to_datetime(data, errors='coerce')
-                    if data.notna().sum() == 0:
-                        # Not really datetime
-                        if data.nunique() > 100:
-                            return []
-                        data = raw_data.dropna()  # back to original
-                except Exception:
-                    if data.nunique() > 100:
-                        return []
-                    data = raw_data.dropna()
-        elif data.nunique() > 100:
-            return []
-
-    # Case 1: Datetime
-    if np.issubdtype(data.dtype, np.datetime64):
-        date_range_days = (data.max() - data.min()).days
-        if date_range_days > 60:
-            binned = data.dt.to_period('M').astype(str)
+    # 对 object 列尝试日期解析（≥60% 成功就按日期处理；否则若类别过多直接放弃绘图）
+    if is_object_dtype(s):
+        parsed = pd.to_datetime(s, errors='coerce')
+        if parsed.notna().mean() >= 0.60:
+            s = parsed.dropna()
         else:
-            binned = data.dt.date.astype(str)
+            if s.astype(str).nunique() > 100:
+                return []
 
-        value_counts = binned.value_counts().sort_index()
+    # =============== 情况一：日期型 ===============
+    if is_datetime64_any_dtype(s):
+        date_range_days = (s.max() - s.min()).days
+        if date_range_days > 60:
+            binned = s.dt.to_period('M').astype(str)
+        else:
+            binned = s.dt.date.astype(str)
+
+        vc = binned.value_counts().sort_index()
         fig = go.Figure(go.Bar(
-            x=value_counts.index.tolist(),
-            y=value_counts.values.tolist(),
+            x=vc.index.tolist(),
+            y=vc.values.tolist(),
             marker_color="#636EFA",
             hovertemplate='Date: %{x}<br>Count: %{y}<extra></extra>'
         ))
 
-    # Case 2: Numeric with many unique values
-    elif np.issubdtype(data.dtype, np.number) and data.nunique() > 20:
-        data_min, data_max = data.min(), data.max()
-        data_range = data_max - data_min
+    # =============== 情况二：数值型 ===============
+    elif is_numeric_dtype(s):
+        # 低唯一值：当分类处理
+        if s.nunique() <= 20:
+            vc = s.astype(str).value_counts()
+            cats, vals = vc.index.tolist(), vc.values.tolist()
+            extended = (colorscale * ((len(cats) // len(colorscale)) + 1))[:len(cats)]
+            fig = go.Figure(go.Bar(
+                x=cats, y=vals, marker_color=extended,
+                hovertemplate='Category: %{x}<br>Count: %{y}<extra></extra>'
+            ))
+        else:
+            # 直方图：手动分箱 + go.Bar，保证柱子与刻度对齐
+            data_min, data_max = float(s.min()), float(s.max())
+            data_range = data_max - data_min
 
-        rough_bin_width = data_range / 10
-        magnitude = 10 ** int(np.floor(np.log10(rough_bin_width)))
-        bin_width = int(np.ceil(rough_bin_width / magnitude) * magnitude)
+            if data_range == 0:
+                fig = go.Figure(go.Bar(
+                    x=[str(data_min)], y=[len(s)],
+                    marker_color="#636EFA",
+                    hovertemplate='Value: %{x}<br>Count: %{y}<extra></extra>'
+                ))
+            else:
+                # 计算一个“合适”的 bin 宽度（约 10 个箱）
+                rough_bin_width = data_range / 10.0
+                magnitude = 10 ** int(np.floor(np.log10(rough_bin_width)))
+                bin_width = max(1.0, float(np.ceil(rough_bin_width / magnitude) * magnitude))
 
-        start = int(np.floor(data_min / bin_width) * bin_width)
-        end = int(np.ceil(data_max / bin_width) * bin_width)
-        bin_edges = np.arange(start, end + bin_width, bin_width)
-        bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+                start = np.floor(data_min / bin_width) * bin_width
+                end = np.ceil(data_max / bin_width) * bin_width
+                edges = np.arange(start, end + bin_width, bin_width)
+                counts, edges = np.histogram(s, bins=edges)
+                centers = 0.5 * (edges[:-1] + edges[1:])
 
-        fig = go.Figure(go.Histogram(
-            x=data,
-            xbins=dict(
-                start=start,
-                end=end,
-                size=bin_width
-            ),
-            marker_color="#636EFA",
-            hovertemplate='Bin: %{x}<br>Count: %{y}<extra></extra>',
-        ))
+                # 用 customdata 带上左右边界，hover 更清晰
+                custom = np.column_stack([edges[:-1], edges[1:]])
 
-        fig.update_xaxes(
-            tickmode='array',
-            tickvals=bin_centers,
-            ticktext=[str(int(x)) for x in bin_centers]
-        )
+                fig = go.Figure(go.Bar(
+                    x=centers,
+                    y=counts,
+                    width=[bin_width * 0.9] * len(centers),
+                    marker_color="#636EFA",
+                    customdata=custom,
+                    hovertemplate='Bin: %{customdata[0]:.0f} - %{customdata[1]:.0f}<br>Count: %{y}<extra></extra>'
+                ))
 
-    # Case 3: Categorical or low-unique numeric
+                # 刻度直接用中心点（与柱子对齐）
+                fig.update_xaxes(
+                    tickmode='array',
+                    tickvals=centers.tolist(),
+                    ticktext=[f"{int(c)}" if abs(c) >= 1 else f"{c:.2f}" for c in centers]
+                )
+
+    # =============== 情况三：类别型 / 其它回退 ===============
     else:
-        value_counts = data.astype(str).value_counts()
-        categories = value_counts.index.tolist()
-        values = value_counts.values.tolist()
-
-        extended_colors = (colorscale * ((len(categories) // len(colorscale)) + 1))[:len(categories)]
-        color_map = {cat: col for cat, col in zip(categories, extended_colors)}
-        bar_colors = [color_map[c] for c in categories]
-
+        vc = original.astype(str).value_counts()
+        if vc.shape[0] > 100:
+            return []
+        cats, vals = vc.index.tolist(), vc.values.tolist()
+        extended = (colorscale * ((len(cats) // len(colorscale)) + 1))[:len(cats)]
         fig = go.Figure(go.Bar(
-            x=categories,
-            y=values,
-            marker_color=bar_colors,
+            x=cats, y=vals, marker_color=extended,
             hovertemplate='Category: %{x}<br>Count: %{y}<extra></extra>'
         ))
 
+    # 统一布局
     fig.update_layout(
         xaxis={"automargin": True},
         yaxis={"automargin": True},
@@ -429,7 +453,9 @@ def update_histogram(active_cell):
         showlegend=False
     )
 
-    return dcc.Graph(id=column_id, figure=fig)
+    # 统一返回 children 形态
+    return [dcc.Graph(id=f"hist-{str(column_id)}", figure=fig)]
+
 
 @app.callback(
     [Output('label-selection', 'options'),
@@ -442,7 +468,7 @@ def update_columns(df_id):
         return [], []
 
     # Get the columns of the selected DataFrame
-    columns = [{'label': col, 'value': col} for col in global_vars.data_snapshots[int(df_id) - 1].columns]
+    columns = [{'label': col, 'value': col} for col in app_vars.data_snapshots[int(df_id) - 1].columns]
 
     return columns, columns
 
@@ -482,11 +508,11 @@ def update_model_dropdown(selected_task):
     prevent_initial_call=True
 )
 def evaluate_dataset(_, df_id, sens_attr, label, task, model, past_res_table, past_res):
-    if global_vars.df is None or not global_vars.data_snapshots:
+    if app_vars.df is None or not app_vars.data_snapshots:
         return 'No dataset is loaded!', True, [], [], [], " Run", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if df_id is None or sens_attr is None or label is None or task is None or model is None:
         return 'The experimental setting is incomplete!', True, [], [], [], " Run", dash.no_update, dash.no_update, dash.no_update, dash.no_update
-    data = global_vars.data_snapshots[int(df_id) - 1]
+    data = app_vars.data_snapshots[int(df_id) - 1]
     if label in sens_attr:
         return 'The label cannot be in the sensitive attributes!', True, [], [], [], " Run", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if data[label].dtype in ['float64', 'float32'] and task == 'Classification':
@@ -585,7 +611,7 @@ def evaluate_dataset(_, df_id, sens_attr, label, task, model, past_res_table, pa
         [f"Row {i + 1}: {row}" for i, row in enumerate(tables)]
     )
     query = f"Assess the bias level in the dataset using the following results: {data_string}. The model accuracy is {res}. These results were generated by executing the {task} task with the {model} model. The analysis centers on the sensitive attributes {sens_attr}, with {label} serving as the target attribute. The objective is to identify and minimize disparities among subgroups of the sensitive attributes without sacrificing accuracy."
-    answer, media, sensi_attrs, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
+    answer, media, sensi_attrs, suggestions, stage, op, expl = query_llm(query, app_vars.current_stage, current_user.id)
     answer = format_reply_to_markdown(answer)
     res_explanation = [dcc.Markdown(answer, className="llm-text")]
     now = datetime.datetime.now()
@@ -595,7 +621,8 @@ def evaluate_dataset(_, df_id, sens_attr, label, task, model, past_res_table, pa
     past_res_table.append({"Snapshot": df_id, "Timestamp": formatted_date_time, "Result": res,
                            "Setting": settings})
     past_res.append(tables)
-    global_vars.agent.add_user_action_to_history(f"I have evaluated the dataset and got the result and disparity scores: {data_string}")
+    app_vars.agent.add_user_action_to_history(
+        f"I have evaluated the dataset and got the result and disparity scores: {data_string}")
     return "", False, [html.Hr(), tooltip, res], tables, res_explanation, " Run", past_res_table, past_res, op, expl
 
 
@@ -607,13 +634,14 @@ def evaluate_dataset(_, df_id, sens_attr, label, task, model, past_res_table, pa
 )
 def remove_all_result(n_clicks):
     if n_clicks:
-        return [],{}
+        return [], {}
     return dash.no_update, dash.no_update
+
 
 @app.callback(
     Output('chosen-experiment-res', 'children'),
     Input('experiment-result-table', 'active_cell'),
-    State("experiment-result","data"),
+    State("experiment-result", "data"),
     prevent_initial_call=True
 )
 def show_past_experiment_result(active_cell, data):
@@ -625,6 +653,7 @@ def show_past_experiment_result(active_cell, data):
 
     return data[row]
 
+
 @app.callback(
     Output('comparison-res', 'children', allow_duplicate=True),
     Output('comparison-alert', 'children', allow_duplicate=True),
@@ -635,14 +664,14 @@ def show_past_experiment_result(active_cell, data):
     Input({'type': 'spinner-btn', 'index': 10}, 'children'),
     State('experiment-result-table', 'selected_rows'),
     State('experiment-result-table', 'data'),
-    State("experiment-result","data"),
+    State("experiment-result", "data"),
     prevent_initial_call=True
 
 )
 def compare_experiment_results(_, selected_rows, table_data, res_data):
     if selected_rows is None:
         return [], "Choose two experiment results to compare.", True, "Compare", dash.no_update, dash.no_update
-    if len(selected_rows)!=2:
+    if len(selected_rows) != 2:
         return [], "You can only choose two experiment results to compare.", True, "Compare", dash.no_update, dash.no_update
     # Get the row id from the active cell
     acc1 = table_data[selected_rows[0]]["Result"]
@@ -657,7 +686,7 @@ def compare_experiment_results(_, selected_rows, table_data, res_data):
         [f"Row {i + 1}: {row}" for i, row in enumerate(res2)]
     )
     query = f"Please compare the results of two comparison. The first chosen result has the overall {acc1} and the accuracy across different subgroups and categories is {res_string1}. The second chosen result has the overall {acc2} and the accuracy across different subgroups and categories is {res_string2}. You should consider both the accuracy and disparity score to demonstrate which result is better."
-    answer, media, sensi_attrs, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
+    answer, media, sensi_attrs, suggestions, stage, op, expl = query_llm(query, app_vars.current_stage, current_user.id)
     answer = format_reply_to_markdown(answer)
     res_comparison = [dcc.Markdown(answer, className="llm-text")]
     return res_comparison, dash.no_update, dash.no_update, "compare", op, expl
@@ -672,18 +701,18 @@ def compare_experiment_results(_, selected_rows, table_data, res_data):
     prevent_initial_call=True
 )
 def display_data_stat(n1, n2, is_open):
-    if global_vars.df is not None:
+    if app_vars.df is not None:
         # Summarize the DataFrame and include column names as the first column
-        summary = summarize_dataframe(global_vars.df)
+        summary = summarize_dataframe(app_vars.df)
         summary.reset_index(inplace=True)  # Turn column names into a column
         summary.rename(columns={"index": "Column Name"}, inplace=True)
 
         # Ensure serializable
         summary = summary.fillna("").astype(str)
-        total_missing = global_vars.df.isnull().sum().sum()
-        total_values = global_vars.df.size
+        total_missing = app_vars.df.isnull().sum().sum()
+        total_values = app_vars.df.size
         missing_rate = (total_missing / total_values) * 100
-        desc = f"This dataset: {global_vars.file_name}, comprises {global_vars.df.shape[0]} rows and {global_vars.df.shape[1]} columns. with an overall missing rate {missing_rate:.2f}%. "
+        desc = f"This dataset: {app_vars.file_name}, comprises {app_vars.df.shape[0]} rows and {app_vars.df.shape[1]} columns. with an overall missing rate {missing_rate:.2f}%. "
         # Define the DataTable
         table = dash_table.DataTable(
             columns=[
@@ -701,13 +730,14 @@ def display_data_stat(n1, n2, is_open):
 
         # Toggle modal and return table
         if n1 or n2:
-            return not is_open, [desc,table]
+            return not is_open, [desc, table]
 
     return is_open, []
 
+
 @app.callback(
     Output("data-stat-summary", "children"),
-    Output({'type': 'spinner-btn', 'index': 1}, "children",allow_duplicate=True),
+    Output({'type': 'spinner-btn', 'index': 1}, "children", allow_duplicate=True),
     Output("recommended-op", "children", allow_duplicate=True),
     Output("tooltip-expl", "children", allow_duplicate=True),
     Input({'type': 'spinner-btn', 'index': 1}, "children"),
@@ -715,7 +745,7 @@ def display_data_stat(n1, n2, is_open):
     prevent_initial_call=True
 )
 def display_data_summary(_, data):
-    if global_vars.df is not None:
+    if app_vars.df is not None:
         # Summarize the DataFrame and include column names as the first column
         data_string = "\n".join(
             [f"Row {i + 1}: {row}" for i, row in enumerate(data)]
@@ -732,9 +762,10 @@ def display_data_summary(_, data):
                 approaches. 
                 """
 
-        answer, media, sensi_attrs, suggestions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id)
+        answer, media, sensi_attrs, suggestions, stage, op, expl = query_llm(query, app_vars.current_stage,
+                                                                             current_user.id)
         answer = format_reply_to_markdown(answer)
-        global_vars.agent.add_user_action_to_history(f"I have analyzed the dataset. ")
+        app_vars.agent.add_user_action_to_history(f"I have analyzed the dataset. ")
         return [dcc.Markdown(answer, className="llm-text")], "Analyze", op, expl
 
     return [], "Analyze", dash.no_update, dash.no_update
@@ -783,4 +814,3 @@ def summarize_dataframe(df):
     summary = summary.join(categorical_summary, how="left")
 
     return summary
-

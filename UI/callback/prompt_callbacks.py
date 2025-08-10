@@ -3,7 +3,7 @@ from db_models.users import User
 from db_models.databases import db
 from dash.dependencies import Input, Output, State
 from flask_login import current_user
-from UI.variable import global_vars
+from UI.app_state import app_vars
 import dash
 from constant_prompt import DEFAULT_NEXT_QUESTION_PROMPT, DEFAULT_SYSTEM_PROMPT, DEFAULT_PREFIX_PROMPT, \
     DEFAULT_PERSONA_PROMPT
@@ -30,7 +30,7 @@ def update_prompt(update_prompt_click, new_next_question_1, new_system_prompt, n
         user.persona_prompt = new_persona_prompt
         user.system_prompt = new_system_prompt
         db.session.commit()
-        global_vars.agent.update_agent_prompt()
+        app_vars.agent.update_agent_prompt()
     except Exception as e:
         db.session.rollback()
         print("Error when update prompt", e)
@@ -86,7 +86,7 @@ def show_page_content(pathname):
 #         user.persona_prompt = DEFAULT_PERSONA_PROMPT
 #         user.system_prompt = DEFAULT_SYSTEM_PROMPT
 #         db.session.commit()
-#         global_vars.agent.update_agent_prompt()
+#         app_vars.agent.update_agent_prompt()
 #     except Exception as e:
 #         db.session.rollback()
 #         print("Error when update prompt", e)

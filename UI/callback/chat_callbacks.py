@@ -44,30 +44,30 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
     if n_clicks is None and question_clicked is None:
         # no controls clicked
         return query_records, True, "Please enter a query.",  dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
-    if global_vars.df is None:
+    if app_vars.df is None:
         # no dataset loaded
         return query_records, True, "Please upload a dataset first.", dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     trigger = ctx.triggered_id
 
     if not isinstance(trigger, str) and 'next-suggested-question' in trigger.type:
-        query = global_vars.suggested_questions[int(trigger.index[-1])]
+        query = app_vars.suggested_questions[int(trigger.index[-1])]
     else:
         query = input_text
     new_user_message = html.Div(query + '\n', className="user-msg")
-    global_vars.dialog.append("\nUSER: " + query + '\n')
+    app_vars.dialog.append("\nUSER: " + query + '\n')
     suggested_questions = []
     if not query_records:
         query_records = []
     context=''
-    if global_vars.rag and rag_status:
-        context = global_vars.rag.retrieve(query)
-    answer, media, sensi_attrs, new_suggested_questions, stage, op, expl = query_llm(query, global_vars.current_stage, current_user.id, context)
+    if app_vars.rag and rag_status:
+        context = app_vars.rag.retrieve(query)
+    answer, media, sensi_attrs, new_suggested_questions, stage, op, expl = query_llm(query, app_vars.current_stage, current_user.id, context)
     print(stage)
     change_stage = False
     stages = ["Identify","Measure","Surface","Adapt"]
     if stage is not None and stage in stages:
-        if stage != global_vars.current_stage:
-            global_vars.current_stage = stage
+        if stage != app_vars.current_stage:
+            app_vars.current_stage = stage
             change_stage = True
     if new_suggested_questions is not None:
         for i in range(len(new_suggested_questions)):
@@ -86,26 +86,26 @@ def update_messages(n_clicks, n_submit, question_clicked, input_text, query_reco
             if text is not None:
                 answer = format_reply_to_markdown(text)
                 response = answer + '\n'
-                global_vars.dialog.append("\n" + response)
+                app_vars.dialog.append("\n" + response)
                 # Simulate a response from the system
                 new_response_message = dcc.Markdown(response, className="llm-msg")
                 query_records.append(new_response_message)
             if code is not None:
                 answer = format_reply_to_markdown(code)
                 response = answer + '\n'
-                global_vars.dialog.append("\n" + response)
+                app_vars.dialog.append("\n" + response)
                 query_records.append(create_python_editors(code))
 
     else:
         answer = format_reply_to_markdown(answer)
         response = answer + '\n'
-        global_vars.dialog.append("\n" + response)
+        app_vars.dialog.append("\n" + response)
         # Simulate a response from the system
         new_response_message = dcc.Markdown(response, className="llm-msg")
         query_records.append(new_response_message)
     if media:
         query_records.append(media[-1])
-    list_commands = global_vars.agent.list_commands
+    list_commands = app_vars.agent.list_commands
     return query_records, False, "", time.time(), suggested_questions, ('\n').join(list_commands) if len(
         list_commands) > 0 and not media else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update, op, expl
 
@@ -122,10 +122,10 @@ def export_conversation(n_clicks, format):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
     if (triggered_id != 'download-button'):
         return None
-    # return dict(content="".join(global_vars.dialog), filename=f"query-history-{formatted_date_time}.txt")
-    if (global_vars.agent is None):
+    # return dict(content="".join(app_vars.dialog), filename=f"query-history-{formatted_date_time}.txt")
+    if (app_vars.agent is None):
         return None
-    history, extension = global_vars.agent.get_history(
+    history, extension = app_vars.agent.get_history(
         c_format=ConversationFormat(format))
     return dict(content=history, filename=f"query-history-{formatted_date_time}" + extension)
 
@@ -138,10 +138,10 @@ def export_conversation(n_clicks, format):
 # )
 # def rag_switch(value):
 #     if value:
-#         global_vars.use_rag = True
+#         app_vars.use_rag = True
 #         return 'RAG: On', {'display': 'block'}, {'display': 'block'}
 #     else:
-#         global_vars.use_rag = False
+#         app_vars.use_rag = False
 #         return 'RAG: OFF', {'display': 'none'}, {'display': 'none'}
 
 @app.callback(
@@ -199,10 +199,10 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
             if file_type in allowed_extensions:
                 output = f"RAG files: {filename}\n"
 
-                if global_vars.rag:
-                    global_vars.rag.clean()
+                if app_vars.rag:
+                    app_vars.rag.clean()
 
-                global_vars.rag = RAG(io.BytesIO(decoded), file_type)
+                app_vars.rag = RAG(io.BytesIO(decoded), file_type)
                 total_msg.append(html.Div([html.I(className="bi bi-file-earmark-text",
                        style={"marginRight": "8px", "fontSize": "1.2rem"}),f"The file {filename} has been read." + '\n'], className="file-msg"))
                 return [html.Div([output])], total_msg, html.Span(className="fas fa-file")
@@ -222,11 +222,11 @@ def upload_rag_area(list_of_contents, list_of_names, clicks_rag, clicks_send, ra
     elif triggered_id == 'send-button':
         if not rag_status:
             return dash.no_update, dash.no_update, html.Span(className="fas fa-file")
-        if not global_vars.rag or not rag_output:
+        if not app_vars.rag or not rag_output:
             return dash.no_update, dash.no_update, html.Span(className="fas fa-file")
 
         try:
-            docs = global_vars.rag.retrieve(query)
+            docs = app_vars.rag.retrieve(query)
             rag_output=html.Div(["Retrieved relevant context: \n" + docs])
 
             return rag_output, dash.no_update, html.Span(className="fas fa-file")
@@ -271,7 +271,7 @@ def show_figure_modal(n_clicks, id):
 )
 def explain_llm_figure(_, content):
     if content is not None:
-        explanation = global_vars.agent.describe_image('', content)
+        explanation = app_vars.agent.describe_image('', content)
         return dcc.Markdown(explanation.content,className="llm-text"), {"display": "block", "marginBottom": "20px", "marginTop": "20px"}, {"display":"none"}
 
 @app.callback(

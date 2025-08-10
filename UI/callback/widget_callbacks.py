@@ -2,7 +2,7 @@ import dash
 
 from UI.app import app
 from dash.dependencies import Input, Output, State
-from UI.variable import global_vars
+from UI.app_state import app_vars
 
 
 @app.callback(
@@ -24,13 +24,13 @@ from UI.variable import global_vars
 )
 def change_pipeline_stage(val, m_style, s_style, a_style, ra1_style, ra2_style, ra3_style):
     stages = ["Identify","Measure","Surface","Adapt"]
-    if global_vars.agent:
+    if app_vars.agent:
         if val>=(len(stages)):
             val = 3
         new_stage = stages[val]
-        global_vars.agent.current_stage = new_stage
-        global_vars.current_stage = new_stage
-        global_vars.agent.add_user_action_to_history(f"I have modify the current stage of the bias management "
+        app_vars.agent.current_stage = new_stage
+        app_vars.current_stage = new_stage
+        app_vars.agent.add_user_action_to_history(f"I have modify the current stage of the bias management "
                                                      f"pipeline to {new_stage}. It's the time to go to this stage.")
         if val == 0:
             m_style["display"] = "none"
@@ -109,7 +109,7 @@ bias_management_questions = {
     prevent_initial_call=True,
 )
 def display_common_questions(open_clicks, close_clicks, is_open):
-    questions = bias_management_questions.get(global_vars.current_stage, [])
+    questions = bias_management_questions.get(app_vars.current_stage, [])
     options = [{"label": question, "value": question} for question in questions]
     if open_clicks or close_clicks:
         return not is_open, options
