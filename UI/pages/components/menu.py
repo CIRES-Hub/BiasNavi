@@ -57,9 +57,10 @@ def menu():
                             id="menu-model",
                         ),
                         dbc.DropdownMenu(
-                            [dbc.DropdownMenuItem("Non-expert Mode ✔", id="menu-nex-view"),
-                             dbc.DropdownMenuItem(
-                                 "Expert Mode", id="menu-ex-view"),
+                            [
+                                dbc.DropdownMenuItem("Baseline Mode", id="menu-baseline-view"),
+                                dbc.DropdownMenuItem("Non-expert Mode  ✔", id="menu-nex-view"),
+                                dbc.DropdownMenuItem("Expert Mode", id="menu-ex-view"),
                              ],
                             label="Mode",
                             nav=True,

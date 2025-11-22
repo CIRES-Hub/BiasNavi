@@ -196,6 +196,14 @@ def chatbox():
                         dcc.Store(id='sensitive-attr-store', data={})
 
                     ], id="bias-management-buttons", className="bias-buttons"),
+                    # for experiment use only
+                    html.Div([
+                        html.Button('Adapt Bias',
+                                id="baseline-mode-adapt-btn",
+                                n_clicks=0, className='primary-button',
+                                style={'margin': '10px', "display": "none"},
+                                title="Provide tools for mitigating biases."),],
+                        className="bias-buttons")
 
                 ], style={"marginTop":"20px", "marginBottom":"10px"}),
             ], className='query')]

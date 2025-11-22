@@ -12,6 +12,7 @@ class APP_State(object):
         self.current_stage = "Identify"
         self.editor_id_counter = 0
         self.bias_identifier_counter = 0
+        self.baseline_mode = False
 
 
 app_vars = APP_State()

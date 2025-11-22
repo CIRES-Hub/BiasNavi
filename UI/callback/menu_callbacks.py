@@ -6,7 +6,8 @@ from dash.exceptions import PreventUpdate
 from dash import callback_context
 from UI.pages.components.survey_modal import survey_modal
 from flask_login import logout_user, current_user
-
+from agent.baseline_agent import BaselineAgent
+from agent import DatasetAgent
 @app.callback(
      Output('right-column', 'style', allow_duplicate=True),
      Output('menu-nex-view', 'children', allow_duplicate=True),
@@ -27,6 +28,40 @@ def display_non_expert_view(n_clicks, label, style):
         return style, "Non-Expert Mode ✔", "Expert Mode", 5, 7, 0, {'display': 'none'}, {'display': 'none'}
     else:
         return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+
+@app.callback(
+     Output('right-column', 'style', allow_duplicate=True),
+     Output('menu-nex-view', 'disabled', allow_duplicate=True),
+     Output('menu-ex-view', 'disabled', allow_duplicate=True),
+     Output('left-column', 'width', allow_duplicate=True),
+     Output('middle-column', 'width', allow_duplicate=True),
+     Output('right-column', 'width', allow_duplicate=True),
+     Output('data-view-buttons', 'style', allow_duplicate=True),
+     Output("chat_history", 'style', allow_duplicate=True),
+     Output("next-suggested-questions", 'style', allow_duplicate=True),
+     Output('menu-baseline-view', 'children', allow_duplicate=True),
+     Output("baseline-mode-adapt-btn","style", allow_duplicate=True),
+     Output("bias-management-buttons", "style", allow_duplicate=True),
+     Output("to-do-div", "style", allow_duplicate=True),
+     Output("menu-prompt", "style", allow_duplicate=True),
+     Output("menu-profile", "style", allow_duplicate=True),
+     Input('menu-baseline-view', 'n_clicks'),
+     State('menu-baseline-view', 'children'),
+     State('right-column', 'style'),
+    prevent_initial_call=True
+)
+def baseline_mode(n_clicks, label, right_column_style):
+    if label == 'Baseline Mode':
+        right_column_style['display'] = 'none'
+        app_vars.baseline_mode = True
+        app_vars.agent = BaselineAgent(app_vars.df)
+        return right_column_style, True, True, 5, 7, 0, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, "Exit Baseline Mode", {'display': 'block'},{'display': 'none'}, {'display': 'none'},{'display': 'none'}, {'display': 'none'}
+    else:
+        app_vars.agent = DatasetAgent(app_vars.df)
+        app_vars.baseline_mode = False
+        return (dash.no_update, False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, {'display': 'block'},
+                "Baseline Mode", {'display': 'none'}, {'display': 'block'}, {'display': 'block'},{'display': 'block'}, {'display': 'block'})
 
 
 @app.callback(

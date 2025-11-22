@@ -112,9 +112,7 @@ def execute_commands(n_click, commands):
         output = collect_output(user_output_file, user_error_file)
         new_df = pd.read_csv(os.path.join(user_data_dir, "df.csv"))
         app_vars.df = new_df
-        app_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
-        app_vars.agent = DatasetAgent(app_vars.df, file_name=app_vars.file_name,
-                                      conversation_session=app_vars.conversation_session)
+        app_vars.agent = app_vars.agent.update_frame(new_df)
 
         columns = [{"name": col, "id": col, 'deletable': True, 'renamable': True} for col in app_vars.df.columns]
         options = [{'label': col, 'value': col} for col in app_vars.df.columns]
@@ -193,12 +191,7 @@ def execute_generated_code(n_click, commands):
         app_vars.df = new_df
 
         # Reset agent session
-        app_vars.conversation_session = f"{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
-        app_vars.agent = DatasetAgent(
-            app_vars.df,
-            file_name=app_vars.file_name,
-            conversation_session=app_vars.conversation_session
-        )
+        app_vars.agent = app_vars.agent.update_dataframe(new_df)
         if ("df =" in commands or "df=" in commands) and "successfully" in output[-1].children:
             return [output, False, {"display": "block"}, {"display": "none"}, "1"]
         else:

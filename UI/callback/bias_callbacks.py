@@ -656,3 +656,87 @@ def explain_report_table(_, tb):
         answer = format_reply_to_markdown(answer)
         app_vars.agent.add_user_action_to_history("I have analyzed the result of bias measuring.")
         return dcc.Markdown(answer, className="llm-text"), {"display": "block"}, {"display": "none"}
+
+
+@app.callback(
+    Output('query-area', 'children', allow_duplicate=True),
+    Output('report-alert', 'children', allow_duplicate=True),
+    Output('report-alert', 'is_open', allow_duplicate=True),
+    Output("recommended-op", "children", allow_duplicate=True),
+    Output("tooltip-expl", "children", allow_duplicate=True),
+    Output('bias-stage-value', 'data', allow_duplicate=True),
+    Output('toggle-msg-value', 'data', allow_duplicate=True),
+    Input('baseline-mode-adapt-btn', 'n_clicks'),
+    State('column-names-dropdown', 'value'),
+    State('sensitive-attr-store', 'data'),
+    State('query-area', 'children'),
+    State('toggle-msg-value', 'data'),
+    prevent_initial_call=True
+)
+def adapt_bias_baseline_mode(_, target, sensitive_attrs, msg, toggle_index):
+    if app_vars.df is None:
+        return dash.no_update, "No dataset is loaded.", True, dash.no_update, dash.no_update, dash.no_update
+    if target is None:
+        return dash.no_update, "Please choose a target before adapting bias.", True, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+    button_area = html.Div(style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center', "marginTop":"20pt"}, children=[
+        dcc.Loading(children=[
+            html.Div(style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'flex-start', 'gap': '15px'},
+                     children=[
+                         html.Div(style={'display': 'flex', 'gap': '10px'},
+                                  children=[
+                                      html.Button('Undersample', id="undersample-btn",
+                                                  className='primary-button', style={'margin': '5px'},
+                                                  title="Reduces the size of the majority class by randomly removing "
+                                                        "samples to balance the dataset."),
+                                      html.Button('Oversample', id="oversample-btn",
+                                                  className='primary-button', style={'margin': '5px'},
+                                                  title="Increases the size of the minority class by replicating its "
+                                                        "samples or generating synthetic samples."),
+                                      html.Button('Augmentation (SMOTE)', id="smote-btn",
+                                                  className='primary-button', style={'margin': '5px'},
+                                                  title="Generates synthetic samples for the minority class rather than "
+                                                        "simply duplicating existing samples."),
+                                  ]),
+                         dcc.Dropdown(
+                             id='adapting-attrs-dropdown',
+                             style={'width': '100%', 'marginBottom': '20px'},
+                             options=[{'label': col, 'value': col} for col in app_vars.df.columns],
+                             placeholder="Choose the attribute(s) to adapt to...",
+                         )
+                     ]),
+
+            dbc.Alert(
+                "",
+                id="adapting-alert",
+                is_open=False,
+                dismissable=True,
+                color="primary",
+                duration=5000,
+            ),
+        ]),
+    ])
+
+    app_vars.agent.add_user_action_to_history("I have started to adapt the bias in this dataset.")
+    result = html.Div([
+        html.Div(
+            [
+                html.I(
+                    className="bi bi-chevron-down",
+                    id={"type": "toggle-msg-icon", "index": toggle_index},
+                    style={"cursor": "pointer", "marginRight": "8px", "fontSize": "1.2rem"}
+                ),
+                html.H4("Choose an operation to adapt bias.", style={"margin": 0})
+            ],
+            id={"type": "toggle-msg-btn", "index": toggle_index},
+            style={"display": "flex", "alignItems": "center"},
+        ),
+        dbc.Collapse(
+            [button_area,
+             ],
+            id={"type": "collapse-msg", "index": toggle_index},
+            is_open=True
+        )
+    ], className="section")
+    msg.append(result)
+    return  msg, dash.no_update, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update

@@ -34,6 +34,11 @@ def query_llm(query, stage, user_id, context=''):
     app_vars.suggested_questions = suggestions
     return response, media, sensi_attrs, suggestions, stage, "Suggestion: "+op, explanation
 
+def query_llm_baseline_mode(query, user_id):
+    result, media = app_vars.agent.run(query)
+    app_vars.agent.persist_history(user_id=str(user_id))
+    return result, media
+
 
 def format_reply_to_markdown(reply):
     """

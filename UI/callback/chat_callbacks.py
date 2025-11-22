@@ -39,75 +39,117 @@ from itertools import zip_longest
 )
 def update_messages(n_clicks, n_submit, question_clicked, input_text, query_records, suggested_questions, rag_status):
     if not input_text and not question_clicked:
-        #no input information provided
-        return query_records, True, "Please enter a query.",  dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update,  dash.no_update
+        # no input information provided
+        return query_records, True, "Please enter a query.", dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if n_clicks is None and question_clicked is None:
         # no controls clicked
-        return query_records, True, "Please enter a query.",  dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return query_records, True, "Please enter a query.", dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     if app_vars.df is None:
         # no dataset loaded
         return query_records, True, "Please upload a dataset first.", dash.no_update, suggested_questions, "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
     trigger = ctx.triggered_id
+    if app_vars.baseline_mode == False:
 
-    if not isinstance(trigger, str) and 'next-suggested-question' in trigger.type:
-        query = app_vars.suggested_questions[int(trigger.index[-1])]
-    else:
+        if not isinstance(trigger, str) and 'next-suggested-question' in trigger.type:
+            query = app_vars.suggested_questions[int(trigger.index[-1])]
+        else:
+            query = input_text
+        new_user_message = html.Div(query + '\n', className="user-msg")
+        app_vars.dialog.append("\nUSER: " + query + '\n')
+        suggested_questions = []
+        if not query_records:
+            query_records = []
+        context=''
+        if app_vars.rag and rag_status:
+            context = app_vars.rag.retrieve(query)
+        answer, media, sensi_attrs, new_suggested_questions, stage, op, expl = query_llm(query, app_vars.current_stage, current_user.id, context)
+        print(stage)
+        change_stage = False
+        stages = ["Identify","Measure","Surface","Adapt"]
+        if stage is not None and stage in stages:
+            if stage != app_vars.current_stage:
+                app_vars.current_stage = stage
+                change_stage = True
+        if new_suggested_questions is not None:
+            for i in range(len(new_suggested_questions)):
+                if new_suggested_questions[i]:
+                    new_suggested_question = html.Div(dbc.CardBody([
+                        html.P("Suggested Next Question", style={'fontWeight': 'bold', "marginBottom": "0px"}),
+                        html.P(new_suggested_questions[i], style={"marginBottom": "0px"})],
+                        style={"padding": 0}), className="next-suggested-question",
+                        id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)
+                    suggested_questions.append(new_suggested_question)
+
+        query_records.append(new_user_message)
+        if contains_python_code_block(answer):
+            text_blocks, code_blocks = extract_text_and_code_blocks(answer)
+            for text, code in zip_longest(text_blocks, code_blocks):
+                if text is not None:
+                    answer = format_reply_to_markdown(text)
+                    response = answer + '\n'
+                    app_vars.dialog.append("\n" + response)
+                    # Simulate a response from the system
+                    new_response_message = dcc.Markdown(response, className="llm-msg")
+                    query_records.append(new_response_message)
+                if code is not None:
+                    answer = format_reply_to_markdown(code)
+                    response = answer + '\n'
+                    app_vars.dialog.append("\n" + response)
+                    query_records.append(create_python_editors(code))
+
+        else:
+            answer = format_reply_to_markdown(answer)
+            response = answer + '\n'
+            app_vars.dialog.append("\n" + response)
+            # Simulate a response from the system
+            new_response_message = dcc.Markdown(response, className="llm-msg")
+            query_records.append(new_response_message)
+        if media:
+            query_records.append(media[-1])
+        list_commands = app_vars.agent.list_commands
+        return query_records, False, "", time.time(), suggested_questions, ('\n').join(list_commands) if len(
+            list_commands) > 0 and not media else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update, op, expl
+
+    if app_vars.baseline_mode == True:
+
         query = input_text
-    new_user_message = html.Div(query + '\n', className="user-msg")
-    app_vars.dialog.append("\nUSER: " + query + '\n')
-    suggested_questions = []
-    if not query_records:
-        query_records = []
-    context=''
-    if app_vars.rag and rag_status:
-        context = app_vars.rag.retrieve(query)
-    answer, media, sensi_attrs, new_suggested_questions, stage, op, expl = query_llm(query, app_vars.current_stage, current_user.id, context)
-    print(stage)
-    change_stage = False
-    stages = ["Identify","Measure","Surface","Adapt"]
-    if stage is not None and stage in stages:
-        if stage != app_vars.current_stage:
-            app_vars.current_stage = stage
-            change_stage = True
-    if new_suggested_questions is not None:
-        for i in range(len(new_suggested_questions)):
-            if new_suggested_questions[i]:
-                new_suggested_question = html.Div(dbc.CardBody([
-                    html.P("Suggested Next Question", style={'fontWeight': 'bold', "marginBottom": "0px"}),
-                    html.P(new_suggested_questions[i], style={"marginBottom": "0px"})],
-                    style={"padding": 0}), className="next-suggested-question",
-                    id={"type": "next-suggested-question", "index": f'next-question-{i}'}, n_clicks=0)
-                suggested_questions.append(new_suggested_question)
+        new_user_message = html.Div(query + '\n', className="user-msg")
+        app_vars.dialog.append("\nUSER: " + query + '\n')
+        if not query_records:
+            query_records = []
+        if app_vars.rag and rag_status:
+            context = app_vars.rag.retrieve(query)
+        answer, media = query_llm_baseline_mode(query, current_user.id)
 
-    query_records.append(new_user_message)
-    if contains_python_code_block(answer):
-        text_blocks, code_blocks = extract_text_and_code_blocks(answer)
-        for text, code in zip_longest(text_blocks, code_blocks):
-            if text is not None:
-                answer = format_reply_to_markdown(text)
-                response = answer + '\n'
-                app_vars.dialog.append("\n" + response)
-                # Simulate a response from the system
-                new_response_message = dcc.Markdown(response, className="llm-msg")
-                query_records.append(new_response_message)
-            if code is not None:
-                answer = format_reply_to_markdown(code)
-                response = answer + '\n'
-                app_vars.dialog.append("\n" + response)
-                query_records.append(create_python_editors(code))
+        query_records.append(new_user_message)
+        if contains_python_code_block(answer):
+            text_blocks, code_blocks = extract_text_and_code_blocks(answer)
+            for text, code in zip_longest(text_blocks, code_blocks):
+                if text is not None:
+                    answer = format_reply_to_markdown(text)
+                    response = answer + '\n'
+                    app_vars.dialog.append("\n" + response)
+                    # Simulate a response from the system
+                    new_response_message = dcc.Markdown(response, className="llm-msg")
+                    query_records.append(new_response_message)
+                if code is not None:
+                    answer = format_reply_to_markdown(code)
+                    response = answer + '\n'
+                    app_vars.dialog.append("\n" + response)
+                    query_records.append(create_python_editors(code))
 
-    else:
-        answer = format_reply_to_markdown(answer)
-        response = answer + '\n'
-        app_vars.dialog.append("\n" + response)
-        # Simulate a response from the system
-        new_response_message = dcc.Markdown(response, className="llm-msg")
-        query_records.append(new_response_message)
-    if media:
-        query_records.append(media[-1])
-    list_commands = app_vars.agent.list_commands
-    return query_records, False, "", time.time(), suggested_questions, ('\n').join(list_commands) if len(
-        list_commands) > 0 and not media else "", "", change_stage, stages.index(stage) if change_stage else dash.no_update, op, expl
+        else:
+            answer = format_reply_to_markdown(answer)
+            response = answer + '\n'
+            app_vars.dialog.append("\n" + response)
+            # Simulate a response from the system
+            new_response_message = dcc.Markdown(response, className="llm-msg")
+            query_records.append(new_response_message)
+        if media:
+            query_records.append(media[-1])
+        list_commands = app_vars.agent.list_commands
+        return query_records, False, "", time.time(), dash.no_update, ('\n').join(list_commands) if len(
+            list_commands) > 0 and not media else "", "", dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 @app.callback(
