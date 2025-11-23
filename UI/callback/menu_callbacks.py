@@ -31,12 +31,12 @@ def display_non_expert_view(n_clicks, label, style):
 
 
 @app.callback(
-     Output('right-column', 'style', allow_duplicate=True),
      Output('menu-nex-view', 'disabled', allow_duplicate=True),
      Output('menu-ex-view', 'disabled', allow_duplicate=True),
      Output('left-column', 'width', allow_duplicate=True),
      Output('middle-column', 'width', allow_duplicate=True),
      Output('right-column', 'width', allow_duplicate=True),
+     Output('right-column', 'style', allow_duplicate=True),
      Output('data-view-buttons', 'style', allow_duplicate=True),
      Output("chat_history", 'style', allow_duplicate=True),
      Output("next-suggested-questions", 'style', allow_duplicate=True),
@@ -48,19 +48,18 @@ def display_non_expert_view(n_clicks, label, style):
      Output("menu-profile", "style", allow_duplicate=True),
      Input('menu-baseline-view', 'n_clicks'),
      State('menu-baseline-view', 'children'),
-     State('right-column', 'style'),
+
     prevent_initial_call=True
 )
-def baseline_mode(n_clicks, label, right_column_style):
+def baseline_mode(n_clicks, label):
     if label == 'Baseline Mode':
-        right_column_style['display'] = 'none'
         app_vars.baseline_mode = True
         app_vars.agent = BaselineAgent(app_vars.df)
-        return right_column_style, True, True, 5, 7, 0, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, "Exit Baseline Mode", {'display': 'block'},{'display': 'none'}, {'display': 'none'},{'display': 'none'}, {'display': 'none'}
+        return True, True, 4, 5, 3, {'display': 'block'},{'display': 'block'},{'display': 'none'}, {'display': 'none'}, "Exit Baseline Mode", {'display': 'block'},{'display': 'none'}, {'display': 'none'},{'display': 'none'}, {'display': 'none'}
     else:
         app_vars.agent = DatasetAgent(app_vars.df)
         app_vars.baseline_mode = False
-        return (dash.no_update, False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, {'display': 'block'},
+        return (False, False, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, {'display': 'block'},
                 "Baseline Mode", {'display': 'none'}, {'display': 'block'}, {'display': 'block'},{'display': 'block'}, {'display': 'block'})
 
 
