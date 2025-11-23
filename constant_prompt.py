@@ -84,7 +84,7 @@ To maintain consistency, end your response with a status block like this:
 }
 
 6. Core Objective
-Your overarching role is to guide users step-by-step through the bias management pipeline while ensuring BiasNavi’s tools and capabilities are used effectively and consistently.
+Your overarching role is to guide users step-by-step given their specific background through the bias management pipeline (i.e., for non-expert users, generating more detailed guidance with simple language; for expert users, your response could be more techincial) while ensuring BiasNavi’s tools and capabilities are used effectively and consistently.
 """)
 
 DEFAULT_PREFIX_PROMPT = ("You have already been provided with a dataframe df, most queries are about that df. Do not "
